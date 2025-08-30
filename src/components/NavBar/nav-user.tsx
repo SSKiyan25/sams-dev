@@ -17,6 +17,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { signOut } from "firebase/auth";
+import { auth } from "@/firebase/firebase.config";
+import { useRouter } from "next/navigation";
 
 interface User {
   name?: string;
@@ -31,6 +34,12 @@ interface NavUserProps {
 
 export function NavUser({ user }: NavUserProps) {
   const { isMobile } = useSidebar();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await signOut(auth);
+    router.push("/login");
+  };
 
   // Use avatar from user.avatar or user.image (fallback)
   const avatarSrc = user.avatar || user.image;
@@ -87,7 +96,10 @@ export function NavUser({ user }: NavUserProps) {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="flex gap-2 py-1.5 text-destructive cursor-pointer">
+            <DropdownMenuItem
+              className="flex gap-2 py-1.5 text-destructive cursor-pointer"
+              onClick={handleSignOut}
+            >
               <LogOut />
               Log out
             </DropdownMenuItem>

@@ -16,9 +16,24 @@ import {
 import { format } from "date-fns";
 import { useState } from "react";
 
-export function EventsFilters() {
+interface EventsFiltersProps {
+  onSetDate: (date: Date | undefined) => void;
+  onSortBy: (sortBy: string) => void;
+}
+
+export function EventsFilters({ onSetDate, onSortBy }: EventsFiltersProps) {
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [sortBy, setSortBy] = useState<string>("date-desc");
+
+  const handleDateChange = (date: Date | undefined) => {
+    setDate(date);
+    onSetDate(date);
+  };
+
+  const handleSortByChange = (sortBy: string) => {
+    setSortBy(sortBy);
+    onSortBy(sortBy);
+  };
 
   return (
     <div className="flex flex-wrap gap-2">
@@ -33,7 +48,7 @@ export function EventsFilters() {
           <Calendar
             mode="single"
             selected={date}
-            onSelect={setDate}
+            onSelect={handleDateChange}
             initialFocus
           />
           {date && (
@@ -41,7 +56,7 @@ export function EventsFilters() {
               <Button
                 variant="ghost"
                 className="w-full justify-start"
-                onClick={() => setDate(undefined)}
+                onClick={() => handleDateChange(undefined)}
               >
                 Clear date
               </Button>
@@ -50,7 +65,7 @@ export function EventsFilters() {
         </PopoverContent>
       </Popover>
 
-      <Select value={sortBy} onValueChange={setSortBy}>
+      <Select value={sortBy} onValueChange={handleSortByChange}>
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder="Sort by" />
         </SelectTrigger>

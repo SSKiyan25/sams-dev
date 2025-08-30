@@ -16,25 +16,32 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { UserRound, LockKeyhole, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { set } from "date-fns";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/firebase/firebase.config";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
     try {
+      await signInWithEmailAndPassword(auth, email, password);
       // Mock authentication - replace with actual authentication logic
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Navigate to dashboard on successful login
       router.push("/org-dashboard");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed", error);
+      setError(error.message);
     } finally {
       setIsLoading(false);
     }

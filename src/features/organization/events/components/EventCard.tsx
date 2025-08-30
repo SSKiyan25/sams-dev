@@ -17,7 +17,7 @@ import {
   UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { Event, TimeRange } from "../data";
+import { Event } from "../data";
 
 interface EventCardProps {
   event: Event;
@@ -39,24 +39,34 @@ export function EventCard({ event }: EventCardProps) {
   };
 
   // Format time range
-  const formatTimeRange = (timeRange: TimeRange) => {
-    if (!timeRange) return null;
-    return `${formatTime(timeRange.start)} - ${formatTime(timeRange.end)}`;
+  const formatTimeRange = (
+    timeStart: string | null,
+    timeOutStart: string | null
+  ) => {
+    if (!timeStart || !timeOutStart) return null;
+    return `${formatTime(timeStart)} - ${formatTime(timeOutStart)}`;
   };
 
   // Function to display the time information with proper terminology
-  const getTimeDisplay = (timeIn: TimeRange, timeOut: TimeRange) => {
-    if (timeIn && timeOut) {
+  const getTimeDisplay = (
+    timeInStart: string | null,
+    timeInEnd: string | null,
+    timeOutStart: string | null,
+    timeOutEnd: string | null
+  ) => {
+    if (timeInStart && timeInEnd && timeOutStart && timeOutEnd) {
       return (
         <>
-          <div>Time-in: {formatTimeRange(timeIn)}</div>
-          <div>Time-out: {formatTimeRange(timeOut)}</div>
+          <div>Time-in: {formatTimeRange(timeInStart, timeInEnd)}</div>
+          <div>Time-out: {formatTimeRange(timeOutStart, timeOutEnd)}</div>
         </>
       );
-    } else if (timeIn && !timeOut) {
-      return <div>Time-in only: {formatTimeRange(timeIn)}</div>;
-    } else if (!timeIn && timeOut) {
-      return <div>Time-out only: {formatTimeRange(timeOut)}</div>;
+    } else if (timeInStart && !timeOutStart) {
+      return <div>Time-in only: {formatTimeRange(timeInStart, timeInEnd)}</div>;
+    } else if (!timeInStart && timeOutStart) {
+      return (
+        <div>Time-out only: {formatTimeRange(timeOutStart, timeOutEnd)}</div>
+      );
     } else {
       return "No time set";
     }
@@ -118,7 +128,12 @@ export function EventCard({ event }: EventCardProps) {
               <div className="flex items-start">
                 <ClockIcon className="mr-2 h-4 w-4 mt-0.5" />
                 <div className="flex flex-col">
-                  {getTimeDisplay(event.timeIn, event.timeOut)}
+                  {getTimeDisplay(
+                    event.timeInStart,
+                    event.timeInEnd,
+                    event.timeOutStart,
+                    event.timeOutEnd
+                  )}
                 </div>
               </div>
               {event.note && (

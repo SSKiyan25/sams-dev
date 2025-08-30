@@ -6,10 +6,16 @@ import { AddEventDialog } from "./AddEventDialog";
 
 interface EventsHeaderProps {
   onSearch: (query: string) => void;
+  onEventAdded?: () => void;
 }
 
-export function EventsHeader({ onSearch }: EventsHeaderProps) {
+export function EventsHeader({ onSearch, onEventAdded }: EventsHeaderProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
+  const handleEventAdded = () => {
+    setIsAddDialogOpen(false);
+    onEventAdded?.();
+  };
 
   return (
     <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
@@ -40,6 +46,7 @@ export function EventsHeader({ onSearch }: EventsHeaderProps) {
       <AddEventDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
+        onEventAdded={handleEventAdded}
       />
     </div>
   );

@@ -1,43 +1,12 @@
 import { useEffect, useState } from "react";
-import {
-  eventsData,
-  getFilteredEvents,
-  paginateEvents,
-  Event,
-  EventStatus,
-} from "../data";
 import { EventCard } from "./EventCard";
+import { Event } from "../data";
 
 interface EventsListProps {
-  status: "all" | EventStatus;
-  searchQuery: string;
-  currentPage: number;
-  itemsPerPage: number;
+  events: Event[];
 }
-
-export function EventsList({
-  status,
-  searchQuery,
-  currentPage,
-  itemsPerPage,
-}: EventsListProps) {
-  const [events, setEvents] = useState<Event[]>([]);
-
-  useEffect(() => {
-    // Filter events based on status and search query
-    const filteredEvents = getFilteredEvents(eventsData, status, searchQuery);
-
-    // Paginate the filtered events
-    const paginatedEvents = paginateEvents(
-      filteredEvents,
-      currentPage,
-      itemsPerPage
-    );
-
-    setEvents(paginatedEvents);
-  }, [status, searchQuery, currentPage, itemsPerPage]);
-
-  if (events.length === 0) {
+export function EventsList({ events }: EventsListProps) {
+  if (!events || events.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center">
         <p className="text-muted-foreground">No events found</p>

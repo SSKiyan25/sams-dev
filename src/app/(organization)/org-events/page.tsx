@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { EventsList } from "@/features/organization/events/components/EventsList";
 import { EventsHeader } from "@/features/organization/events/components/EventsHeader";
 import { EventsFilters } from "@/features/organization/events/components/EventsFilters";
 import { EventsPagination } from "@/features/organization/events/components/EventsPagination";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { eventsData } from "@/features/organization/events/data";
+import { Event, EventStatus } from "@/features/organization/events/data";
 import {
   Select,
   SelectContent,
@@ -15,19 +15,36 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { getEvents } from "@/firebase/firestoreService";
+import { set } from "date-fns";
 
 export default function EventsPage() {
+  const [eventsData, setEventsData] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
   // Default to "ongoing" tab, but will adjust based on available data
   const [currentTab, setCurrentTab] = useState<
     "ongoing" | "upcoming" | "completed" | "archived" | "all"
   >("ongoing");
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [date, setDate] = useState<Date | undefined>(undefined);
+  const [sortBy, setSortBy] = useState<string>("date-desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
 
   // Check if screen is mobile
   const isDesktop = useMediaQuery("(min-width: 768px)");
+
+  const fetchEvents = useCallback(async () => {
+    setLoading(true);
+    const events = await getEvents();
+    setEventsData(events as unknown as Event[]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
 
   // Determine initial tab based on data availability
   useEffect(() => {
@@ -56,7 +73,42 @@ export default function EventsPage() {
   // Reset pagination when changing tabs or search
   useEffect(() => {
     setCurrentPage(1);
-  }, [currentTab, searchQuery]);
+  }, [currentTab, searchQuery, date, sortBy]);
+
+  const filteredEvents = eventsData.filter((event) => {
+    const statusMatch = currentTab === "all" || event.status === currentTab;
+    const searchMatch =
+      !searchQuery ||
+      event.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const dateMatch =
+      !date || new Date(event.date).toDateString() === date.toDateString();
+    return statusMatch && searchMatch && dateMatch;
+  });
+
+  const sortedEvents = filteredEvents.sort((a, b) => {
+    switch (sortBy) {
+      case "date-asc":
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      case "date-desc":
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      case "name-asc":
+        return a.name.localeCompare(b.name);
+      case "name-desc":
+        return b.name.localeCompare(a.name);
+      case "attendees-asc":
+        return a.attendees - b.attendees;
+      case "attendees-desc":
+        return b.attendees - a.attendees;
+      default:
+        return 0;
+    }
+  });
+
+  const paginatedEvents = filteredEvents.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
 
   // Create hook for useMediaQuery
   const TabsOrSelect = () => {
@@ -108,9 +160,13 @@ export default function EventsPage() {
     );
   };
 
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="space-y-6 p-4 md:p-6">
-      <EventsHeader onSearch={setSearchQuery} />
+      <EventsHeader onSearch={setSearchQuery} onEventAdded={fetchEvents} />
 
       <Tabs
         value={currentTab}
@@ -120,58 +176,17 @@ export default function EventsPage() {
         <TabsOrSelect />
 
         <div className="mt-4">
-          <EventsFilters />
+          <EventsFilters onSetDate={setDate} onSortBy={setSortBy} />
         </div>
 
-        <TabsContent value="ongoing" className="mt-4">
-          <EventsList
-            status="ongoing"
-            searchQuery={searchQuery}
-            currentPage={currentPage}
-            itemsPerPage={itemsPerPage}
-          />
-        </TabsContent>
-
-        <TabsContent value="upcoming" className="mt-4">
-          <EventsList
-            status="upcoming"
-            searchQuery={searchQuery}
-            currentPage={currentPage}
-            itemsPerPage={itemsPerPage}
-          />
-        </TabsContent>
-
-        <TabsContent value="completed" className="mt-4">
-          <EventsList
-            status="completed"
-            searchQuery={searchQuery}
-            currentPage={currentPage}
-            itemsPerPage={itemsPerPage}
-          />
-        </TabsContent>
-
-        <TabsContent value="archived" className="mt-4">
-          <EventsList
-            status="archived"
-            searchQuery={searchQuery}
-            currentPage={currentPage}
-            itemsPerPage={itemsPerPage}
-          />
-        </TabsContent>
-
-        <TabsContent value="all" className="mt-4">
-          <EventsList
-            status="all"
-            searchQuery={searchQuery}
-            currentPage={currentPage}
-            itemsPerPage={itemsPerPage}
-          />
+        <TabsContent value={currentTab} className="mt-4">
+          <EventsList events={paginatedEvents} />
         </TabsContent>
       </Tabs>
 
       <EventsPagination
         currentPage={currentPage}
-        totalPages={5} // This would be calculated based on total events
+        totalPages={totalPages} // This would be calculated based on total events
         onPageChange={setCurrentPage}
       />
     </div>
