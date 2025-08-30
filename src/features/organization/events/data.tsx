@@ -11,7 +11,7 @@ export type Event = {
   timeOutStart: string | null;
   timeOutEnd: string | null;
   location: string;
-  note: string | null;
+  note: string | "";
   attendees: number;
   status: EventStatus;
 };
