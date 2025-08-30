@@ -180,7 +180,7 @@ export default function EventsPage() {
         </div>
 
         <TabsContent value={currentTab} className="mt-4">
-          <EventsList events={paginatedEvents} />
+          <EventsList events={paginatedEvents} onEventsUpdate={fetchEvents} />
         </TabsContent>
       </Tabs>
 

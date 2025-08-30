@@ -21,9 +21,17 @@ import { Event } from "../data";
 
 interface EventCardProps {
   event: Event;
+  onEdit: (event: Event) => void;
+  onArchive: (event: Event) => void;
+  onDelete: (event: Event) => void;
 }
 
-export function EventCard({ event }: EventCardProps) {
+export function EventCard({
+  event,
+  onEdit,
+  onArchive,
+  onDelete,
+}: EventCardProps) {
   //   const [isOpen, setIsOpen] = useState(false);
 
   // Format time to 12-hour format
@@ -88,6 +96,10 @@ export function EventCard({ event }: EventCardProps) {
     }
   };
 
+  const handleEditEvent = () => {
+    onEdit(event);
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
@@ -109,8 +121,17 @@ export function EventCard({ event }: EventCardProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>Edit Event</DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive">
+              <DropdownMenuItem onClick={handleEditEvent}>
+                Edit Event
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() =>
+                  event.status === "archived"
+                    ? onDelete(event)
+                    : onArchive(event)
+                }
+                className="text-destructive"
+              >
                 {event.status === "archived" ? "Delete" : "Archive"}
               </DropdownMenuItem>
             </DropdownMenuContent>
