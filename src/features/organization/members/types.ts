@@ -20,4 +20,3 @@ export type MemberData = {
   id: string;
   member: Member;
 };
-

@@ -6,7 +6,7 @@ import { EventsHeader } from "@/features/organization/events/components/EventsHe
 import { EventsFilters } from "@/features/organization/events/components/EventsFilters";
 import { EventsPagination } from "@/features/organization/events/components/EventsPagination";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Event, EventStatus } from "@/features/organization/events/data";
+import { Event, EventStatus } from "@/features/organization/events/types";
 import {
   Select,
   SelectContent,
@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { getEvents } from "@/firebase/firestoreService";
+import { getEvents } from "@/firebase";
 import { set } from "date-fns";
 
 export default function EventsPage() {

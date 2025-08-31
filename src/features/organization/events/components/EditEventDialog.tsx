@@ -29,9 +29,9 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { EventFormData, eventSchema } from "@/lib/validators";
-import { updateEvent } from "@/firebase/firestoreService";
+import { updateEvent } from "@/firebase";
 import { useForm } from "react-hook-form";
-import { Event } from "../data";
+import { Event } from "../types";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface EditEventDialogProps {

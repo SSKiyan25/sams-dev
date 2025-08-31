@@ -6,7 +6,7 @@ import {
   Faculty,
   Program,
   MemberData,
-} from "@/features/organization/members/data";
+} from "@/features/organization/members/types";
 import { MemberForm } from "@/features/organization/members/components/MemberForm";
 import { DeleteConfirmationDialog } from "@/features/organization/members/components/DeleteConfirmationDialog";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ import {
   getPrograms,
   getUsers,
   updateUser,
-} from "@/firebase/firestoreService";
+} from "@/firebase";
 
 export default function MembersPage() {
   const [members, setMembers] = useState<MemberData[]>([]);

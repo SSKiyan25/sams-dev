@@ -2,10 +2,7 @@ import { MembersStats } from "./MembersStats";
 import { ShortcutLinks } from "./ShortcutLinks";
 import { RecentMembers } from "./RecentMembers";
 import { useEffect, useState } from "react";
-import {
-  getOngoingEvents,
-  getUpcomingEvents,
-} from "@/firebase/firestoreService";
+import { getOngoingEvents, getUpcomingEvents } from "@/firebase";
 
 export function DashboardLayout() {
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);

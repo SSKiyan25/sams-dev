@@ -29,7 +29,7 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { EventFormData, eventSchema } from "@/lib/validators";
-import { addEvent } from "@/firebase/firestoreService";
+import { addEvent } from "@/firebase";
 import { useForm } from "react-hook-form";
 import { Checkbox } from "@/components/ui/checkbox";
 

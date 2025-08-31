@@ -32,8 +32,9 @@ import {
   Member,
   Program,
   Faculty,
-} from "@/features/organization/members/data";
+} from "@/features/organization/members/types";
 import { useForm } from "react-hook-form";
+import { useMemberForm } from "../hooks/userMemberForm";
 
 interface MemberFormProps {
   open: boolean;
@@ -52,17 +53,7 @@ export function MemberForm({
   facultyData,
   programData,
 }: MemberFormProps) {
-  const form = useForm<MemberFormData>({
-    resolver: zodResolver(memberSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      programId: "",
-      facultyId: "",
-      role: "user",
-    },
-  });
-
+  const form = useMemberForm();
   useEffect(() => {
     if (open && member) {
       form.reset(member.member);

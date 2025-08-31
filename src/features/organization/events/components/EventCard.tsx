@@ -17,7 +17,7 @@ import {
   UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { Event } from "../data";
+import { Event } from "../types";
 
 interface EventCardProps {
   event: Event;
