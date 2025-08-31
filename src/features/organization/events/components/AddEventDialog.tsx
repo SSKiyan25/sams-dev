@@ -31,6 +31,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { EventFormData, eventSchema } from "@/lib/validators";
 import { addEvent } from "@/firebase/firestoreService";
 import { useForm } from "react-hook-form";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface AddEventDialogProps {
   open: boolean;
@@ -45,17 +46,25 @@ export function AddEventDialog({
 }: AddEventDialogProps) {
   const form = useForm<EventFormData>({
     resolver: zodResolver(eventSchema),
+    defaultValues: {
+      majorEvent: false,
+    },
   });
 
   const [loading, setLoading] = useState(false);
 
   const onSubmit = async (data: EventFormData) => {
-    setLoading(true);
-    await addEvent(data);
-    onEventAdded();
-    onOpenChange(false);
-    setLoading(false);
-    form.reset();
+    try {
+      setLoading(true);
+      await addEvent(data);
+      onEventAdded();
+      onOpenChange(false);
+      setLoading(false);
+      form.reset();
+    } catch (error) {
+      setLoading(false);
+      console.error("Error adding event:", error);
+    }
   };
 
   return (
@@ -212,6 +221,24 @@ export function AddEventDialog({
                     />
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="majorEvent"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Mark as a major event</FormLabel>
+                  </div>
                 </FormItem>
               )}
             />

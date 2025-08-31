@@ -6,10 +6,11 @@ export type Event = {
   id: number;
   name: string;
   date: string;
-  timeInStart: string | null;
-  timeInEnd: string | null;
-  timeOutStart: string | null;
-  timeOutEnd: string | null;
+  majorEvent?: boolean;
+  timeInStart?: string | null;
+  timeInEnd?: string | null;
+  timeOutStart?: string | null;
+  timeOutEnd?: string | null;
   location: string;
   note: string | "";
   attendees: number;

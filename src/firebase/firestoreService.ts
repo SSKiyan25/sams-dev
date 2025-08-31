@@ -10,6 +10,7 @@ import {
 import { db } from "./firebase.config";
 import { EventFormData } from "@/lib/validators";
 import { create } from "domain";
+import { Event } from "@/features/organization/events/data";
 
 const eventsCollection = collection(db, "events");
 
@@ -17,6 +18,11 @@ export const addEvent = async (eventData: EventFormData) => {
   try {
     const docRef = await addDoc(eventsCollection, {
       ...eventData,
+      note: eventData.note || "",
+      timeInStart: eventData.timeInStart || null,
+      timeInEnd: eventData.timeInEnd || null,
+      timeOutStart: eventData.timeOutStart || null,
+      timeOutEnd: eventData.timeOutEnd || null,
       createdAt: Timestamp.now(),
       date: Timestamp.fromDate(eventData.date),
       attendees: 0,
@@ -51,6 +57,11 @@ export const updateEvent = async (
   const eventDoc = doc(db, "events", eventId);
   await updateDoc(eventDoc, {
     ...eventData,
+    note: eventData.note || "",
+    timeInStart: eventData.timeInStart || null,
+    timeInEnd: eventData.timeInEnd || null,
+    timeOutStart: eventData.timeOutStart || null,
+    timeOutEnd: eventData.timeOutEnd || null,
     date: Timestamp.fromDate(eventData.date),
   });
 };
@@ -63,4 +74,14 @@ export const archiveEvent = async (eventId: string) => {
 export const deleteEvent = async (eventId: string) => {
   const eventDoc = doc(db, "events", eventId);
   await deleteDoc(eventDoc);
+};
+
+export const getOngoingEvents = async () => {
+  const events = (await getEvents()) as unknown as Event[];
+  return events.filter((event) => event.status === "ongoing");
+};
+
+export const getUpcomingEvents = async () => {
+  const events = (await getEvents()) as unknown as Event[];
+  return events.filter((event) => event.status === "upcoming");
 };

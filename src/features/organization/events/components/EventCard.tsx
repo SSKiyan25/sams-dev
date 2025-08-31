@@ -150,10 +150,10 @@ export function EventCard({
                 <ClockIcon className="mr-2 h-4 w-4 mt-0.5" />
                 <div className="flex flex-col">
                   {getTimeDisplay(
-                    event.timeInStart,
-                    event.timeInEnd,
-                    event.timeOutStart,
-                    event.timeOutEnd
+                    event.timeInStart ?? null,
+                    event.timeInEnd ?? null,
+                    event.timeOutStart ?? null,
+                    event.timeOutEnd ?? null
                   )}
                 </div>
               </div>

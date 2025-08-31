@@ -32,6 +32,7 @@ import { EventFormData, eventSchema } from "@/lib/validators";
 import { updateEvent } from "@/firebase/firestoreService";
 import { useForm } from "react-hook-form";
 import { Event } from "../data";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface EditEventDialogProps {
   open: boolean;
@@ -58,6 +59,7 @@ export function EditEventDialog({
         name: selectedEvent.name,
         date: new Date(selectedEvent.date),
         location: selectedEvent.location,
+        majorEvent: selectedEvent.majorEvent,
         note: selectedEvent.note || "",
         timeInStart: selectedEvent.timeInStart || "",
         timeInEnd: selectedEvent.timeInEnd || "",
@@ -232,6 +234,24 @@ export function EditEventDialog({
                     />
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="majorEvent"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Mark as a major event</FormLabel>
+                  </div>
                 </FormItem>
               )}
             />

@@ -3,6 +3,7 @@ import { z } from "zod";
 export const eventSchema = z.object({
   name: z.string().min(1, "Event name is required"),
   date: z.date({ error: "Event date is required" }),
+  majorEvent: z.boolean().optional(),
   timeInStart: z.string().optional(),
   timeInEnd: z.string().optional(),
   timeOutStart: z.string().optional(),
