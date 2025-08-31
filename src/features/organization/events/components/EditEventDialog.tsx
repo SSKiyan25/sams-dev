@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,51 +29,64 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { EventFormData, eventSchema } from "@/lib/validators";
-import { addEvent } from "@/firebase";
+import { updateEvent } from "@/firebase";
 import { useForm } from "react-hook-form";
+import { Event } from "../types";
 import { Checkbox } from "@/components/ui/checkbox";
 
-interface AddEventDialogProps {
+interface EditEventDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onEventAdded: () => void;
+  onEventEdited: () => void;
+  selectedEvent: Event | null;
 }
 
-export function AddEventDialog({
+export function EditEventDialog({
   open,
   onOpenChange,
-  onEventAdded,
-}: AddEventDialogProps) {
+  onEventEdited,
+  selectedEvent,
+}: EditEventDialogProps) {
   const form = useForm<EventFormData>({
     resolver: zodResolver(eventSchema),
-    defaultValues: {
-      majorEvent: false,
-    },
   });
 
   const [loading, setLoading] = useState(false);
 
-  const onSubmit = async (data: EventFormData) => {
-    try {
-      setLoading(true);
-      await addEvent(data);
-      onEventAdded();
-      onOpenChange(false);
-      setLoading(false);
-      form.reset();
-    } catch (error) {
-      setLoading(false);
-      console.error("Error adding event:", error);
+  useEffect(() => {
+    if (selectedEvent) {
+      form.reset({
+        name: selectedEvent.name,
+        date: new Date(selectedEvent.date),
+        location: selectedEvent.location,
+        majorEvent: selectedEvent.majorEvent,
+        note: selectedEvent.note || "",
+        timeInStart: selectedEvent.timeInStart || "",
+        timeInEnd: selectedEvent.timeInEnd || "",
+        timeOutStart: selectedEvent.timeOutStart || "",
+        timeOutEnd: selectedEvent.timeOutEnd || "",
+      });
     }
+  }, [selectedEvent, form]);
+
+  const onSubmit = async (data: EventFormData) => {
+    if (!selectedEvent) return;
+
+    setLoading(true);
+    await updateEvent(selectedEvent.id.toString(), data);
+    onEventEdited();
+    onOpenChange(false);
+    setLoading(false);
+    form.reset();
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Add New Event</DialogTitle>
+          <DialogTitle>Update Event</DialogTitle>
           <DialogDescription>
-            Create a new event for your organization. Fill in the details below.
+            Update the details of the event below.
           </DialogDescription>
         </DialogHeader>
 
@@ -252,7 +265,7 @@ export function AddEventDialog({
                 Cancel
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? "Creating..." : "Create Event"}
+                {loading ? "Updating..." : "Update Event"}
               </Button>
             </DialogFooter>
           </form>

@@ -1,0 +1,16 @@
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { MemberFormData, memberSchema } from "@/lib/validators";
+
+export const useMemberForm = () => {
+  return useForm<MemberFormData>({
+    resolver: zodResolver(memberSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      programId: "",
+      facultyId: "",
+      role: "user",
+    },
+  });
+};

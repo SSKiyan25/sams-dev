@@ -17,13 +17,21 @@ import {
   UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { Event, TimeRange } from "../data";
+import { Event } from "../types";
 
 interface EventCardProps {
   event: Event;
+  onEdit: (event: Event) => void;
+  onArchive: (event: Event) => void;
+  onDelete: (event: Event) => void;
 }
 
-export function EventCard({ event }: EventCardProps) {
+export function EventCard({
+  event,
+  onEdit,
+  onArchive,
+  onDelete,
+}: EventCardProps) {
   //   const [isOpen, setIsOpen] = useState(false);
 
   // Format time to 12-hour format
@@ -39,24 +47,34 @@ export function EventCard({ event }: EventCardProps) {
   };
 
   // Format time range
-  const formatTimeRange = (timeRange: TimeRange) => {
-    if (!timeRange) return null;
-    return `${formatTime(timeRange.start)} - ${formatTime(timeRange.end)}`;
+  const formatTimeRange = (
+    timeStart: string | null,
+    timeOutStart: string | null
+  ) => {
+    if (!timeStart || !timeOutStart) return null;
+    return `${formatTime(timeStart)} - ${formatTime(timeOutStart)}`;
   };
 
   // Function to display the time information with proper terminology
-  const getTimeDisplay = (timeIn: TimeRange, timeOut: TimeRange) => {
-    if (timeIn && timeOut) {
+  const getTimeDisplay = (
+    timeInStart: string | null,
+    timeInEnd: string | null,
+    timeOutStart: string | null,
+    timeOutEnd: string | null
+  ) => {
+    if (timeInStart && timeInEnd && timeOutStart && timeOutEnd) {
       return (
         <>
-          <div>Time-in: {formatTimeRange(timeIn)}</div>
-          <div>Time-out: {formatTimeRange(timeOut)}</div>
+          <div>Time-in: {formatTimeRange(timeInStart, timeInEnd)}</div>
+          <div>Time-out: {formatTimeRange(timeOutStart, timeOutEnd)}</div>
         </>
       );
-    } else if (timeIn && !timeOut) {
-      return <div>Time-in only: {formatTimeRange(timeIn)}</div>;
-    } else if (!timeIn && timeOut) {
-      return <div>Time-out only: {formatTimeRange(timeOut)}</div>;
+    } else if (timeInStart && !timeOutStart) {
+      return <div>Time-in only: {formatTimeRange(timeInStart, timeInEnd)}</div>;
+    } else if (!timeInStart && timeOutStart) {
+      return (
+        <div>Time-out only: {formatTimeRange(timeOutStart, timeOutEnd)}</div>
+      );
     } else {
       return "No time set";
     }
@@ -76,6 +94,10 @@ export function EventCard({ event }: EventCardProps) {
       default:
         return "secondary";
     }
+  };
+
+  const handleEditEvent = () => {
+    onEdit(event);
   };
 
   return (
@@ -99,8 +121,17 @@ export function EventCard({ event }: EventCardProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>Edit Event</DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive">
+              <DropdownMenuItem onClick={handleEditEvent}>
+                Edit Event
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() =>
+                  event.status === "archived"
+                    ? onDelete(event)
+                    : onArchive(event)
+                }
+                className="text-destructive"
+              >
                 {event.status === "archived" ? "Delete" : "Archive"}
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -118,7 +149,12 @@ export function EventCard({ event }: EventCardProps) {
               <div className="flex items-start">
                 <ClockIcon className="mr-2 h-4 w-4 mt-0.5" />
                 <div className="flex flex-col">
-                  {getTimeDisplay(event.timeIn, event.timeOut)}
+                  {getTimeDisplay(
+                    event.timeInStart ?? null,
+                    event.timeInEnd ?? null,
+                    event.timeOutStart ?? null,
+                    event.timeOutEnd ?? null
+                  )}
                 </div>
               </div>
               {event.note && (

@@ -3,18 +3,11 @@ import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, MapPinIcon, ClockIcon, UsersIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ongoingEvents, upcomingEvents } from "../data";
+import { useEffect } from "react";
 
-// Define type for time range
-type TimeRange = {
-  start: string;
-  end: string;
-} | null;
-
-export function ShortcutLinks() {
+export function ShortcutLinks({ upcomingEvents, ongoingEvents }: any) {
   const allEvents = [...ongoingEvents, ...upcomingEvents].slice(0, 3);
 
-  // Format time to 12-hour format
   const formatTime = (time: string | null) => {
     if (!time) return null;
 
@@ -27,29 +20,38 @@ export function ShortcutLinks() {
   };
 
   // Format time range
-  const formatTimeRange = (timeRange: TimeRange) => {
-    if (!timeRange) return null;
-    return `${formatTime(timeRange.start)} - ${formatTime(timeRange.end)}`;
+  const formatTimeRange = (
+    timeStart: string | null,
+    timeOutStart: string | null
+  ) => {
+    if (!timeStart || !timeOutStart) return null;
+    return `${formatTime(timeStart)} - ${formatTime(timeOutStart)}`;
   };
 
   // Function to display the time information with proper terminology
-  const getTimeDisplay = (timeIn: TimeRange, timeOut: TimeRange) => {
-    if (timeIn && timeOut) {
+  const getTimeDisplay = (
+    timeInStart: string | null,
+    timeInEnd: string | null,
+    timeOutStart: string | null,
+    timeOutEnd: string | null
+  ) => {
+    if (timeInStart && timeInEnd && timeOutStart && timeOutEnd) {
       return (
         <>
-          <div>Time-in: {formatTimeRange(timeIn)}</div>
-          <div>Time-out: {formatTimeRange(timeOut)}</div>
+          <div>Time-in: {formatTimeRange(timeInStart, timeInEnd)}</div>
+          <div>Time-out: {formatTimeRange(timeOutStart, timeOutEnd)}</div>
         </>
       );
-    } else if (timeIn && !timeOut) {
-      return <div>Time-in only: {formatTimeRange(timeIn)}</div>;
-    } else if (!timeIn && timeOut) {
-      return <div>Time-out only: {formatTimeRange(timeOut)}</div>;
+    } else if (timeInStart && !timeOutStart) {
+      return <div>Time-in only: {formatTimeRange(timeInStart, timeInEnd)}</div>;
+    } else if (!timeInStart && timeOutStart) {
+      return (
+        <div>Time-out only: {formatTimeRange(timeOutStart, timeOutEnd)}</div>
+      );
     } else {
       return "No time set";
     }
   };
-
   return (
     <Card>
       <CardHeader>
@@ -71,7 +73,7 @@ export function ShortcutLinks() {
               <Card className="overflow-hidden transition-colors hover:bg-accent hover:text-accent-foreground">
                 <div className="p-4">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-semibold">{event.title}</h3>
+                    <h3 className="font-semibold">{event.name}</h3>
                     <Badge
                       variant={
                         event.status === "ongoing" ? "default" : "secondary"
@@ -94,7 +96,12 @@ export function ShortcutLinks() {
                         <ClockIcon className="mr-2 h-4 w-4 -ml-6" />
                         <span className="font-medium">Time schedule:</span>
                       </div>
-                      {getTimeDisplay(event.timeIn, event.timeOut)}
+                      {getTimeDisplay(
+                        event.timeInStart ?? null,
+                        event.timeInEnd ?? null,
+                        event.timeOutStart ?? null,
+                        event.timeOutEnd ?? null
+                      )}
                     </div>
                     <div className="flex items-center">
                       <UsersIcon className="mr-2 h-4 w-4" />
