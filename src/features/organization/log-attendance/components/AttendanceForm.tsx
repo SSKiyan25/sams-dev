@@ -1,4 +1,6 @@
-import { useState } from "react";
+"use client";
+
+import { useEffect, useState } from "react";
 import { Event } from "@/features/organization/events/types";
 import {
   Card,
@@ -32,6 +34,7 @@ import { ProcessingOverlay } from "./Search/ProcessingOverlay";
 
 import { toast } from "sonner";
 import { Member, MemberData } from "../../members/types";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 interface AttendanceFormProps {
   event: Event;
@@ -62,9 +65,35 @@ export function AttendanceForm({ event, type, onSubmit }: AttendanceFormProps) {
   const [showNames, setShowNames] = useState(false);
   const [searchMethod, setSearchMethod] = useState<"id" | "name">("id");
   const [nameSearchResults, setNameSearchResults] = useState<Member[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    // Get the auth instance
+    const auth = getAuth();
+
+    // Set up the listener and store the unsubscribe function
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // User is signed in
+        setCurrentUser(user);
+      } else {
+        // User is signed out
+        setCurrentUser(null);
+      }
+    });
+
+    // Return the cleanup function to unsubscribe from the listener
+    return () => unsubscribe();
+  }, []); // The empty array ensures this effect runs only once on mount
 
   // Handle ID search
   const handleIdSearch = async () => {
+    if (!currentUser) {
+      console.error("User not authenticated.");
+      toast.error("You must be signed in to perform this action.");
+      return;
+    }
+
     if (!studentId.trim()) return;
 
     // First validate the format
@@ -82,7 +111,8 @@ export function AttendanceForm({ event, type, onSubmit }: AttendanceFormProps) {
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       const student = (await searchUserByStudentId(
-        studentId
+        studentId,
+        currentUser
       )) as unknown as Member;
 
       if (student) {
@@ -111,7 +141,8 @@ export function AttendanceForm({ event, type, onSubmit }: AttendanceFormProps) {
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       const results = (await searchUserByName(
-        searchName
+        searchName,
+        currentUser
       )) as unknown as Member[];
       console.log(results.length);
       setNameSearchResults(results as Member[]);
