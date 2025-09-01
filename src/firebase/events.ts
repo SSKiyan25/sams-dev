@@ -7,6 +7,7 @@ import {
   updateDoc,
   query,
   where,
+  getDoc,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { EventFormData } from "@/lib/validators";
@@ -40,7 +41,7 @@ export const addEvent = async (eventData: EventFormData) => {
       date: Timestamp.fromDate(eventData.date),
       attendees: 0,
       status: new Date(eventData.date) > new Date() ? "upcoming" : "ongoing",
-      isDeleted: false, 
+      isDeleted: false,
     });
     return docRef.id;
   } catch (error) {
@@ -58,6 +59,20 @@ export const getEvents = async (status?: "ongoing" | "upcoming") => {
     return querySnapshot.docs.map(transformEventData);
   } catch (error) {
     handleFirestoreError(error, "fetch events");
+  }
+};
+
+export const getEventById = async (eventId: string) => {
+  try {
+    const eventDoc = doc(db, "events", eventId);
+    const eventSnapshot = await getDoc(eventDoc);
+    if (eventSnapshot.exists()) {
+      return transformEventData(eventSnapshot);
+    } else {
+      throw new Error("Event not found");
+    }
+  } catch (error) {
+    handleFirestoreError(error, `fetch event with ID ${eventId}`);
   }
 };
 

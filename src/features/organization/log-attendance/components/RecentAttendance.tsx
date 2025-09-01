@@ -18,13 +18,14 @@ import {
   RefreshCcw,
   UsersIcon,
 } from "lucide-react";
-import { AttendanceRecord, getRecentAttendance } from "../data";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials } from "../utils";
 import Link from "next/link";
+import { getRecentAttendance } from "@/firebase";
+import { AttendanceRecord } from "../types";
 
 interface RecentAttendanceProps {
-  eventId: number;
+  eventId: string;
   type: "time-in" | "time-out";
   organizationId?: string;
 }
@@ -46,7 +47,10 @@ export function RecentAttendance({
       // Simulate network delay
       await new Promise((resolve) => setTimeout(resolve, 800));
 
-      const recentRecords = getRecentAttendance(eventId, type);
+      const recentRecords = (await getRecentAttendance(
+        eventId,
+        type
+      )) as unknown as AttendanceRecord[];
       setRecords(recentRecords);
     } catch (error) {
       console.error("Failed to load recent attendance:", error);
@@ -64,7 +68,7 @@ export function RecentAttendance({
     return () => clearInterval(intervalId);
   }, [loadAttendance]);
 
-  const formatTime = (timestamp: string) => {
+  const formatTime = (timestamp: Date) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
@@ -143,12 +147,22 @@ export function RecentAttendance({
                 <div className="flex items-center gap-3 mb-3">
                   <Avatar className="h-10 w-10 bg-primary/10 text-primary">
                     <AvatarFallback>
-                      {showNames ? getInitials(record.student.name) : "ST"}
+                      {showNames
+                        ? getInitials(
+                            record.student.firstName +
+                              " " +
+                              record.student.lastName
+                          )
+                        : "ST"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">
-                      {showNames ? record.student.name : "Student"}
+                      {showNames
+                        ? record.student.firstName +
+                          " " +
+                          record.student.lastName
+                        : "Student"}
                     </p>
                     <p className="text-sm text-muted-foreground truncate">
                       ID: {record.student.studentId}
@@ -165,7 +179,7 @@ export function RecentAttendance({
 
                 <div className="flex items-center text-sm text-muted-foreground">
                   <ClockIcon className="h-3.5 w-3.5 mr-1.5" />
-                  {formatTime(record.timestamp)}
+                  {formatTime(new Date(record.timestamp))}
                 </div>
               </div>
             ))}

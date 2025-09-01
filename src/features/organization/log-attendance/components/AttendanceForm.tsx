@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Event } from "@/features/organization/events/data";
+import { Event } from "@/features/organization/events/types";
 import {
   Card,
   CardContent,
@@ -15,12 +15,8 @@ import {
   AlertCircleIcon,
   XCircleIcon,
 } from "lucide-react";
-import {
-  findStudentById,
-  findStudentsByName,
-  isValidStudentId,
-  StudentBasicInfo,
-} from "../data";
+import { searchUserByName, searchUserByStudentId } from "@/firebase";
+import { isValidStudentId } from "../utils";
 import { AddStudentDialog } from "./AddStudentDialog";
 
 // Seach related components and elements
@@ -35,6 +31,7 @@ import { NoStudentFound } from "./Search/NoStudentFound";
 import { ProcessingOverlay } from "./Search/ProcessingOverlay";
 
 import { toast } from "sonner";
+import { Member, MemberData } from "../../members/types";
 
 interface AttendanceFormProps {
   event: Event;
@@ -56,7 +53,7 @@ export function AttendanceForm({ event, type, onSubmit }: AttendanceFormProps) {
       | "error"
       | "not-found"
       | "invalid-format";
-    student: StudentBasicInfo | null;
+    student: Member | null;
   }>({
     status: "idle",
     student: null,
@@ -64,9 +61,7 @@ export function AttendanceForm({ event, type, onSubmit }: AttendanceFormProps) {
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
   const [showNames, setShowNames] = useState(false);
   const [searchMethod, setSearchMethod] = useState<"id" | "name">("id");
-  const [nameSearchResults, setNameSearchResults] = useState<
-    StudentBasicInfo[]
-  >([]);
+  const [nameSearchResults, setNameSearchResults] = useState<Member[]>([]);
 
   // Handle ID search
   const handleIdSearch = async () => {
@@ -86,7 +81,9 @@ export function AttendanceForm({ event, type, onSubmit }: AttendanceFormProps) {
       // Simulate network request
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      const student = findStudentById(studentId);
+      const student = (await searchUserByStudentId(
+        studentId
+      )) as unknown as Member;
 
       if (student) {
         setSearchResult({ status: "success", student });
@@ -113,8 +110,11 @@ export function AttendanceForm({ event, type, onSubmit }: AttendanceFormProps) {
       // Simulate network request
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      const results = findStudentsByName(searchName);
-      setNameSearchResults(results);
+      const results = (await searchUserByName(
+        searchName
+      )) as unknown as Member[];
+      console.log(results.length);
+      setNameSearchResults(results as Member[]);
 
       if (results.length === 0) {
         toast.error(`No students found matching "${searchName}"`);
@@ -131,7 +131,7 @@ export function AttendanceForm({ event, type, onSubmit }: AttendanceFormProps) {
     }
   };
 
-  const handleNameSelect = (student: StudentBasicInfo) => {
+  const handleNameSelect = (student: Member) => {
     setStudentId(student.studentId);
     setSearchResult({ status: "success", student });
   };
@@ -162,7 +162,11 @@ export function AttendanceForm({ event, type, onSubmit }: AttendanceFormProps) {
       // Show success toast
       toast.success(
         `${
-          showNames ? searchResult.student.name : "Student"
+          showNames
+            ? searchResult.student.firstName +
+              " " +
+              searchResult.student.lastName
+            : "Student"
         } has successfully ${
           type === "time-in" ? "checked in" : "checked out"
         } for ${event.name}.`
@@ -207,7 +211,11 @@ export function AttendanceForm({ event, type, onSubmit }: AttendanceFormProps) {
         <ProcessingOverlay
           type={type}
           showNames={showNames}
-          studentName={searchResult.student?.name}
+          studentName={
+            searchResult.student?.firstName +
+              " " +
+              searchResult.student?.lastName || ""
+          }
         />
       )}
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,13 +13,15 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LoaderIcon, InfoIcon } from "lucide-react";
-import { addStudent, StudentBasicInfo, isValidStudentId } from "../data";
+import { addUser } from "@/firebase";
+import { Member, MemberData } from "@/features/organization/members/types";
+import { isValidStudentId } from "../utils";
 
 interface AddStudentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   suggestedId: string;
-  onStudentAdded: (student: StudentBasicInfo) => void;
+  onStudentAdded: (student: Member) => void;
 }
 
 export function AddStudentDialog({
@@ -28,24 +30,47 @@ export function AddStudentDialog({
   suggestedId,
   onStudentAdded,
 }: AddStudentDialogProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Member>({
     studentId: suggestedId,
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
+    programId: "", // You might want to add fields for these
+    facultyId: "", // Or pass them as props
+    role: "user",
   });
   const [consentChecked, setConsentChecked] = useState(false);
   const [showConsentError, setShowConsentError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<{
     studentId?: string;
-    name?: string;
+    firstName?: string;
+    lastName?: string;
     email?: string;
   }>({});
+
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        studentId: suggestedId,
+        firstName: "",
+        lastName: "",
+        email: "",
+        programId: "",
+        facultyId: "",
+        role: "user",
+      });
+      setConsentChecked(false);
+      setShowConsentError(false);
+      setFormErrors({});
+    }
+  }, [open, suggestedId]);
 
   const validateForm = () => {
     const errors: {
       studentId?: string;
-      name?: string;
+      firstName?: string;
+      lastName?: string;
       email?: string;
     } = {};
 
@@ -55,8 +80,12 @@ export function AddStudentDialog({
       errors.studentId = "Invalid format. Use XX-X-XXXXX (e.g., 20-1-01709)";
     }
 
-    if (!formData.name) {
-      errors.name = "Name is required";
+    if (!formData.firstName) {
+      errors.firstName = "First name is required";
+    }
+
+    if (!formData.lastName) {
+      errors.lastName = "Last name is required";
     }
 
     if (!formData.email) {
@@ -73,7 +102,6 @@ export function AddStudentDialog({
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // Clear the error for this field when the user starts typing
     if (formErrors[name as keyof typeof formErrors]) {
       setFormErrors((prev) => ({
         ...prev,
@@ -84,7 +112,6 @@ export function AddStudentDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     const isValid = validateForm();
 
     if (!consentChecked) {
@@ -97,13 +124,10 @@ export function AddStudentDialog({
     }
 
     setIsSubmitting(true);
-
     try {
-      // Simulate network delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      const newStudent = await addStudent(formData);
-      onStudentAdded(newStudent);
+      await addUser(formData);
+      onStudentAdded(formData);
+      onOpenChange(false);
     } catch (error) {
       console.error("Failed to add student:", error);
     } finally {
@@ -120,7 +144,6 @@ export function AddStudentDialog({
             Enter the student details to add them to the system.
           </DialogDescription>
         </DialogHeader>
-
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="studentId">Student ID</Label>
@@ -137,22 +160,40 @@ export function AddStudentDialog({
               <p className="text-sm text-destructive">{formErrors.studentId}</p>
             )}
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
-            <Input
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              disabled={isSubmitting}
-              required
-            />
-            {formErrors.name && (
-              <p className="text-sm text-destructive">{formErrors.name}</p>
-            )}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">First Name</Label>
+              <Input
+                id="firstName"
+                name="firstName"
+                value={formData.firstName}
+                onChange={handleChange}
+                disabled={isSubmitting}
+                required
+              />
+              {formErrors.firstName && (
+                <p className="text-sm text-destructive">
+                  {formErrors.firstName}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Last Name</Label>
+              <Input
+                id="lastName"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleChange}
+                disabled={isSubmitting}
+                required
+              />
+              {formErrors.lastName && (
+                <p className="text-sm text-destructive">
+                  {formErrors.lastName}
+                </p>
+              )}
+            </div>
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="email">Email Address</Label>
             <Input
@@ -168,7 +209,6 @@ export function AddStudentDialog({
               <p className="text-sm text-destructive">{formErrors.email}</p>
             )}
           </div>
-
           <div className="border rounded-md p-4 bg-muted/50">
             <div className="flex items-start space-x-2">
               <Checkbox
@@ -189,19 +229,17 @@ export function AddStudentDialog({
                 <p className="text-sm text-muted-foreground">
                   By checking this box, I consent to the collection, storage,
                   and processing of my personal information for attendance
-                  tracking purposes in accordance with the university&apos;s
-                  privacy policy.
+                  tracking purposes in accordance with the university's privacy
+                  policy.
                 </p>
               </div>
             </div>
-
             {showConsentError && (
               <p className="text-sm text-destructive mt-2">
                 You must agree to the terms and conditions to continue
               </p>
             )}
           </div>
-
           <Alert variant="default" className="bg-blue-50 border-blue-200">
             <InfoIcon className="h-4 w-4 text-blue-800" />
             <AlertDescription className="text-blue-700 text-sm">
@@ -210,7 +248,6 @@ export function AddStudentDialog({
               request access or deletion of your data at any time.
             </AlertDescription>
           </Alert>
-
           <DialogFooter className="pt-4">
             <Button
               type="button"
