@@ -34,7 +34,7 @@ const handleFirestoreError = (error: any, context: string) => {
  * @param uid - The user ID of the currently authenticated user.
  * @returns The facultyId string or null if not found or an error occurs.
  */
-const _getCurrentUserFacultyId = async (
+export const getCurrentUserFacultyId = async (
   uid: string
 ): Promise<string | null> => {
   if (!uid) {
@@ -113,7 +113,7 @@ export const searchUserByStudentId = async (
   // Encapsulated logic in a single try/catch block for comprehensive error handling.
   try {
     // Replaced duplicated code with a call to the new helper function.
-    const facultyId = await _getCurrentUserFacultyId(currentUser?.uid);
+    const facultyId = await getCurrentUserFacultyId(currentUser?.uid);
     if (!facultyId) {
       return null; // Stop if we can't get the facultyId.
     }
@@ -149,7 +149,7 @@ export const searchUserByName = async (
       return [];
     }
 
-    const facultyId = await _getCurrentUserFacultyId(currentUser?.uid);
+    const facultyId = await getCurrentUserFacultyId(currentUser?.uid);
     if (!facultyId) {
       return [];
     }

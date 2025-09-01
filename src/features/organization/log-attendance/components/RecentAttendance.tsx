@@ -60,7 +60,7 @@ export function RecentAttendance({
   }, [eventId, type]);
 
   useEffect(() => {
-    loadAttendance();
+    // loadAttendance();
 
     // Set up a refresh interval (every 30 seconds)
     const intervalId = setInterval(loadAttendance, 30000);

@@ -63,13 +63,20 @@ export function MemberForm({
         lastName: "",
         programId: "",
         facultyId: "",
+        studentId: "",
+        email: "",
         role: "user",
       });
     }
   }, [open, member, form]);
 
   const handleFormSubmit = (data: MemberFormData) => {
-    onSubmit(data);
+    const memberToSubmit: Member = {
+      ...data,
+      studentId: member?.member.studentId ?? "",
+      email: member?.member.email ?? "",
+    };
+    onSubmit(memberToSubmit);
   };
 
   return (
@@ -83,6 +90,32 @@ export function MemberForm({
             onSubmit={form.handleSubmit(handleFormSubmit)}
             className="space-y-4"
           >
+            <FormField
+              control={form.control}
+              name="studentId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Studentd Id</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="firstName"
