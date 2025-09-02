@@ -7,11 +7,22 @@ import {
   updateDoc,
   query,
   where,
+  writeBatch,
   getDoc,
+  orderBy,
+  limit,
+  startAfter,
+  QueryDocumentSnapshot,
+  DocumentData,
+  getCountFromServer,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { EventFormData } from "@/lib/validators";
 import { Event } from "@/features/organization/events/types";
+import {
+  determineEventStatus,
+  getEventsNeedingStatusUpdate,
+} from "@/utils/eventStatusUtils";
 
 const eventsCollection = collection(db, "events");
 
@@ -22,14 +33,118 @@ const handleFirestoreError = (error: any, context: string) => {
 };
 
 // Helper to transform event data
-const transformEventData = (doc: any) => ({
-  id: doc.id,
-  ...doc.data(),
-  date: doc.data().date.toDate(),
-});
+const transformEventData = (doc: any): Event => {
+  const data = doc.data();
+  return {
+    id: doc.id,
+    ...data,
+    date: data.date?.toDate ? data.date.toDate() : data.date,
+  } as Event;
+};
+
+export interface PaginatedEvents {
+  events: Event[];
+  totalCount: number;
+  lastDoc: QueryDocumentSnapshot<DocumentData> | null;
+  hasMore: boolean;
+}
+
+/**
+ * Get paginated events with server-side filtering and sorting
+ */
+export const getPaginatedEvents = async (
+  status?: "ongoing" | "upcoming" | "completed" | "archived" | "all",
+  sortField: string = "date",
+  sortDirection: "asc" | "desc" = "desc",
+  pageSize: number = 5,
+  startAfterDoc?: QueryDocumentSnapshot<DocumentData> | null,
+  searchQuery?: string,
+  skip: number = 0,
+  filterDate?: Date
+): Promise<PaginatedEvents> => {
+  try {
+    // Base query
+    let baseQuery = query(eventsCollection, where("isDeleted", "==", false));
+
+    // Add status filter if provided and not "all"
+    if (status && status !== "all") {
+      baseQuery = query(baseQuery, where("status", "==", status));
+    }
+
+    // Add date filter if provided
+    // In Firestore, we need to filter by a specific day range
+    if (filterDate) {
+      // Start of the day
+      const startDate = new Date(filterDate);
+      startDate.setHours(0, 0, 0, 0);
+
+      // End of the day
+      const endDate = new Date(filterDate);
+      endDate.setHours(23, 59, 59, 999);
+
+      // Add date range filter
+      baseQuery = query(
+        baseQuery,
+        where("date", ">=", Timestamp.fromDate(startDate)),
+        where("date", "<=", Timestamp.fromDate(endDate))
+      );
+    }
+
+    // Add sorting
+    const sortFieldPath =
+      sortField === "name" || sortField === "attendees" ? sortField : "date";
+    const sortedQuery = query(baseQuery, orderBy(sortFieldPath, sortDirection));
+
+    // Get total count for pagination
+    const countSnapshot = await getCountFromServer(sortedQuery);
+    const totalCount = countSnapshot.data().count;
+
+    // Execute query - get all results for this query
+    const snapshot = await getDocs(sortedQuery);
+    const allEvents = snapshot.docs.map(transformEventData);
+
+    // Manual pagination using skip and limit
+    const events = allEvents.slice(skip, skip + pageSize);
+
+    // Update event statuses if needed
+    const eventsToUpdate = getEventsNeedingStatusUpdate(events);
+    if (eventsToUpdate.length > 0) {
+      await updateEventStatuses(eventsToUpdate);
+      // If we're filtering by status, refetch to get accurate results
+      if (status && status !== "all") {
+        return getPaginatedEvents(
+          status,
+          sortField,
+          sortDirection,
+          pageSize,
+          startAfterDoc,
+          searchQuery,
+          skip,
+          filterDate
+        );
+      }
+    }
+
+    return {
+      events,
+      totalCount,
+      lastDoc: null, // We're not using cursor pagination anymore
+      hasMore: skip + pageSize < totalCount,
+    };
+  } catch (error) {
+    handleFirestoreError(error, "fetch paginated events");
+    return {
+      events: [],
+      totalCount: 0,
+      lastDoc: null,
+      hasMore: false,
+    };
+  }
+};
 
 export const addEvent = async (eventData: EventFormData) => {
   try {
+    const status = determineEventStatus(eventData.date);
     const docRef = await addDoc(eventsCollection, {
       ...eventData,
       note: eventData.note || "",
@@ -40,7 +155,7 @@ export const addEvent = async (eventData: EventFormData) => {
       createdAt: Timestamp.now(),
       date: Timestamp.fromDate(eventData.date),
       attendees: 0,
-      status: new Date(eventData.date) > new Date() ? "upcoming" : "ongoing",
+      status,
       isDeleted: false,
     });
     return docRef.id;
@@ -82,6 +197,17 @@ export const updateEvent = async (
 ) => {
   try {
     const eventDoc = doc(db, "events", eventId);
+
+    // Get current event to check if it's archived
+    const currentEvent = await getEventById(eventId);
+
+    // If event is archived, maintain archived status
+    // Otherwise, determine status based on date
+    const status =
+      currentEvent?.status === "archived"
+        ? "archived"
+        : determineEventStatus(eventData.date);
+
     await updateDoc(eventDoc, {
       ...eventData,
       note: eventData.note || "",
@@ -90,9 +216,101 @@ export const updateEvent = async (
       timeOutStart: eventData.timeOutStart || null,
       timeOutEnd: eventData.timeOutEnd || null,
       date: Timestamp.fromDate(eventData.date),
+      status, // Set status automatically based on date
     });
   } catch (error) {
     handleFirestoreError(error, `update event with ID ${eventId}`);
+  }
+};
+
+export const updateEventStatuses = async (
+  events: Event[]
+): Promise<boolean> => {
+  try {
+    const batch = writeBatch(db);
+
+    events.forEach((event) => {
+      // Skip archived events - they stay archived
+      if (event.status === "archived") return;
+
+      // Convert ID to string if it's a number
+      const eventId =
+        typeof event.id === "number" ? String(event.id) : event.id;
+      const eventDoc = doc(db, "events", eventId);
+
+      const newStatus = determineEventStatus(new Date(event.date));
+
+      if (event.status !== newStatus) {
+        batch.update(eventDoc, { status: newStatus });
+      }
+    });
+
+    await batch.commit();
+    return true;
+  } catch (error) {
+    console.error("Error updating event statuses:", error);
+    return false;
+  }
+};
+
+export const getEvents = async (
+  status?: "ongoing" | "upcoming" | "completed"
+): Promise<Event[]> => {
+  try {
+    let q = query(eventsCollection, where("isDeleted", "==", false));
+    if (status) {
+      q = query(q, where("status", "==", status));
+    }
+    const querySnapshot = await getDocs(q);
+    const events = querySnapshot.docs.map(transformEventData);
+
+    // Check for events that need status updates
+    const eventsToUpdate = getEventsNeedingStatusUpdate(events);
+    if (eventsToUpdate.length > 0) {
+      await updateEventStatuses(eventsToUpdate);
+      // If we're filtering by status, refetch to get accurate results
+      if (status) {
+        return getEvents(status);
+      }
+    }
+
+    return events;
+  } catch (error) {
+    handleFirestoreError(error, "fetch events");
+    return []; // Return empty array on error
+  }
+};
+
+export const getEventsByStatus = async (status: string) => {
+  try {
+    const eventsRef = collection(db, "events");
+    const q = query(eventsRef, where("status", "==", status));
+    const querySnapshot = await getDocs(q);
+
+    const events: Event[] = [];
+    querySnapshot.forEach((doc) => {
+      events.push(transformEventData(doc));
+    });
+
+    return events;
+  } catch (error) {
+    console.error("Error fetching events by status:", error);
+    return [];
+  }
+};
+
+export const getEventById = async (eventId: string): Promise<Event | null> => {
+  try {
+    const eventDoc = doc(db, "events", eventId);
+    const docSnap = await getDoc(eventDoc);
+
+    if (docSnap.exists()) {
+      return transformEventData({ id: docSnap.id, data: () => docSnap.data() });
+    }
+    return null;
+  } catch (error) {
+    handleFirestoreError(error, `get event with ID ${eventId}`);
+    return null;
   }
 };
 
