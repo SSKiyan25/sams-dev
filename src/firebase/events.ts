@@ -164,6 +164,33 @@ export const addEvent = async (eventData: EventFormData) => {
   }
 };
 
+export const getEvents = async (status?: "ongoing" | "upcoming") => {
+  try {
+    let q = query(eventsCollection, where("isDeleted", "==", false));
+    if (status) {
+      q = query(q, where("status", "==", status));
+    }
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(transformEventData);
+  } catch (error) {
+    handleFirestoreError(error, "fetch events");
+  }
+};
+
+export const getEventById = async (eventId: string) => {
+  try {
+    const eventDoc = doc(db, "events", eventId);
+    const eventSnapshot = await getDoc(eventDoc);
+    if (eventSnapshot.exists()) {
+      return transformEventData(eventSnapshot);
+    } else {
+      throw new Error("Event not found");
+    }
+  } catch (error) {
+    handleFirestoreError(error, `fetch event with ID ${eventId}`);
+  }
+};
+
 export const updateEvent = async (
   eventId: string,
   eventData: EventFormData

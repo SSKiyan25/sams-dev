@@ -4,11 +4,7 @@ import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { AttendanceInterface } from "@/features/organization/log-attendance/components/AttendanceInterface";
 import { PageHeader } from "@/features/organization/log-attendance/components/PageHeader";
-import { Event } from "@/features/organization/log-attendance/data";
-import {
-  logAttendance,
-  getEventById,
-} from "@/features/organization/log-attendance/data";
+import { Event } from "@/features/organization/events/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -20,10 +16,16 @@ import {
   ArrowLeftIcon,
 } from "lucide-react";
 import Link from "next/link";
+import {
+  checkLogAttendanceExist,
+  getEventById,
+  logAttendance,
+} from "@/firebase";
+import { toast } from "sonner";
 
 export default function LogAttendancePage() {
   const params = useParams();
-  const eventId = Number(params.id);
+  const eventId = params.id?.toString();
 
   const [event, setEvent] = useState<Event | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,8 +34,8 @@ export default function LogAttendancePage() {
     // Simulate loading event data
     setIsLoading(true);
 
-    setTimeout(() => {
-      const foundEvent = getEventById(eventId);
+    setTimeout(async () => {
+      const foundEvent = await getEventById(eventId as string);
       setEvent(foundEvent || null);
       setIsLoading(false);
     }, 500); // Simulate network delay
@@ -47,8 +49,18 @@ export default function LogAttendancePage() {
     if (event.status !== "ongoing") return;
 
     try {
+      const exist = await checkLogAttendanceExist(
+        eventId as string,
+        studentId,
+        type
+      );
+      console.log(exist);
+      if (exist) {
+        toast.error("Attendance record already exists.");
+        return;
+      }
       await logAttendance({
-        eventId,
+        eventId: eventId as string,
         studentId,
         type,
       });
@@ -116,8 +128,8 @@ export default function LogAttendancePage() {
               <div className="flex items-center text-muted-foreground">
                 <ClockIcon className="mr-2 h-4 w-4" />
                 <span>
-                  {event.timeIn
-                    ? `Time-in: ${event.timeIn.start} - ${event.timeIn.end}`
+                  {event.timeInStart && event.timeInEnd
+                    ? `Time-in: ${event.timeInStart} - ${event.timeInEnd}`
                     : "No time-in set"}
                 </span>
               </div>

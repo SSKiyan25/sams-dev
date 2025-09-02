@@ -3,6 +3,8 @@ export type Member = {
   lastName: string;
   programId: string;
   facultyId: string;
+  studentId: string;
+  email: string;
   role: "admin" | "user";
 };
 

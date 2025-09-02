@@ -2,7 +2,7 @@ import { useState } from "react";
 import { EventCard } from "./EventCard";
 import { EditEventDialog } from "./EditEventDialog";
 import { Event } from "../types";
-import { archiveEvent, deleteEvent } from "@/firebase/index";
+import { archiveEvent, deleteEvent } from "@/firebase";
 
 interface EventsListProps {
   events: Event[];
