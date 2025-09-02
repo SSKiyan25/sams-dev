@@ -16,9 +16,11 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { UserRound, LockKeyhole, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { set } from "date-fns";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/firebase/firebase.config";
+import { LoginLoadingOverlay } from "@/features/auth/components/LoginLoadingOverlay";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -34,14 +36,26 @@ export default function LoginPage() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // Mock authentication - replace with actual authentication logic
-      // await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Add a small delay to show the loading overlay before redirecting
+      // await new Promise((resolve) => setTimeout(resolve, 1500));
 
       // Navigate to dashboard on successful login
       router.push("/org-dashboard");
-    } catch (error: any) {
+    } catch (error: string | any) {
       console.error("Login failed", error);
-      setError(error.message);
+
+      // Show a more user-friendly error message
+      if (
+        error.code === "auth/wrong-password" ||
+        error.code === "auth/user-not-found"
+      ) {
+        setError("Invalid email or password. Please try again.");
+      } else if (error.code === "auth/too-many-requests") {
+        setError("Too many failed login attempts. Please try again later.");
+      } else {
+        setError("An error occurred during sign in. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -49,6 +63,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-muted/30">
+      {/* Show loading overlay when authenticating */}
+      {isLoading && <LoginLoadingOverlay />}
+
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold">Sign in to SAMS</CardTitle>
@@ -56,6 +73,16 @@ export default function LoginPage() {
             Enter your credentials to access your account
           </CardDescription>
         </CardHeader>
+
+        {error && (
+          <div className="px-6 pt-1">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -70,6 +97,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -79,6 +107,8 @@ export default function LoginPage() {
                 <Link
                   href="/forgot-password"
                   className="text-sm text-primary hover:underline"
+                  tabIndex={isLoading ? -1 : 0}
+                  aria-disabled={isLoading}
                 >
                   Forgot password?
                 </Link>
@@ -92,11 +122,12 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
             <div className="flex items-center space-x-2 mb-4">
-              <Checkbox id="remember" />
+              <Checkbox id="remember" disabled={isLoading} />
               <label
                 htmlFor="remember"
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
