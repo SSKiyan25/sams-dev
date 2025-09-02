@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -20,14 +19,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LoaderIcon, InfoIcon } from "lucide-react";
-import { Member, Program } from "@/features/organization/members/types";
-import { isValidStudentId } from "../../log-attendance/utils";
-import { addUser, getCurrentUserFacultyId, getPrograms } from "@/firebase";
-import { MemberForm } from "../../members/components/MemberForm";
-import { get } from "http";
-import { getAuth } from "firebase/auth";
-
-// --- Component Interfaces and Initial State ---
+import { Member } from "@/features/organization/members/types";
+import { useAddStudentForm } from "../hooks/useAddStudentForm";
 
 interface AddStudentDialogProps {
   open: boolean;
@@ -36,131 +29,30 @@ interface AddStudentDialogProps {
   onStudentAdded: (student: Member) => void;
 }
 
-type FormErrors = {
-  studentId?: string;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  programId?: string;
-  facultyId?: string;
-};
-
-const initialFormData: Member = {
-  studentId: "",
-  firstName: "",
-  lastName: "",
-  email: "",
-  programId: "",
-  facultyId: "",
-  role: "user",
-};
-
-// --- The React Component ---
-
 export function AddStudentDialog({
   open,
   onOpenChange,
   suggestedId,
   onStudentAdded,
 }: AddStudentDialogProps) {
-  const [formData, setFormData] = useState<Member>({
-    ...initialFormData,
-    studentId: suggestedId,
+  const {
+    formData,
+    consentChecked,
+    setConsentChecked,
+    showConsentError,
+    setShowConsentError,
+    isSubmitting,
+    formErrors,
+    handleChange,
+    handleSubmit,
+    programData,
+    handleSelectChange,
+  } = useAddStudentForm({
+    suggestedId,
+    onStudentAdded,
+    open,
+    onOpenChange,
   });
-  const [consentChecked, setConsentChecked] = useState(false);
-  const [showConsentError, setShowConsentError] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formErrors, setFormErrors] = useState<FormErrors>({});
-  const [programData, setProgramData] = useState<Program[]>([]);
-
-  const handleSelectChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, programId: value }));
-    if (formErrors.programId) {
-      setFormErrors((prev) => ({ ...prev, programId: undefined }));
-    }
-  };
-
-  useEffect(() => {
-    // Fetch program data from API or context
-    const fetchProgramData = async () => {
-      try {
-        const data = (await getPrograms()) as Program[];
-        setProgramData(data);
-      } catch (error) {
-        console.error("Failed to fetch program data:", error);
-      }
-    };
-
-    fetchProgramData();
-  }, []);
-
-  useEffect(() => {
-    if (open) {
-      setFormData({ ...initialFormData, studentId: suggestedId });
-      setConsentChecked(false);
-      setShowConsentError(false);
-      setFormErrors({});
-    }
-  }, [open, suggestedId]);
-
-  const validateForm = (): boolean => {
-    const errors: FormErrors = {};
-
-    if (!formData.studentId) {
-      errors.studentId = "Student ID is required";
-    } else if (!isValidStudentId(formData.studentId)) {
-      errors.studentId = "Invalid format. Use XX-X-XXXXX (e.g., 20-1-01709)";
-    }
-    if (!formData.firstName) errors.firstName = "First name is required";
-    if (!formData.lastName) errors.lastName = "Last name is required";
-    if (!formData.programId) errors.programId = "Program ID is required";
-    if (!formData.email) {
-      errors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = "Invalid email format";
-    }
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (formErrors[name as keyof FormErrors]) {
-      setFormErrors((prev) => ({ ...prev, [name]: undefined }));
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setShowConsentError(!consentChecked);
-    const isFormValid = validateForm();
-    if (!isFormValid || !consentChecked) {
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      // await addUser(formData);
-      await addUser({
-        studentId: formData.studentId,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        programId: formData.programId,
-        facultyId:
-          (await getCurrentUserFacultyId(getAuth().currentUser?.uid ?? "")) ||
-          "",
-        role: "user",
-      });
-      onStudentAdded(formData);
-      onOpenChange(false);
-    } catch (error) {
-      console.error("Failed to add student:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
