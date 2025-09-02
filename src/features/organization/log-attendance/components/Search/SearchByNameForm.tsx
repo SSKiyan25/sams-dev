@@ -1,9 +1,9 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { StudentBasicInfo } from "../../data";
 import { SearchIcon, ArrowRightIcon } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials } from "../../utils";
+import { Member } from "@/features/organization/members/types";
 
 interface SearchByNameFormProps {
   searchName: string;
@@ -11,9 +11,9 @@ interface SearchByNameFormProps {
   handleSearch: () => void;
   handleKeyDown: (e: React.KeyboardEvent) => void;
   isSubmitting: boolean;
-  nameSearchResults: StudentBasicInfo[];
+  nameSearchResults: Member[];
   showNames: boolean;
-  onStudentSelect: (student: StudentBasicInfo) => void;
+  onStudentSelect: (student: Member) => void;
   showLabel?: boolean;
   enhancedResults?: boolean;
 }
@@ -78,12 +78,18 @@ export function SearchByNameForm({
                 >
                   <Avatar className="h-10 w-10 mr-3 bg-primary/10 text-primary">
                     <AvatarFallback>
-                      {showNames ? getInitials(student.name) : "ST"}
+                      {showNames
+                        ? getInitials(
+                            student.firstName + " " + student.lastName
+                          )
+                        : "ST"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">
-                      {showNames ? student.name : "Student"}
+                      {showNames
+                        ? student.firstName + " " + student.lastName
+                        : "Student"}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       ID: {student.studentId}
@@ -104,7 +110,10 @@ export function SearchByNameForm({
                 className="justify-start"
                 onClick={() => onStudentSelect(student)}
               >
-                {showNames ? student.name : "Student"} (ID: {student.studentId})
+                {showNames
+                  ? student.firstName + " " + student.lastName
+                  : "Student"}{" "}
+                (ID: {student.studentId})
               </Button>
             ))}
           </div>

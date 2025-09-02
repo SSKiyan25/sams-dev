@@ -1,12 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { StudentBasicInfo } from "../../data";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CheckCircleIcon, XCircleIcon, Loader2Icon } from "lucide-react";
 import { getInitials } from "../../utils";
+import { Member } from "@/features/organization/members/types";
 
 interface StudentDetailsProps {
-  student: StudentBasicInfo;
+  student: Member;
   showNames: boolean;
   isSubmitting: boolean;
   type: "time-in" | "time-out";
@@ -32,14 +32,18 @@ export function StudentDetails({
       <div className="flex items-center gap-3 flex-1">
         <Avatar className="h-12 w-12 bg-primary/10 text-primary">
           <AvatarFallback>
-            {showNames ? getInitials(student.name) : "ST"}
+            {showNames
+              ? getInitials(student.firstName + " " + student.lastName)
+              : "ST"}
           </AvatarFallback>
         </Avatar>
 
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="font-medium">
-              {showNames ? student.name : "Student"}
+              {showNames
+                ? student.firstName + " " + student.lastName
+                : "Student"}
             </h3>
             <Badge variant="outline">ID: {student.studentId}</Badge>
           </div>

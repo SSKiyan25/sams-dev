@@ -1,8 +1,8 @@
-import { Event } from "@/features/organization/log-attendance/data";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { AttendanceForm } from "./AttendanceForm";
 import { RecentAttendance } from "./RecentAttendance";
+import { Event } from "../../events/types";
 
 interface AttendanceInterfaceProps {
   event: Event;
@@ -17,8 +17,8 @@ export function AttendanceInterface({
   onLogAttendance,
 }: AttendanceInterfaceProps) {
   // Determine available attendance types
-  const hasTimeIn = !!event.timeIn;
-  const hasTimeOut = !!event.timeOut;
+  const hasTimeIn = !!event.timeInStart && !!event.timeInEnd;
+  const hasTimeOut = !!event.timeOutStart && !!event.timeOutEnd;
 
   // Set default active tab based on available options
   const defaultTab = hasTimeIn ? "time-in" : "time-out";
@@ -57,7 +57,7 @@ export function AttendanceInterface({
           <h2 className="text-xl font-semibold mb-4">
             Recent {title} Activity
           </h2>
-          <RecentAttendance eventId={event.id} type={type} />
+          <RecentAttendance eventId={event.id.toString()} type={type} />
         </div>
       </>
     );
@@ -97,7 +97,7 @@ export function AttendanceInterface({
         <h2 className="text-xl font-semibold mb-4">
           Recent {activeTab.replace("-", " ")} Activity
         </h2>
-        <RecentAttendance eventId={event.id} type={activeTab} />
+        <RecentAttendance eventId={event.id.toString()} type={activeTab} />
       </div>
     </>
   );

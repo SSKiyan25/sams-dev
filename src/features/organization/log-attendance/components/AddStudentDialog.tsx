@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,19 +6,27 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LoaderIcon, InfoIcon } from "lucide-react";
-import { addStudent, StudentBasicInfo, isValidStudentId } from "../data";
+import { Member } from "@/features/organization/members/types";
+import { useAddStudentForm } from "../hooks/useAddStudentForm";
 
 interface AddStudentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   suggestedId: string;
-  onStudentAdded: (student: StudentBasicInfo) => void;
+  onStudentAdded: (student: Member) => void;
 }
 
 export function AddStudentDialog({
@@ -28,88 +35,24 @@ export function AddStudentDialog({
   suggestedId,
   onStudentAdded,
 }: AddStudentDialogProps) {
-  const [formData, setFormData] = useState({
-    studentId: suggestedId,
-    name: "",
-    email: "",
+  const {
+    formData,
+    consentChecked,
+    setConsentChecked,
+    showConsentError,
+    setShowConsentError,
+    isSubmitting,
+    formErrors,
+    handleChange,
+    handleSubmit,
+    programData,
+    handleSelectChange,
+  } = useAddStudentForm({
+    suggestedId,
+    onStudentAdded,
+    open,
+    onOpenChange,
   });
-  const [consentChecked, setConsentChecked] = useState(false);
-  const [showConsentError, setShowConsentError] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formErrors, setFormErrors] = useState<{
-    studentId?: string;
-    name?: string;
-    email?: string;
-  }>({});
-
-  const validateForm = () => {
-    const errors: {
-      studentId?: string;
-      name?: string;
-      email?: string;
-    } = {};
-
-    if (!formData.studentId) {
-      errors.studentId = "Student ID is required";
-    } else if (!isValidStudentId(formData.studentId)) {
-      errors.studentId = "Invalid format. Use XX-X-XXXXX (e.g., 20-1-01709)";
-    }
-
-    if (!formData.name) {
-      errors.name = "Name is required";
-    }
-
-    if (!formData.email) {
-      errors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = "Invalid email format";
-    }
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-
-    // Clear the error for this field when the user starts typing
-    if (formErrors[name as keyof typeof formErrors]) {
-      setFormErrors((prev) => ({
-        ...prev,
-        [name]: undefined,
-      }));
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const isValid = validateForm();
-
-    if (!consentChecked) {
-      setShowConsentError(true);
-      return;
-    }
-
-    if (!isValid) {
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      // Simulate network delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      const newStudent = await addStudent(formData);
-      onStudentAdded(newStudent);
-    } catch (error) {
-      console.error("Failed to add student:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -120,9 +63,8 @@ export function AddStudentDialog({
             Enter the student details to add them to the system.
           </DialogDescription>
         </DialogHeader>
-
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="studentId">Student ID</Label>
             <Input
               id="studentId"
@@ -130,30 +72,47 @@ export function AddStudentDialog({
               value={formData.studentId}
               onChange={handleChange}
               disabled={isSubmitting}
-              required
-              placeholder="XX-X-XXXXX (e.g., 29-1-12345)"
+              placeholder="XX-X-XXXXX"
             />
             {formErrors.studentId && (
               <p className="text-sm text-destructive">{formErrors.studentId}</p>
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
-            <Input
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              disabled={isSubmitting}
-              required
-            />
-            {formErrors.name && (
-              <p className="text-sm text-destructive">{formErrors.name}</p>
-            )}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="firstName">First Name</Label>
+              <Input
+                id="firstName"
+                name="firstName"
+                value={formData.firstName}
+                onChange={handleChange}
+                disabled={isSubmitting}
+              />
+              {formErrors.firstName && (
+                <p className="text-sm text-destructive">
+                  {formErrors.firstName}
+                </p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="lastName">Last Name</Label>
+              <Input
+                id="lastName"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleChange}
+                disabled={isSubmitting}
+              />
+              {formErrors.lastName && (
+                <p className="text-sm text-destructive">
+                  {formErrors.lastName}
+                </p>
+              )}
+            </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="email">Email Address</Label>
             <Input
               id="email"
@@ -162,15 +121,37 @@ export function AddStudentDialog({
               value={formData.email}
               onChange={handleChange}
               disabled={isSubmitting}
-              required
             />
             {formErrors.email && (
               <p className="text-sm text-destructive">{formErrors.email}</p>
             )}
           </div>
 
+          <div className="space-y-1.5">
+            <Label>Program</Label>
+            <Select
+              onValueChange={handleSelectChange}
+              value={formData.programId}
+              disabled={isSubmitting}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a program" />
+              </SelectTrigger>
+              <SelectContent>
+                {programData.map((program) => (
+                  <SelectItem key={program.id} value={program.id}>
+                    {program.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {formErrors.programId && (
+              <p className="text-sm text-destructive">{formErrors.programId}</p>
+            )}
+          </div>
+
           <div className="border rounded-md p-4 bg-muted/50">
-            <div className="flex items-start space-x-2">
+            <div className="flex items-start space-x-3">
               <Checkbox
                 id="terms"
                 checked={consentChecked}
@@ -178,36 +159,34 @@ export function AddStudentDialog({
                   setConsentChecked(checked as boolean);
                   if (checked) setShowConsentError(false);
                 }}
+                aria-label="Agree to terms and conditions"
               />
               <div className="grid gap-1.5 leading-none">
-                <Label
-                  htmlFor="terms"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
+                <Label htmlFor="terms" className="cursor-pointer">
                   I agree to the terms and conditions
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  By checking this box, I consent to the collection, storage,
-                  and processing of my personal information for attendance
-                  tracking purposes in accordance with the university&apos;s
-                  privacy policy.
+                  By checking this box, I consent to the collection and
+                  processing of my personal information for attendance tracking
+                  purposes.
                 </p>
               </div>
             </div>
-
             {showConsentError && (
               <p className="text-sm text-destructive mt-2">
-                You must agree to the terms and conditions to continue
+                You must agree to the terms to continue.
               </p>
             )}
           </div>
 
-          <Alert variant="default" className="bg-blue-50 border-blue-200">
-            <InfoIcon className="h-4 w-4 text-blue-800" />
-            <AlertDescription className="text-blue-700 text-sm">
-              Your data will be used solely for attendance tracking purposes and
-              will be handled in accordance with our privacy policy. You can
-              request access or deletion of your data at any time.
+          <Alert
+            variant="default"
+            className="bg-blue-50 border-blue-200 text-blue-800"
+          >
+            <InfoIcon className="h-4 w-4" />
+            <AlertDescription className="text-blue-700">
+              Your data will be used solely for attendance tracking and handled
+              in accordance with our privacy policy.
             </AlertDescription>
           </Alert>
 

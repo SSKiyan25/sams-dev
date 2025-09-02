@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { EventCard } from "./EventCard";
 import { EditEventDialog } from "./EditEventDialog";
-import { Event } from "../data";
-import { archiveEvent, deleteEvent } from "@/firebase/firestoreService";
+import { Event } from "../types";
+import { archiveEvent, deleteEvent } from "@/firebase";
 
 interface EventsListProps {
   events: Event[];
