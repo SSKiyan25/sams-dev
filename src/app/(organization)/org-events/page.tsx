@@ -1,194 +1,127 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { EventsList } from "@/features/organization/events/components/EventsList";
 import { EventsHeader } from "@/features/organization/events/components/EventsHeader";
 import { EventsFilters } from "@/features/organization/events/components/EventsFilters";
 import { EventsPagination } from "@/features/organization/events/components/EventsPagination";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Event, EventStatus } from "@/features/organization/events/types";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { getEvents } from "@/firebase";
-import { set } from "date-fns";
+import { EventsSkeletonLoader } from "@/features/organization/events/components/EventsSkeletonLoader";
+import { EventsSearchBar } from "@/features/organization/events/components/EventsSearchBar";
+import {
+  EventsTabNavigation,
+  EventStatus,
+} from "@/features/organization/events/components/EventsTabNavigation";
+import { useEventsData } from "@/features/organization/events/hooks/useEventsData";
 
 export default function EventsPage() {
-  const [eventsData, setEventsData] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
-  // Default to "ongoing" tab, but will adjust based on available data
-  const [currentTab, setCurrentTab] = useState<
-    "ongoing" | "upcoming" | "completed" | "archived" | "all"
-  >("ongoing");
+  const [currentTab, setCurrentTab] = useState<EventStatus>("ongoing");
+  const [isSearchActive, setIsSearchActive] = useState(false);
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [date, setDate] = useState<Date | undefined>(undefined);
-  const [sortBy, setSortBy] = useState<string>("date-desc");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(5);
+  // Use the updated hook with server-side pagination
+  const {
+    events,
+    totalEvents,
+    loading,
+    currentPage,
+    totalPages,
+    handlePageChange,
+    handleSearch,
+    handleSort,
+    handleDateChange,
+    searchQuery,
+  } = useEventsData(currentTab);
 
   // Check if screen is mobile
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
-  const fetchEvents = useCallback(async () => {
-    setLoading(true);
-    const events = await getEvents();
-    setEventsData(events as unknown as Event[]);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
-
-  // Determine initial tab based on data availability
-  useEffect(() => {
-    // Check if there are any ongoing events
-    const hasOngoingEvents = eventsData.some(
-      (event) => event.status === "ongoing"
-    );
-
-    if (hasOngoingEvents) {
-      setCurrentTab("ongoing");
-    } else {
-      // If no ongoing events, check for upcoming events
-      const hasUpcomingEvents = eventsData.some(
-        (event) => event.status === "upcoming"
-      );
-
-      if (hasUpcomingEvents) {
-        setCurrentTab("upcoming");
-      } else {
-        // If no upcoming events either, default to "completed"
-        setCurrentTab("completed");
-      }
-    }
-  }, []);
-
-  // Reset pagination when changing tabs or search
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [currentTab, searchQuery, date, sortBy]);
-
-  const filteredEvents = eventsData.filter((event) => {
-    const statusMatch = currentTab === "all" || event.status === currentTab;
-    const searchMatch =
-      !searchQuery ||
-      event.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const dateMatch =
-      !date || new Date(event.date).toDateString() === date.toDateString();
-    return statusMatch && searchMatch && dateMatch;
-  });
-
-  const sortedEvents = filteredEvents.sort((a, b) => {
-    switch (sortBy) {
-      case "date-asc":
-        return new Date(a.date).getTime() - new Date(b.date).getTime();
-      case "date-desc":
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
-      case "name-asc":
-        return a.name.localeCompare(b.name);
-      case "name-desc":
-        return b.name.localeCompare(a.name);
-      case "attendees-asc":
-        return a.attendees - b.attendees;
-      case "attendees-desc":
-        return b.attendees - a.attendees;
-      default:
-        return 0;
-    }
-  });
-
-  const paginatedEvents = filteredEvents.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
-
-  // Create hook for useMediaQuery
-  const TabsOrSelect = () => {
-    if (isDesktop) {
-      return (
-        <TabsList className="grid w-full gap-2 grid-cols-5">
-          <TabsTrigger value="ongoing" className="relative">
-            Ongoing
-            {/* Show indicator dot for ongoing events */}
-            {eventsData.some((e) => e.status === "ongoing") && (
-              <span className="absolute h-2 w-2 rounded-full bg-primary -top-0.5 -right-0.5"></span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-          <TabsTrigger value="completed">Completed</TabsTrigger>
-          <TabsTrigger value="archived">Archived</TabsTrigger>
-          <TabsTrigger value="all">All</TabsTrigger>
-        </TabsList>
-      );
-    }
-
-    return (
-      <div className="w-full mb-4">
-        <Select
-          value={currentTab}
-          onValueChange={(
-            value: "ongoing" | "upcoming" | "completed" | "archived" | "all"
-          ) => setCurrentTab(value)}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ongoing" className="relative">
-              <div className="flex items-center">
-                Ongoing
-                {eventsData.some((e) => e.status === "ongoing") && (
-                  <span className="ml-2 h-2 w-2 rounded-full bg-primary"></span>
-                )}
-              </div>
-            </SelectItem>
-            <SelectItem value="upcoming">Upcoming</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="archived">Archived</SelectItem>
-            <SelectItem value="all">All Events</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    );
+  // Handle search activation/deactivation
+  const onSearch = (query: string) => {
+    handleSearch(query);
+    setIsSearchActive(!!query.trim());
   };
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  // Clear search
+  const clearSearch = () => {
+    handleSearch("");
+    setIsSearchActive(false);
+  };
 
   return (
     <div className="space-y-6 p-4 md:p-6">
-      <EventsHeader onSearch={setSearchQuery} onEventAdded={fetchEvents} />
-
-      <Tabs
-        value={currentTab}
-        className="w-full"
-        onValueChange={(value) => setCurrentTab(value as any)}
-      >
-        <TabsOrSelect />
-
-        <div className="mt-4">
-          <EventsFilters onSetDate={setDate} onSortBy={setSortBy} />
-        </div>
-
-        <TabsContent value={currentTab} className="mt-4">
-          <EventsList events={paginatedEvents} onEventsUpdate={fetchEvents} />
-        </TabsContent>
-      </Tabs>
-
-      <EventsPagination
-        currentPage={currentPage}
-        totalPages={totalPages} // This would be calculated based on total events
-        onPageChange={setCurrentPage}
+      <EventsHeader
+        onSearch={onSearch}
+        onEventAdded={() => {
+          // Refresh the events list after adding a new event
+          handlePageChange(1);
+        }}
       />
+
+      {/* Search results indicator */}
+      {isSearchActive && (
+        <EventsSearchBar
+          searchQuery={searchQuery}
+          resultsCount={totalEvents}
+          onClear={clearSearch}
+        />
+      )}
+
+      <div className="mt-4">
+        <EventsFilters
+          onSetDate={handleDateChange}
+          onSortBy={handleSort}
+          disabled={loading}
+        />
+      </div>
+
+      {isSearchActive ? (
+        // Search results view - no tabs, no pagination
+        <div className="mt-4">
+          {loading ? (
+            <EventsSkeletonLoader />
+          ) : (
+            <EventsList
+              events={events}
+              onEventsUpdate={() => handleSearch(searchQuery)}
+            />
+          )}
+        </div>
+      ) : (
+        // Normal tabbed view with pagination
+        <Tabs
+          value={currentTab}
+          className="w-full mt-4"
+          onValueChange={(value) => setCurrentTab(value as EventStatus)}
+        >
+          <EventsTabNavigation
+            currentTab={currentTab}
+            setCurrentTab={setCurrentTab}
+            loading={loading}
+            isDesktop={isDesktop}
+          />
+
+          <TabsContent value={currentTab} className="mt-4">
+            {loading ? (
+              <EventsSkeletonLoader />
+            ) : (
+              <EventsList
+                events={events}
+                onEventsUpdate={() => handlePageChange(currentPage)}
+              />
+            )}
+          </TabsContent>
+        </Tabs>
+      )}
+
+      {/* Only show pagination for non-search results */}
+      {!loading && totalEvents > 0 && !isSearchActive && (
+        <EventsPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+      )}
     </div>
   );
 }

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { EventCard } from "./EventCard";
 import { EditEventDialog } from "./EditEventDialog";
-import { Event } from "../data";
-import { archiveEvent, deleteEvent } from "@/firebase/firestoreService";
+import { Event } from "../types";
+import { archiveEvent, deleteEvent } from "@/firebase/index";
 
 interface EventsListProps {
   events: Event[];
@@ -10,7 +10,7 @@ interface EventsListProps {
 }
 
 export function EventsList({ events, onEventsUpdate }: EventsListProps) {
-   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
   const handleEditClick = (event: Event) => {
@@ -42,13 +42,12 @@ export function EventsList({ events, onEventsUpdate }: EventsListProps) {
     setSelectedEvent(null);
   };
 
-
   if (!events || events.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center">
         <p className="text-muted-foreground">No events found</p>
         <p className="text-sm text-muted-foreground">
-          Try adjusting your filters or search query
+          Try adjusting your filters or search keywords
         </p>
       </div>
     );

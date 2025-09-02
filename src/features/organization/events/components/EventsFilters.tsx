@@ -19,9 +19,14 @@ import { useState } from "react";
 interface EventsFiltersProps {
   onSetDate: (date: Date | undefined) => void;
   onSortBy: (sortBy: string) => void;
+  disabled?: boolean;
 }
 
-export function EventsFilters({ onSetDate, onSortBy }: EventsFiltersProps) {
+export function EventsFilters({
+  onSetDate,
+  onSortBy,
+  disabled = false,
+}: EventsFiltersProps) {
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [sortBy, setSortBy] = useState<string>("date-desc");
 
@@ -39,7 +44,7 @@ export function EventsFilters({ onSetDate, onSortBy }: EventsFiltersProps) {
     <div className="flex flex-wrap gap-2">
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2" disabled={disabled}>
             <CalendarIcon className="h-4 w-4" />
             {date ? format(date, "PPP") : "Filter by date"}
           </Button>
@@ -65,7 +70,11 @@ export function EventsFilters({ onSetDate, onSortBy }: EventsFiltersProps) {
         </PopoverContent>
       </Popover>
 
-      <Select value={sortBy} onValueChange={handleSortByChange}>
+      <Select
+        value={sortBy}
+        onValueChange={handleSortByChange}
+        disabled={disabled}
+      >
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder="Sort by" />
         </SelectTrigger>
