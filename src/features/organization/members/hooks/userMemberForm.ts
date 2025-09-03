@@ -13,6 +13,7 @@ export const useMemberForm = () => {
       programId: "",
       facultyId: "",
       role: "user",
+      yearLevel: undefined,
     },
   });
 };
