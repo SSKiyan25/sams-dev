@@ -272,7 +272,11 @@ export const getEvents = async (
 export const getEventsByStatus = async (status: string) => {
   try {
     const eventsRef = collection(db, "events");
-    const q = query(eventsRef, where("status", "==", status));
+    const q = query(
+      eventsRef,
+      where("status", "==", status),
+      where("isDeleted", "==", false)
+    );
     const querySnapshot = await getDocs(q);
 
     const events: Event[] = [];
@@ -293,7 +297,10 @@ export const getEventById = async (eventId: string): Promise<Event | null> => {
     const docSnap = await getDoc(eventDoc);
 
     if (docSnap.exists()) {
-      return transformEventData({ id: docSnap.id, data: () => docSnap.data() });
+      const data = docSnap.data();
+      if (data && data.isDeleted === false) {
+        return transformEventData({ id: docSnap.id, data: () => data });
+      }
     }
     return null;
   } catch (error) {

@@ -10,6 +10,8 @@ import {
   getDoc,
   CollectionReference,
   DocumentData,
+  orderBy,
+  limit,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { MemberFormData } from "@/lib/validators";
@@ -61,7 +63,12 @@ export const getCurrentUserFacultyId = async (
 
 export const getUsers = async () => {
   try {
-    const querySnapshot = await getDocs(usersCollection);
+    const usersQuery = query(
+      usersCollection,
+      where("isDeleted", "==", false),
+      where("role", "==", "user")
+    );
+    const querySnapshot = await getDocs(usersQuery);
     return querySnapshot.docs.map((doc) => ({
       id: doc.id,
       member: { ...doc.data() },
@@ -73,11 +80,48 @@ export const getUsers = async () => {
   }
 };
 
+export const getRecentUsers = async () => {
+  try {
+    const recentUsersQuery = query(
+      usersCollection,
+      where("role", "==", "user"),
+      where("isDeleted", "==", false),
+      orderBy("createdAt", "desc"),
+      limit(5)
+    );
+    const querySnapshot = await getDocs(recentUsersQuery);
+    return querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      member: { ...doc.data() },
+    }));
+  } catch (error) {
+    handleFirestoreError(error, "fetch recent users");
+    return [];
+  }
+};
+
+export const checkStudentIdExist = async (studentId: string) => {
+  try {
+    const querySnapshot = await getDocs(
+      query(
+        usersCollection,
+        where("studentId", "==", studentId),
+        where("isDeleted", "==", false)
+      )
+    );
+    return !querySnapshot.empty;
+  } catch (error) {
+    handleFirestoreError(error, "check student ID existence");
+    return false;
+  }
+};
+
 export const addUser = async (userData: MemberFormData) => {
   try {
     const docRef = await addDoc(usersCollection, {
       ...userData,
       createdAt: Timestamp.now(),
+      isDeleted: false,
     });
     return docRef.id;
   } catch (error) {
@@ -121,7 +165,8 @@ export const searchUserByStudentId = async (
     const searchQuery = query(
       usersCollection,
       where("studentId", "==", studentId),
-      where("facultyId", "==", facultyId)
+      where("facultyId", "==", facultyId),
+      where("isDeleted", "==", false)
     );
 
     const querySnapshot = await getDocs(searchQuery);
@@ -159,14 +204,16 @@ export const searchUserByName = async (
       usersCollection,
       where("facultyId", "==", facultyId),
       where("firstName", ">=", trimmedName),
-      where("firstName", "<=", trimmedName + "\uf8ff")
+      where("firstName", "<=", trimmedName + "\uf8ff"),
+      where("isDeleted", "==", false)
     );
 
     const lastNameQuery = query(
       usersCollection,
       where("facultyId", "==", facultyId),
       where("lastName", ">=", trimmedName),
-      where("lastName", "<=", trimmedName + "\uf8ff")
+      where("lastName", "<=", trimmedName + "\uf8ff"),
+      where("isDeleted", "==", false)
     );
 
     // Execute both queries in parallel for better performance.
@@ -204,8 +251,15 @@ export const searchUserByName = async (
 
 export const getUserById = async (userId: string): Promise<Member | null> => {
   try {
-    const userDoc = await getDoc(doc(db, "users", userId));
-    if (userDoc.exists()) {
+    const querySnapshot = await getDocs(
+      query(
+        usersCollection,
+        where("id", "==", userId),
+        where("isDeleted", "==", false)
+      )
+    );
+    if (!querySnapshot.empty) {
+      const userDoc = querySnapshot.docs[0];
       return {
         id: userDoc.id,
         ...userDoc.data(),

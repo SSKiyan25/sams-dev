@@ -4,12 +4,35 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { recentMembers } from "../data";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Member, Program } from "../../members/types";
+import { useEffect, useState } from "react";
+import { getPrograms } from "@/firebase";
 
 interface RecentMembersProps {
   isLoading?: boolean;
+  recentMembers: Member[];
 }
 
-export function RecentMembers({ isLoading = false }: RecentMembersProps) {
+export function RecentMembers({
+  isLoading = false,
+  recentMembers,
+}: RecentMembersProps) {
+  const [programs, setPrograms] = useState<Program[]>([]);
+
+  useEffect(() => {
+    const fetchPrograms = async () => {
+      const programsData = await getPrograms();
+      setPrograms(programsData as Program[]);
+    };
+
+    fetchPrograms();
+  }, []);
+
+  function getProgramName(programId: string) {
+    const program = programs.find((p) => p.id === programId);
+    return program ? program.name : "Unknown Program";
+  }
+
   function getInitials(name: string) {
     return name
       .split(" ")
@@ -50,21 +73,32 @@ export function RecentMembers({ isLoading = false }: RecentMembersProps) {
             <MemberSkeletons />
           ) : (
             recentMembers.map((member) => (
-              <div key={member.id} className="flex items-center gap-4">
+              <div key={member.studentId} className="flex items-center gap-4">
                 <Avatar>
-                  <AvatarImage src={member.imageUrl} alt={member.name} />
-                  <AvatarFallback>{getInitials(member.name)}</AvatarFallback>
+                  <AvatarFallback>
+                    {getInitials(member.firstName + " " + member.lastName)}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 space-y-1">
                   <p className="text-sm font-medium leading-none">
-                    {member.name}
+                    {member.firstName + " " + member.lastName}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {member.course}
+                    {getProgramName(member.programId)}
                   </p>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Joined {new Date(member.dateJoined).toLocaleDateString()}
+                  {member.createdAt
+                    ? `Joined ${
+                        typeof member.createdAt === "object" &&
+                        member.createdAt !== null &&
+                        typeof (member.createdAt as any).toDate === "function"
+                          ? (member.createdAt as any)
+                              .toDate()
+                              .toLocaleDateString()
+                          : "Unknown Join Date"
+                      }`
+                    : "Unknown Join Date"}
                 </div>
               </div>
             ))

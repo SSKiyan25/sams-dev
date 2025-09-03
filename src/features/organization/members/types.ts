@@ -1,3 +1,5 @@
+import { Timestamp } from "firebase/firestore";
+
 export type Member = {
   firstName: string;
   lastName: string;
@@ -6,6 +8,7 @@ export type Member = {
   studentId: string;
   email: string;
   role: "admin" | "user";
+  createdAt?: Timestamp;
 };
 
 export type Program = {
