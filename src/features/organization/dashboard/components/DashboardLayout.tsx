@@ -11,8 +11,10 @@ interface FirebaseEvent {
   name: string;
   date: string | Date;
   location: string;
-  timeIn?: { start: string; end: string } | null;
-  timeOut?: { start: string; end: string } | null;
+  timeInStart?: string | null;
+  timeInEnd?: string | null;
+  timeOutStart?: string | null;
+  timeOutEnd?: string | null;
   attendees?: number;
   isMajor?: boolean;
   createdAt?: any;
@@ -35,10 +37,10 @@ export function DashboardLayout() {
     date: event.date || new Date(),
     location: event.location || "",
     status,
-    timeInStart: event.timeIn?.start || null,
-    timeInEnd: event.timeIn?.end || null,
-    timeOutStart: event.timeOut?.start || null,
-    timeOutEnd: event.timeOut?.end || null,
+    timeInStart: event.timeInStart || null,
+    timeInEnd: event.timeInEnd || null,
+    timeOutStart: event.timeOutStart || null,
+    timeOutEnd: event.timeOutEnd || null,
     attendees: event.attendees || 0,
     majorEvent: event.isMajor || false,
     createdAt: event.createdAt,

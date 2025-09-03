@@ -20,6 +20,7 @@ import { getAuth } from "firebase/auth";
 import { getUserById, searchUserByStudentId } from "./users"; // Assuming this is optimized
 import { AttendanceRecord } from "@/features/organization/log-attendance/types";
 import { Member } from "@/features/organization/members/types";
+import { incrementEventAttendees } from "./events";
 
 // --- Reusable Constants & Helpers ---
 
@@ -71,7 +72,6 @@ export const logAttendance = async ({
   try {
     const querySnapshot = await getDocs(q);
     const now = Timestamp.now();
-
     if (querySnapshot.empty) {
       // Create a new attendance record if one doesn't exist.
       await addDoc(attendanceCollection, {
@@ -81,6 +81,7 @@ export const logAttendance = async ({
         timeOut: type === "time-out" ? now : null,
         status: "partially present",
       });
+      await incrementEventAttendees(eventId);
     } else {
       // Update the existing record.
       const recordDoc = querySnapshot.docs[0];
@@ -99,7 +100,6 @@ export const logAttendance = async ({
       const hasTimeOut = type === "time-out" || existingData.timeOut;
       updateData.status =
         hasTimeIn && hasTimeOut ? "present" : "partially present";
-
       await updateDoc(doc(db, "eventAttendees", recordDoc.id), updateData);
     }
   } catch (error) {
