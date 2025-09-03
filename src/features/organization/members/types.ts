@@ -9,6 +9,7 @@ export type Member = {
   email: string;
   role: "admin" | "user";
   createdAt?: Timestamp;
+  yearLevel?: number; // Adding year level
 };
 
 export type Program = {
