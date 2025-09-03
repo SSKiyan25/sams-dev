@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { QrCodeIcon, UserIcon } from "lucide-react";
+import { QrCodeIcon, UserIcon, Computer } from "lucide-react";
 
 export function AlternativeCheckInMethods() {
   return (
@@ -10,6 +10,11 @@ export function AlternativeCheckInMethods() {
           Alternative check-in methods
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="h-9" disabled>
+            <Computer className="h-4 w-4 mr-2" />
+            Kiosk Mode
+            <span className="text-xs ml-1 text-muted-foreground">(Soon)</span>
+          </Button>
           <Button variant="outline" size="sm" className="h-9" disabled>
             <QrCodeIcon className="h-4 w-4 mr-2" />
             Scan QR

@@ -5,10 +5,10 @@ import Link from "next/link";
 
 interface AttendeesHeaderProps {
   event: Event;
-  onImport: () => void;
+  onExport: () => void;
 }
 
-export function AttendeesHeader({ event, onImport }: AttendeesHeaderProps) {
+export function AttendeesHeader({ event, onExport }: AttendeesHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
       <h2 className="text-lg font-semibold">Attendees</h2>
@@ -26,11 +26,11 @@ export function AttendeesHeader({ event, onImport }: AttendeesHeaderProps) {
 
         <Button
           variant="outline"
-          onClick={onImport}
-          className="w-full sm:w-auto"
+          onClick={onExport}
+          className="w-full sm:w-auto hover:cursor-pointer"
         >
           <Upload className="h-4 w-4 mr-2" />
-          Import
+          Export
         </Button>
       </div>
     </div>

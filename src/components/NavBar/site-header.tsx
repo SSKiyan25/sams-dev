@@ -46,9 +46,7 @@ export function SiteHeader({ user, isAuthenticated }: SiteHeaderProps) {
               height={28}
               className="text-primary"
             />
-            <h1 className="text-xl font-medium text-primary-foreground">
-              SAMS
-            </h1>
+            <h1 className="text-xl font-bold text-primary-foreground">CORAL</h1>
           </span>
         )}
         <div className="ml-auto flex items-center gap-3">

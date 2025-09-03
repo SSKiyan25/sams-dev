@@ -84,7 +84,7 @@ export function AddEventDialog({
 
   return (
     <Dialog open={open} onOpenChange={loading ? undefined : onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] overflow-hidden">
+      <DialogContent className="sm:max-w-[500px] h-auto overflow-hidden pt-12 pb-4">
         <DialogHeader>
           <DialogTitle>Add New Event</DialogTitle>
           <DialogDescription>

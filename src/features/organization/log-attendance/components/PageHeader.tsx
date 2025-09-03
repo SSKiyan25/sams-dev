@@ -4,6 +4,7 @@ import { CalendarIcon, ArrowLeftIcon, ClockIcon, StarIcon } from "lucide-react";
 import Link from "next/link";
 import { formatTimeRange } from "../utils";
 import { Event } from "../../events/types";
+import { formatDate } from "@/utils/useGeneralUtils";
 
 interface PageHeaderProps {
   event: Event;
@@ -42,7 +43,7 @@ export function PageHeader({ event }: PageHeaderProps) {
       <div className="flex flex-col sm:flex-row gap-4 mt-2 text-sm text-muted-foreground">
         <div className="flex items-center">
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {new Date(event.date).toLocaleDateString()}
+          {formatDate(event.date)}
         </div>
 
         <div className="flex items-center">

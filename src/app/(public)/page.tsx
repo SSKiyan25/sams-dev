@@ -10,11 +10,10 @@ export default function Home() {
       {/* Hero Section */}
       <section className="text-center mb-8">
         <h1 className="text-4xl font-bold mb-6 tracking-tight lg:text-5xl">
-          SAMS for Student Organizations
+          CORAL for Student Organizations
         </h1>
         <p className="text-xl text-muted-foreground mb-4 max-w-3xl mx-auto">
-          Simplify event management and track member attendance for your
-          organization activities.
+          Centralized Online Record for Attendance and Logging
         </p>
         <div className="flex flex-wrap justify-center gap-2">
           <Button asChild size="lg">

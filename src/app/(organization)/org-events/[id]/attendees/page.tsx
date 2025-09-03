@@ -15,7 +15,6 @@ import { AttendeesFilters } from "@/features/organization/attendees/components/A
 
 export default function EventAttendeesPage() {
   const params = useParams();
-  // Fix: Don't force conversion to number as your Event IDs might be strings
   const eventId = params.id as string;
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
@@ -76,7 +75,7 @@ export default function EventAttendeesPage() {
       {/* Attendees header with actions */}
       <AttendeesHeader
         event={event}
-        onImport={() => {
+        onExport={() => {
           /* Import functionality */
         }}
       />

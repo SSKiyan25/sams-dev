@@ -114,8 +114,8 @@ export function EventCard({
   };
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="space-y-1 py-2 px-4">
+    <Card className="overflow-hidden pt-8">
+      <CardHeader className="space-y-1 px-4">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -197,12 +197,12 @@ export function EventCard({
 
         {/* Action Buttons */}
         {event.status !== "upcoming" && (
-          <div className="flex flex-col gap-2 pt-1 mt-2">
+          <div className="flex flex-col sm:flex-row gap-2 pt-1 mt-2 w-full justify-center">
             <Button
               asChild
               variant="outline"
               size="sm"
-              className="h-8 justify-center"
+              className="h-10 w-full sm:w-40 justify-center"
             >
               <Link href={`/org-events/${event.id}/attendees`}>
                 <UsersIcon className="mr-1.5 h-4 w-4" />
@@ -211,7 +211,11 @@ export function EventCard({
             </Button>
 
             {event.status === "ongoing" && (
-              <Button asChild size="sm" className="h-8 justify-center">
+              <Button
+                asChild
+                size="sm"
+                className="h-10 w-full sm:w-40 justify-center"
+              >
                 <Link href={`/org-events/${event.id}/log-attendance`}>
                   <UserPlusIcon className="mr-1.5 h-4 w-4" />
                   Log Attendance

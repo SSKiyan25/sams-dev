@@ -33,7 +33,7 @@ import { NoStudentFound } from "./Search/NoStudentFound";
 import { ProcessingOverlay } from "./Search/ProcessingOverlay";
 
 import { toast } from "sonner";
-import { Member, MemberData } from "../../members/types";
+import { Member } from "../../members/types";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 interface AttendanceFormProps {
@@ -250,7 +250,7 @@ export function AttendanceForm({ event, type, onSubmit }: AttendanceFormProps) {
         />
       )}
 
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden pb-8">
         <CardHeader className="bg-primary/5 p-4">
           <CardTitle className="flex items-center gap-2 text-xl">
             <ClipboardCheckIcon className="h-5 w-5" />
@@ -263,8 +263,8 @@ export function AttendanceForm({ event, type, onSubmit }: AttendanceFormProps) {
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="pt-6">
-          <div className="flex justify-end mb-4">
+        <CardContent className="">
+          <div className="flex justify-end mb-2">
             <Button
               type="button"
               variant="outline"

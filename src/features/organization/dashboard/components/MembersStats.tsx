@@ -179,7 +179,7 @@ export function MembersStats({
         </Card>
       </div>
 
-      <Card className="col-span-3">
+      <Card className="col-span-3 p-2">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Attendance by Event</CardTitle>
           {isLoading ? (

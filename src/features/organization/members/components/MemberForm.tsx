@@ -90,7 +90,7 @@ export function MemberForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl w-[90vw] max-h-[85vh] overflow-y-auto py-8">
+      <DialogContent className="max-w-4xl w-[90vw] max-h-[80vh] overflow-y-auto py-8">
         <DialogHeader className="pb-2">
           <DialogTitle>{member ? "Edit Member" : "Add Member"}</DialogTitle>
         </DialogHeader>

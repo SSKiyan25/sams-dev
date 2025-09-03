@@ -23,6 +23,7 @@ import { getInitials } from "../utils";
 import Link from "next/link";
 import { getRecentAttendance } from "@/firebase";
 import { AttendanceRecord } from "../types";
+import { formatDate } from "@/utils/useGeneralUtils";
 
 interface RecentAttendanceProps {
   eventId: string;
@@ -59,14 +60,14 @@ export function RecentAttendance({
     }
   }, [eventId, type]);
 
-  useEffect(() => {
-    // loadAttendance();
+  // useEffect(() => {
+  //   // loadAttendance();
 
-    // Set up a refresh interval (every 30 seconds)
-    const intervalId = setInterval(loadAttendance, 30000);
+  //   // Set up a refresh interval (every 30 seconds)
+  //   // const intervalId = setInterval(loadAttendance, 30000);
 
-    return () => clearInterval(intervalId);
-  }, [loadAttendance]);
+  //   return () => clearInterval(intervalId);
+  // }, [loadAttendance]);
 
   const formatTime = (timestamp: Date) => {
     const date = new Date(timestamp);
@@ -84,7 +85,7 @@ export function RecentAttendance({
 
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader className="pt-8 pb-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center">
           <div>
             <CardTitle>
@@ -179,7 +180,7 @@ export function RecentAttendance({
 
                 <div className="flex items-center text-sm text-muted-foreground">
                   <ClockIcon className="h-3.5 w-3.5 mr-1.5" />
-                  {formatTime(new Date(record.timestamp))}
+                  {formatDate(formatTime(new Date(record.timestamp)))}
                 </div>
               </div>
             ))}
