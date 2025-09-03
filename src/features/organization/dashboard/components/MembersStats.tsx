@@ -125,8 +125,8 @@ export function MembersStats({
         "
       >
         {/* Total Students - always full width on mobile */}
-        <Card className="sm:col-span-1 col-span-2">
-          <CardHeader className="pb-1">
+        <Card className="sm:col-span-1 col-span-2 py-4 gap-2">
+          <CardHeader className="">
             <CardTitle className="text-sm font-medium flex flex-row gap-2 items-center">
               <User />
               Total Students
@@ -143,8 +143,8 @@ export function MembersStats({
           </CardContent>
         </Card>
         {/* Absences and Attendance Rate share a row on mobile */}
-        <Card className="col-span-1 ">
-          <CardHeader className="pb-1">
+        <Card className="col-span-1 py-4 gap-2">
+          <CardHeader className="">
             <CardTitle className="text-sm font-medium flex flex-row gap-2 items-center">
               <UserRoundX />
               Total Absences
@@ -160,8 +160,8 @@ export function MembersStats({
             )}
           </CardContent>
         </Card>
-        <Card className="col-span-1">
-          <CardHeader className="pb-1">
+        <Card className="col-span-1 py-4 gap-2">
+          <CardHeader className="">
             <CardTitle className="text-sm font-medium flex flex-row gap-2 items-center">
               <Percent />
               Attendance Rate
@@ -179,8 +179,8 @@ export function MembersStats({
         </Card>
       </div>
 
-      <Card className="col-span-3 p-2">
-        <CardHeader className="flex flex-row items-center justify-between">
+      <Card className="col-span-3 p-2 py-8">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-start sm:items-center justify-between space-y-2 sm:space-y-0">
           <CardTitle>Attendance by Event</CardTitle>
           {isLoading ? (
             <Skeleton className="h-10 w-[180px]" />
@@ -189,7 +189,7 @@ export function MembersStats({
               value={filterType}
               onValueChange={(value) => setFilterType(value)}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[180px] w-full sm:w-auto">
                 <SelectValue placeholder="Filter events" />
               </SelectTrigger>
               <SelectContent>
@@ -205,11 +205,11 @@ export function MembersStats({
           )}
         </CardHeader>
         <CardContent>
-          <div className="h-[300px]">
+          <div className="h-[420px] pt-4">
             {isLoading ? (
               <div className="w-full h-full flex items-center justify-center bg-muted/20 rounded-md">
                 <div className="space-y-6 w-full px-8">
-                  <Skeleton className="h-4 w-full" />
+                  {/* <Skeleton className="h-4 w-full" /> */}
                   <div className="space-y-2">
                     <Skeleton className="h-28 w-full" />
                     <Skeleton className="h-40 w-full" />
@@ -224,8 +224,8 @@ export function MembersStats({
                   data={chartData}
                   margin={{
                     top: 5,
-                    right: 30,
-                    left: 20,
+                    right: 20,
+                    left: -30,
                     bottom: 20,
                   }}
                 >

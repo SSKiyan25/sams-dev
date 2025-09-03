@@ -58,7 +58,7 @@ export function RecentMembers({
   );
 
   return (
-    <Card>
+    <Card className="py-8">
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
           <span>Recently Added Members</span>
