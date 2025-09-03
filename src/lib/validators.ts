@@ -22,6 +22,7 @@ export const memberSchema = z.object({
   programId: z.string().min(1, "Program is required"),
   facultyId: z.string().min(1, "Faculty is required"),
   role: z.enum(["admin", "user"]),
+  yearLevel: z.number().optional(),
 });
 
 export type MemberFormData = z.infer<typeof memberSchema>;
