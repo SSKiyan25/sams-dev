@@ -2,8 +2,16 @@ import { MembersStats } from "./MembersStats";
 import { ShortcutLinks } from "./ShortcutLinks";
 import { RecentMembers } from "./RecentMembers";
 import { useEffect, useState } from "react";
-import { getOngoingEvents, getUpcomingEvents } from "@/firebase";
+import {
+  getEvents,
+  getOngoingEvents,
+  getRecentUsers,
+  getUpcomingEvents,
+  getUsers,
+} from "@/firebase";
 import { Event } from "../types";
+import { eventAttendance } from "../data";
+import { Member } from "../../members/types";
 
 // Type for Firebase event data
 interface FirebaseEvent {
@@ -26,6 +34,13 @@ export function DashboardLayout() {
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [ongoingEvents, setOngoingEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [studentStats, setStudentStats] = useState({
+    totalStudents: 0,
+    totalAbsences: 0,
+    attendanceRate: 0,
+  });
+  const [eventAttendance, setEventAttendance] = useState<Event[]>([]);
+  const [users, setUsers] = useState<Member[]>([]);
 
   // Helper function to map Firebase events to our Event type
   const mapToEvent = (
@@ -48,16 +63,26 @@ export function DashboardLayout() {
     note: event.note || "",
   });
 
-  const fetchEvents = async () => {
+  const fetchDashboardData = async () => {
     setIsLoading(true);
     try {
       // Simulate network delay
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      const [upcoming, ongoing] = await Promise.all([
+      const [upcoming, ongoing, users, allEvents] = await Promise.all([
         getUpcomingEvents(),
         getOngoingEvents(),
+        getUsers(),
+        getEvents(),
       ]);
+
+      const recentUser = await getRecentUsers();
+
+      setUsers(
+        recentUser.map((user: any) => ({
+          ...user.member,
+        })) as unknown as Member[]
+      );
 
       // Map the Firebase data to our Event type
       const mappedUpcoming = upcoming.map((event: FirebaseEvent) =>
@@ -70,6 +95,29 @@ export function DashboardLayout() {
 
       setUpcomingEvents(mappedUpcoming);
       setOngoingEvents(mappedOngoing);
+      setEventAttendance(allEvents as unknown as Event[]);
+
+      const totalStudents = users.length;
+      const totalAbsences = allEvents.reduce((acc, event) => {
+        const present = (event as unknown as Event).attendees || 0;
+        const absent = totalStudents > present ? totalStudents - present : 0;
+        return acc + absent;
+      }, 0);
+      const totalPossibleAttendees = allEvents.length * totalStudents;
+      const totalAttendees = allEvents.reduce(
+        (acc, event) => acc + ((event as unknown as Event).attendees || 0),
+        0
+      );
+      const attendanceRate =
+        totalPossibleAttendees > 0
+          ? (totalAttendees / totalPossibleAttendees) * 100
+          : 0;
+
+      setStudentStats({
+        totalStudents,
+        totalAbsences,
+        attendanceRate,
+      });
     } catch (error) {
       console.error("Error fetching events:", error);
     } finally {
@@ -78,7 +126,7 @@ export function DashboardLayout() {
   };
 
   useEffect(() => {
-    fetchEvents();
+    fetchDashboardData();
   }, []);
 
   // console.log("Dashboard isLoading:", isLoading);
@@ -92,7 +140,11 @@ export function DashboardLayout() {
         </p>
       </div>
 
-      <MembersStats isLoading={isLoading} />
+      <MembersStats
+        isLoading={isLoading}
+        studentStats={studentStats}
+        eventAttendance={eventAttendance}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <ShortcutLinks
@@ -100,7 +152,10 @@ export function DashboardLayout() {
           ongoingEvents={ongoingEvents}
           isLoading={isLoading}
         />
-        <RecentMembers isLoading={isLoading} />
+        <RecentMembers
+          isLoading={isLoading}
+          recentMembers={users.slice(0, 10)}
+        />
       </div>
     </div>
   );

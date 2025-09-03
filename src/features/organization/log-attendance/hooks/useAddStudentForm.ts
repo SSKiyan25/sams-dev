@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { Member, Program } from "../../members/types";
-import { addUser, getCurrentUserFacultyId, getPrograms } from "@/firebase";
+import {
+  addUser,
+  checkStudentIdExist,
+  getCurrentUserFacultyId,
+  getPrograms,
+} from "@/firebase";
 import { isValidStudentId } from "../utils";
 import { getAuth } from "firebase/auth";
 
@@ -113,6 +118,9 @@ export function useAddStudentForm({
     }
     setIsSubmitting(true);
     try {
+      if (await checkStudentIdExist(formData.studentId)) {
+        setFormErrors({ studentId: "Student ID already exists" });
+      }
       const auth = getAuth();
       const facultyId = await getCurrentUserFacultyId(
         auth.currentUser?.uid ?? ""

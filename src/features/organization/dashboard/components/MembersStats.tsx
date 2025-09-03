@@ -1,7 +1,6 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { studentStats, eventAttendance } from "../data";
 import {
   BarChart,
   Bar,
@@ -23,6 +22,7 @@ import {
 import { useState, useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { User, UserRoundX, Percent } from "lucide-react";
+import { Event } from "../types";
 
 // Custom tooltip component for the chart
 const CustomTooltip = ({
@@ -31,7 +31,7 @@ const CustomTooltip = ({
   label,
 }: TooltipProps<number, string>) => {
   if (active && payload && payload.length) {
-    const event = eventAttendance.find((e) => e.eventName === label);
+    const event = payload[0].payload;
 
     return (
       <div className="rounded-lg border bg-background p-3 shadow-md">
@@ -57,9 +57,19 @@ const CustomTooltip = ({
 
 interface MembersStatsProps {
   isLoading?: boolean;
+  studentStats: {
+    totalStudents: number;
+    totalAbsences: number;
+    attendanceRate: number;
+  };
+  eventAttendance: Event[];
 }
 
-export function MembersStats({ isLoading = false }: MembersStatsProps) {
+export function MembersStats({
+  isLoading = false,
+  studentStats,
+  eventAttendance,
+}: MembersStatsProps) {
   // Filter options
   const [filterType, setFilterType] = useState<string>("recent");
 
@@ -71,7 +81,7 @@ export function MembersStats({ isLoading = false }: MembersStatsProps) {
       uniqueYears.add(year);
     });
     return Array.from(uniqueYears).sort((a, b) => b.localeCompare(a)); // Sort descending
-  }, []);
+  }, [eventAttendance]);
 
   // Filter and prepare chart data based on selected filter
   const chartData = useMemo(() => {
@@ -79,10 +89,10 @@ export function MembersStats({ isLoading = false }: MembersStatsProps) {
 
     // Apply filters
     if (filterType === "recent") {
-      // Show the most recent 10 events
+      // Show the most recent 5 events
       filteredEvents = filteredEvents
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 10);
+        .slice(0, 5);
     } else if (years.includes(filterType)) {
       // Filter by selected year
       filteredEvents = filteredEvents.filter(
@@ -94,13 +104,15 @@ export function MembersStats({ isLoading = false }: MembersStatsProps) {
     return filteredEvents
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()) // Sort by date ascending
       .map((event, index) => ({
-        name: event.eventName,
+        name: event.name,
         displayName: `Event ${index + 1}`,
-        Present: event.present,
-        Absent: event.absent,
+        Present: event.attendees,
+        Absent: event.attendees
+          ? studentStats.totalStudents - event.attendees
+          : studentStats.totalStudents,
         date: event.date,
       }));
-  }, [filterType, years]);
+  }, [filterType, years, eventAttendance, studentStats.totalStudents]);
 
   return (
     <div className="space-y-4">
@@ -160,7 +172,7 @@ export function MembersStats({ isLoading = false }: MembersStatsProps) {
               <Skeleton className="h-4 w-20 sm:h-6 sm:w-16" />
             ) : (
               <div className="text-2xl font-bold sm:text-xl">
-                {studentStats.attendanceRate}%
+                {studentStats.attendanceRate.toFixed(1)}%
               </div>
             )}
           </CardContent>
