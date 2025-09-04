@@ -22,18 +22,16 @@ export default function Home() {
           </div>
 
           {/* Main Title */}
-          <div className="text-center mt-2 mb-8 animate-fade-in-up animation-delay-900">
+          <div className="text-center mt-2 mb-5 animate-fade-in-up animation-delay-900">
             <h1 className="font-instrument text-3xl sm:text-4xl lg:text-5xl font-bold text-black leading-tight">
-              SAMS for Student Organizations
+              CORAL for Student Organizations
             </h1>
           </div>
 
           {/* Subtitle */}
           <div className="text-center mb-8 animate-fade-in-up animation-delay-600">
             <p className="font-instrument text-lg sm:text-xl lg:text-2xl text-[#5B5B5B] leading-relaxed max-w-4xl mx-auto">
-              Simplify event management and track member
-              <br className="hidden sm:block" />
-              attendance for your organization activities.
+              Centralized Online Record for Attendance and Logging
             </p>
           </div>
 
