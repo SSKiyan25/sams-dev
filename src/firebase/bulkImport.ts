@@ -1,3 +1,26 @@
+/**
+ * Bulk Import System for Student Members
+ * 
+ * This module provides functionality to bulk import student members from CSV files.
+ * The system validates CSV data against Firebase reference data to ensure data integrity.
+ * 
+ * Expected CSV Format:
+ * studentId,firstName,lastName,email,programId,facultyId,yearLevel
+ * 
+ * facultyId values should match the full names in the 'faculties' collection (e.g., "Faculty of Computing", "Faculty of Engineering")
+ * programId values should match the full names in the 'programs' collection (e.g., "BS in Computer Science", "BS in Environmental Science")
+ * 
+ * Example CSV row:
+ * 2021001,John,Doe,john.doe@example.com,"BS in Computer Science","Faculty of Computing",3
+ * 
+ * The system automatically:
+ * - Validates all required fields
+ * - Checks faculty and program names against Firebase data
+ * - Prevents duplicate student IDs
+ * - Provides detailed error reporting for failed imports
+ * - Uses efficient batch operations for database writes
+ */
+
 import {
   collection,
   writeBatch,
@@ -10,7 +33,9 @@ import {
   doc,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
-import { Member } from "@/features/organization/members/types";
+import { Member, Faculty, Program } from "@/features/organization/members/types";
+import { getFaculties } from "./faculties";
+import { getPrograms } from "./programs";
 
 // Define the collection reference for reuse across all functions
 // This prevents creating the collection reference multiple times
@@ -18,6 +43,105 @@ const usersCollection: CollectionReference<DocumentData> = collection(
   db,
   "users"
 );
+
+// Interface for reference data cache to improve performance
+// This prevents multiple Firebase calls during batch processing
+interface ReferenceDataCache {
+  faculties: Map<string, Faculty>;  // Map faculty NAME to faculty object (e.g., "Faculty of Computing" -> {id: "doc_id", name: "Faculty of Computing"})
+  programs: Map<string, Program>;   // Map program NAME to program object (e.g., "BS in Computer Science" -> {id: "doc_id", name: "BS in Computer Science"})
+}
+
+// Global cache for reference data (faculties and programs)
+// This will be populated once per bulk import operation
+let referenceCache: ReferenceDataCache | null = null;
+
+/**
+ * Loads and caches faculty and program reference data from Firebase
+ * This function ensures we only fetch reference data once per bulk import operation
+ * @returns Promise that resolves to the cached reference data
+ */
+const loadReferenceData = async (): Promise<ReferenceDataCache> => {
+  // Return cached data if already loaded
+  if (referenceCache) {
+    return referenceCache;
+  }
+
+  try {
+    // Fetch faculties and programs in parallel for efficiency
+    const [facultiesData, programsData] = await Promise.all([
+      getFaculties(),
+      getPrograms()
+    ]);
+
+    // Create Maps for O(1) lookup performance during validation
+    const facultiesMap = new Map<string, Faculty>();
+    const programsMap = new Map<string, Program>();
+
+    // Populate faculty map using the name field for direct matching
+    if (facultiesData) {
+      (facultiesData as Faculty[]).forEach((faculty) => {
+        // Map by the name field (e.g., "Faculty of Computing", "Faculty of Engineering")
+        facultiesMap.set(faculty.name, faculty);
+      });
+    }
+
+    // Populate program map using the name field for direct matching
+    if (programsData) {
+      (programsData as Program[]).forEach((program) => {
+        // Map by the name field (e.g., "BS in Computer Science", "BS in Environmental Science")
+        programsMap.set(program.name, program);
+      });
+    }
+
+    // Cache the reference data for reuse
+    referenceCache = {
+      faculties: facultiesMap,
+      programs: programsMap
+    };
+
+    return referenceCache;
+  } catch (error) {
+    handleFirestoreError(error, "load reference data (faculties and programs)");
+    // Return empty cache on error to prevent crashes
+    return {
+      faculties: new Map(),
+      programs: new Map()
+    };
+  }
+};
+
+/**
+ * Clears the reference data cache
+ * Should be called after bulk import completion to free memory
+ */
+const clearReferenceCache = (): void => {
+  referenceCache = null;
+};
+
+/**
+ * Gets available faculty and program options for CSV template generation
+ * This function can be used by the UI to show users what values are acceptable
+ * @returns Object containing available faculties and programs with their IDs and names
+ */
+export const getAvailableReferenceData = async (): Promise<{
+  faculties: Faculty[];
+  programs: Program[];
+}> => {
+  try {
+    const referenceData = await loadReferenceData();
+    
+    return {
+      faculties: Array.from(referenceData.faculties.values()),
+      programs: Array.from(referenceData.programs.values())
+    };
+  } catch (error) {
+    handleFirestoreError(error, "get available reference data");
+    return {
+      faculties: [],
+      programs: []
+    };
+  }
+};
 
 // Interface for raw CSV row data before validation
 // Includes rowNumber for error reporting and optional fields since CSV parsing may have missing values
@@ -27,8 +151,8 @@ interface RawMemberData {
   firstName?: string;
   lastName?: string;
   email?: string;
-  programId?: string;
-  facultyId?: string;
+  programId?: string;          // Contains full program name (e.g., "BS in Computer Science")
+  facultyId?: string;          // Contains full faculty name (e.g., "Faculty of Computing")
   yearLevel?: string | number; // Can be string from CSV or number after parsing
   [key: string]: unknown;      // Allow additional CSV columns that we don't explicitly handle
 }
@@ -61,11 +185,16 @@ interface ValidatedMemberData extends Member {
 /**
  * Validates required fields for a member record from CSV data
  * Performs comprehensive validation including format checks for email and year level
+ * Also validates that facultyId and programId exist in the Firebase reference data
  * @param data - Raw member data from CSV parsing
+ * @param referenceData - Cached faculty and program reference data for validation
  * @returns Array of error messages (empty if validation passes)
  */
-const validateMemberData = (data: RawMemberData): string[] => {
+const validateMemberData = async (data: RawMemberData): Promise<string[]> => {
   const errors: string[] = [];
+  
+  // Load reference data for faculty and program validation
+  const referenceData = await loadReferenceData();
   
   // Check required string fields and ensure they're not empty after trimming
   if (!data.studentId || data.studentId.trim() === "") {
@@ -91,12 +220,26 @@ const validateMemberData = (data: RawMemberData): string[] => {
     }
   }
   
-  if (!data.programId || data.programId.trim() === "") {
-    errors.push("Program ID is required");
-  }
-  
+  // Faculty name validation: check if required and exists in reference data
   if (!data.facultyId || data.facultyId.trim() === "") {
     errors.push("Faculty ID is required");
+  } else {
+    const facultyName = data.facultyId.trim(); // facultyId contains the full name
+    if (!referenceData.faculties.has(facultyName)) {
+      const availableFaculties = Array.from(referenceData.faculties.keys()).join(', ');
+      errors.push(`Invalid Faculty name "${facultyName}". Available faculties: ${availableFaculties || 'None found'}`);
+    }
+  }
+  
+  // Program name validation: check if required and exists in reference data
+  if (!data.programId || data.programId.trim() === "") {
+    errors.push("Program ID is required");
+  } else {
+    const programName = data.programId.trim(); // programId contains the full name
+    if (!referenceData.programs.has(programName)) {
+      const availablePrograms = Array.from(referenceData.programs.keys()).join(', ');
+      errors.push(`Invalid Program name "${programName}". Available programs: ${availablePrograms || 'None found'}`);
+    }
   }
   
   // Validate year level if provided (optional field)
@@ -224,12 +367,15 @@ export const bulkImportUsers = async (memberData: RawMemberData[]): Promise<Bulk
   };
   
   try {
-    // Step 1: Validate all member data before attempting any database operations
+    // Step 1: Load reference data once for all validations
+    const referenceData = await loadReferenceData();
+    
+    // Step 2: Validate all member data before attempting any database operations
     const validatedMembers: ValidatedMemberData[] = [];
     
     for (const data of memberData) {
-      // Run validation on current row
-      const validationErrors = validateMemberData(data);
+      // Run validation on current row (now async due to reference data loading)
+      const validationErrors = await validateMemberData(data);
       
       // If validation fails, add to errors and skip this record
       if (validationErrors.length > 0) {
@@ -248,8 +394,9 @@ export const bulkImportUsers = async (memberData: RawMemberData[]): Promise<Bulk
         firstName: (data.firstName as string).trim(),
         lastName: (data.lastName as string).trim(),
         email: (data.email as string).trim().toLowerCase(), // Normalize email to lowercase
-        programId: (data.programId as string).trim(),
-        facultyId: (data.facultyId as string).trim(),
+        // Look up the document ID using the full name from CSV (stored in programId/facultyId fields)
+        programId: referenceData.programs.get((data.programId as string).trim())?.id || '',
+        facultyId: referenceData.faculties.get((data.facultyId as string).trim())?.id || '',
         role: "user", // Default role for bulk imported members
         yearLevel: data.yearLevel ? (typeof data.yearLevel === 'string' ? parseInt(data.yearLevel) : Number(data.yearLevel)) : undefined,
       };
@@ -260,10 +407,12 @@ export const bulkImportUsers = async (memberData: RawMemberData[]): Promise<Bulk
     // Early exit if no valid members to process
     if (validatedMembers.length === 0) {
       result.success = false;
+      // Clear cache before returning
+      clearReferenceCache();
       return result;
     }
     
-    // Step 2: Check for existing student IDs to prevent duplicates
+    // Step 3: Check for existing student IDs to prevent duplicates
     const studentIds = validatedMembers.map(member => member.studentId);
     const existingStudentIds = await checkExistingStudentIds(studentIds);
     
@@ -279,10 +428,12 @@ export const bulkImportUsers = async (memberData: RawMemberData[]): Promise<Bulk
     // If all members were duplicates, return success but with zero imports
     if (membersToImport.length === 0) {
       result.success = true; // No errors, but all were duplicates
+      // Clear cache before returning
+      clearReferenceCache();
       return result;
     }
     
-    // Step 3: Batch write to Firestore for efficiency
+    // Step 4: Batch write to Firestore for efficiency
     // Using batch writes ensures atomicity - either all succeed or all fail
     const batch = writeBatch(db);
     const timestamp = Timestamp.now(); // Single timestamp for all records
@@ -313,10 +464,15 @@ export const bulkImportUsers = async (memberData: RawMemberData[]): Promise<Bulk
     result.successfulImports = membersToImport.length;
     result.success = true;
     
+    // Clear reference cache to free memory after successful import
+    clearReferenceCache();
+    
     return result;
     
   } catch (error) {
     // Handle any unexpected errors during the bulk import process
+    // Clear cache even on error to prevent memory leaks
+    clearReferenceCache();
     handleFirestoreError(error, "bulk import users");
     result.success = false;
     return result;
