@@ -12,7 +12,7 @@ export function useEventsData(currentTab: EventStatus) {
   const [events, setEvents] = useState<Event[]>([]);
   const [totalEvents, setTotalEvents] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(5);
+  const [itemsPerPage] = useState(3);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDate, setFilterDate] = useState<Date | undefined>(undefined);

@@ -1,7 +1,6 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -9,35 +8,53 @@ import { EventDetails } from "@/features/organization/attendees/components/Event
 import { AttendanceList } from "@/features/organization/attendees/components/AttendanceList";
 import { AttendeesHeader } from "@/features/organization/attendees/components/AttendeesHeader";
 import { EventSkeleton } from "@/features/organization/attendees/components/EventSkeleton";
-import { useEventAttendees } from "@/features/organization/attendees/hooks/useEventAttendees";
 import { AttendeesPagination } from "@/features/organization/attendees/components/AttendeesPagination";
 import { AttendeesFilters } from "@/features/organization/attendees/components/AttendeesFilters";
+import { AttendanceListSkeleton } from "@/features/organization/attendees/components/AttendanceListSkeleton";
+import { useEventAttendees } from "@/features/organization/attendees/hooks/useEventAttendees";
+import { use, useEffect, useState } from "react";
+import { getEventById } from "@/firebase";
+import { Event } from "@/features/organization/events/types";
 
 export default function EventAttendeesPage() {
   const params = useParams();
   const eventId = params.id as string;
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(10);
-
+  // All logic is now handled by the custom hook
   const {
-    event,
+    eventData, // FIXED: Use this instead of fetching again
     attendees,
     totalAttendees,
-    loading,
+    totalPages,
+    currentPage,
+    attendeesLoading,
     error,
-    refreshAttendees,
+    handleSearch,
     handleSortChange,
     handleProgramFilter,
-    handleSearch,
-  } = useEventAttendees(eventId, currentPage, pageSize);
+    goToNextPage,
+    goToPrevPage,
+    goToSpecificPage,
+    hasNextPage,
+    hasPrevPage,
+  } = useEventAttendees(eventId);
 
-  const totalPages = Math.ceil(totalAttendees / pageSize);
+  // REMOVED: The local useState and useEffect for fetching the event
+  // have been removed to avoid fetching the same data twice.
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+  // Example of how you would use the pagination functions
+  const handleNextPage = () => {
+    if (hasNextPage) {
+      goToNextPage();
+    }
   };
 
-  if (loading) {
+  const handlePrevPage = () => {
+    if (hasPrevPage) {
+      goToPrevPage();
+    }
+  };
+
+  if (attendeesLoading && !eventData) {
     return <EventSkeleton />;
   }
 
@@ -61,7 +78,6 @@ export default function EventAttendeesPage() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      {/* Back button */}
       <Button asChild variant="ghost" className="mb-4 p-0 h-auto">
         <Link href="/org-events">
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -69,33 +85,37 @@ export default function EventAttendeesPage() {
         </Link>
       </Button>
 
-      {/* Event details */}
-      <EventDetails event={event} attendeeCount={totalAttendees} />
+      <EventDetails
+        event={eventData as unknown as Event}
+        attendeeCount={totalAttendees}
+      />
 
-      {/* Attendees header with actions */}
       <AttendeesHeader
-        event={event}
+        event={eventData as unknown as Event}
         onExport={() => {
-          /* Import functionality */
+          /* Export logic */
         }}
       />
 
-      {/* Filters and search */}
       <AttendeesFilters
         onSearch={handleSearch}
         onSortChange={handleSortChange}
         onProgramFilter={handleProgramFilter}
       />
 
-      {/* Attendees list */}
-      <AttendanceList attendees={attendees} onRefresh={refreshAttendees} />
+      {attendeesLoading ? (
+        <AttendanceListSkeleton />
+      ) : (
+        <AttendanceList attendees={attendees} />
+      )}
 
-      {/* Pagination */}
-      {totalAttendees > 0 && (
+      {totalAttendees > 0 && !attendeesLoading && (
         <AttendeesPagination
           currentPage={currentPage}
           totalPages={totalPages}
-          onPageChange={handlePageChange}
+          handleNextPage={handleNextPage}
+          handlePrevPage={handlePrevPage}
+          onPageChange={goToSpecificPage}
         />
       )}
     </div>

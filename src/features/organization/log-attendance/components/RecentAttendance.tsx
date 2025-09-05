@@ -53,6 +53,7 @@ export function RecentAttendance({
         type
       )) as unknown as AttendanceRecord[];
       setRecords(recentRecords);
+      setIsLoading(false);
     } catch (error) {
       console.error("Failed to load recent attendance:", error);
     } finally {
@@ -60,18 +61,24 @@ export function RecentAttendance({
     }
   }, [eventId, type]);
 
-  // useEffect(() => {
-  //   // loadAttendance();
+  useEffect(() => {
+    loadAttendance();
 
-  //   // Set up a refresh interval (every 30 seconds)
-  //   // const intervalId = setInterval(loadAttendance, 30000);
+    // Set up a refresh interval (every 30 seconds)
+    const intervalId = setInterval(loadAttendance, 30000);
 
-  //   return () => clearInterval(intervalId);
-  // }, [loadAttendance]);
+    return () => clearInterval(intervalId);
+  }, [loadAttendance]);
 
-  const formatTime = (timestamp: Date) => {
+  const formatTime = (timestamp: string) => {
+    if (!timestamp) return "Not recorded";
     const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const hours = date.getHours();
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    const ampm = hours >= 12 ? "PM" : "AM";
+    const formattedHours = hours % 12 || 12;
+
+    return `${formattedHours}:${minutes} ${ampm}`;
   };
 
   // Show only the first MAX_VISIBLE_RECORDS records
@@ -180,7 +187,7 @@ export function RecentAttendance({
 
                 <div className="flex items-center text-sm text-muted-foreground">
                   <ClockIcon className="h-3.5 w-3.5 mr-1.5" />
-                  {formatDate(formatTime(new Date(record.timestamp)))}
+                  {formatTime(record.timestamp)}
                 </div>
               </div>
             ))}
