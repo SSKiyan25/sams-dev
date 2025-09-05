@@ -4,12 +4,16 @@ import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 interface AttendeesPaginationProps {
   currentPage: number;
   totalPages: number;
-  onPageChange: (page: number) => void;
+  handleNextPage: () => void;
+  handlePrevPage: () => void;
+  onPageChange?: (page: number) => void;
 }
 
 export function AttendeesPagination({
   currentPage,
   totalPages,
+  handleNextPage,
+  handlePrevPage,
   onPageChange,
 }: AttendeesPaginationProps) {
   // Generate page numbers
@@ -57,7 +61,7 @@ export function AttendeesPagination({
       <Button
         variant="outline"
         size="icon"
-        onClick={() => onPageChange(currentPage - 1)}
+        onClick={handlePrevPage}
         disabled={currentPage === 1}
       >
         <ChevronLeftIcon className="h-4 w-4" />
@@ -78,7 +82,7 @@ export function AttendeesPagination({
             key={page}
             variant={currentPage === page ? "default" : "outline"}
             size="sm"
-            onClick={() => onPageChange(page)}
+            onClick={() => onPageChange && onPageChange(page)}
           >
             {page}
           </Button>
@@ -88,7 +92,7 @@ export function AttendeesPagination({
       <Button
         variant="outline"
         size="icon"
-        onClick={() => onPageChange(currentPage + 1)}
+        onClick={handleNextPage}
         disabled={currentPage === totalPages}
       >
         <ChevronRightIcon className="h-4 w-4" />

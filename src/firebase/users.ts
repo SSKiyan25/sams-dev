@@ -184,71 +184,62 @@ export const searchUserByStudentId = async (
     return null;
   }
 };
+/**
+ * Searches for users by name within a specific faculty.
+ * This function fetches all users from the faculty and performs a "contains"
+ * search on the client-side by concatenating the user's first and last names.
+ *
+ * @param name - The name to search for.
+ * @param currentUser - The currently authenticated user object (e.g., from Firebase Auth).
+ * @returns A promise that resolves to an array of matching Member objects.
+ */
 export const searchUserByName = async (
   name: string,
   currentUser: any
 ): Promise<Member[]> => {
   try {
-    const trimmedName = name.trim();
+    const trimmedName = name.trim().toLowerCase();
     if (!trimmedName) {
+      // Return empty if the search name is blank after trimming.
       return [];
     }
 
     const facultyId = await getCurrentUserFacultyId(currentUser?.uid);
     if (!facultyId) {
+      console.log("Could not determine faculty ID for the current user.");
       return [];
     }
 
-    // Create two separate queries for firstName and lastName.
-    const firstNameQuery = query(
+    // 1. Query all non-deleted users for the given faculty.
+    const allUsersQuery = query(
       usersCollection,
       where("facultyId", "==", facultyId),
-      where("firstName", ">=", trimmedName),
-      where("firstName", "<=", trimmedName + "\uf8ff"),
       where("isDeleted", "==", false)
     );
 
-    const lastNameQuery = query(
-      usersCollection,
-      where("facultyId", "==", facultyId),
-      where("lastName", ">=", trimmedName),
-      where("lastName", "<=", trimmedName + "\uf8ff"),
-      where("isDeleted", "==", false)
-    );
+    const querySnapshot = await getDocs(allUsersQuery);
 
-    // Execute both queries in parallel for better performance.
-    const [firstNameSnapshot, lastNameSnapshot] = await Promise.all([
-      getDocs(firstNameQuery),
-      getDocs(lastNameQuery),
-    ]);
-
-    // Use a Map to combine results and automatically handle duplicates.
-    const uniqueMembers = new Map<string, Member>();
-
-    // Add results from the first name query
-    firstNameSnapshot.docs.forEach((doc) => {
-      uniqueMembers.set(doc.id, {
+    // 2. Filter the results on the client-side.
+    const matchingMembers = querySnapshot.docs
+      .map((doc) => ({
         id: doc.id,
-        ...doc.data(),
-      } as unknown as Member);
-    });
+        ...(doc.data() as Omit<Member, "id">),
+      }))
+      .filter((member) => {
+        // Concatenate first and last name to create a full name for searching.
+        const fullName =
+          `${member.firstName || ""} ${member.lastName || ""}`.toLowerCase();
 
-    // Add results from the last name query
-    lastNameSnapshot.docs.forEach((doc) => {
-      uniqueMembers.set(doc.id, {
-        id: doc.id,
-        ...doc.data(),
-      } as unknown as Member);
-    });
+        // Check if the full name includes the search term.
+        return fullName.includes(trimmedName);
+      });
 
-    // Convert the Map values back to an array and return.
-    return Array.from(uniqueMembers.values());
+    return matchingMembers;
   } catch (error) {
     handleFirestoreError(error, `search for name "${name}"`);
-    return [];
+    return []; // Return an empty array on error.
   }
 };
-
 export const getUserById = async (userId: string): Promise<Member | null> => {
   try {
     const querySnapshot = await getDocs(
