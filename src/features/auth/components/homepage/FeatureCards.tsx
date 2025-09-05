@@ -10,10 +10,10 @@ interface FeatureCardProps {
 
 function FeatureCard({ icon, iconAlt, title, description, animationClass }: FeatureCardProps) {
   return (
-    <div className={`bg-white border border-black/30 rounded-[22px] p-8 backdrop-blur-sm shadow-sm h-[200px] flex items-center ${animationClass}`}>
+    <div className={`bg-white dark:bg-card border border-black/30 dark:border-border rounded-[22px] p-8 backdrop-blur-sm shadow-sm dark:shadow-lg h-[200px] flex items-center ${animationClass}`}>
       <div className="flex items-center gap-6 w-full">
         <div className="flex-shrink-0">
-          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center">
+          <div className="w-24 h-24 bg-gray-100 dark:bg-muted rounded-full flex items-center justify-center">
             <Image
               src={icon}
               alt={iconAlt}
@@ -24,10 +24,10 @@ function FeatureCard({ icon, iconAlt, title, description, animationClass }: Feat
           </div>
         </div>
         <div className="flex-1">
-          <h3 className="font-instrument text-lg sm:text-xl font-bold text-[#272727] leading-tight mb-3">
+          <h3 className="font-instrument text-lg sm:text-xl font-bold text-[#272727] dark:text-foreground leading-tight mb-3">
             {title}
           </h3>
-          <p className="font-instrument text-base sm:text-lg text-[#5B5B5B] leading-relaxed">
+          <p className="font-instrument text-base sm:text-lg text-[#5B5B5B] dark:text-muted-foreground leading-relaxed">
             {description}
           </p>
         </div>
@@ -55,7 +55,7 @@ export function FeatureCards() {
   ];
 
   return (
-    <div className="bg-white px-4 sm:px-6 lg:px-8 py-12 animate-fade-in-up animation-delay-1000">
+    <div className="bg-white dark:bg-background px-4 sm:px-6 lg:px-8 py-12 animate-fade-in-up animation-delay-1000">
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           {features.map((feature, index) => (

@@ -9,7 +9,7 @@ export function HeroSection() {
         {/* Hero Image */}
         <div className="flex justify-center animate-fade-in-up animation-delay-900">
           <Image
-            src="/images/students-vector.jpg"
+            src="/images/students-vector.png"
             alt="Students collaborating and studying together"
             width={2470}
             height={800}
@@ -19,14 +19,14 @@ export function HeroSection() {
 
         {/* Main Title */}
         <div className="text-center mt-2 mb-5 animate-fade-in-up animation-delay-900">
-          <h1 className="font-instrument text-3xl sm:text-4xl lg:text-5xl font-bold text-black leading-tight">
+          <h1 className="font-instrument text-3xl sm:text-4xl lg:text-5xl font-bold text-black dark:text-foreground leading-tight">
             CORAL for Student Organizations
           </h1>
         </div>
 
         {/* Subtitle */}
         <div className="text-center mb-8 animate-fade-in-up animation-delay-600">
-          <p className="font-instrument text-lg sm:text-xl lg:text-2xl text-[#5B5B5B] leading-relaxed max-w-4xl mx-auto">
+          <p className="font-instrument text-lg sm:text-xl lg:text-2xl text-[#5B5B5B] dark:text-muted-foreground leading-relaxed max-w-4xl mx-auto">
             Centralized Online Record for Attendance and Logging
           </p>
         </div>
@@ -35,7 +35,7 @@ export function HeroSection() {
         <div className="flex justify-center mb-13 animate-fade-in-up animation-delay-800">
           <Button
             asChild
-            className="bg-[#008ACF] hover:bg-[#0f73a5] text-white font-poppins text-lg sm:text-2lg font-medium px-16 sm:px-24 py-4 sm:py-8 rounded-xl transition-colors duration-200 shadow-lg hover:shadow-xl"
+            className="bg-[#008ACF] dark:bg-primary hover:bg-[#0f73a5] dark:hover:bg-primary/90 text-white dark:text-primary-foreground font-poppins text-lg sm:text-2lg font-medium px-16 sm:px-24 py-4 sm:py-8 rounded-xl transition-colors duration-200 shadow-lg hover:shadow-xl"
           >
             <Link href="/login">Login</Link>
           </Button>
