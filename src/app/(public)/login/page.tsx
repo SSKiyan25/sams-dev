@@ -18,7 +18,7 @@ import { UserRound, LockKeyhole, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/firebase/firebase.config";
-import { LoginLoadingOverlay } from "@/features/auth/components/LoginLoadingOverlay";
+import { LoginLoadingOverlay } from "@/features/auth/components/login/LoginLoadingOverlay";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 
