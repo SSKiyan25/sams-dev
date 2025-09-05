@@ -30,9 +30,7 @@ export const useEventAttendees = (eventId: string) => {
   });
   const [programFilter, setProgramFilter] = useState<string | null>(null);
 
-  // This useEffect now correctly handles fetching data
   useEffect(() => {
-    // We define the async function inside useEffect
     const performFetch = async () => {
       if (!eventId) return;
       setAttendeesLoading(true);
@@ -48,7 +46,7 @@ export const useEventAttendees = (eventId: string) => {
           eventId,
           PAGE_SIZE,
           sortOption,
-          cursorForCurrentPage || undefined, // Pass the correct cursor for the page
+          cursorForCurrentPage || undefined,
           programFilter ?? undefined,
           searchQuery
         );

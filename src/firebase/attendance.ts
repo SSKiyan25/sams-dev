@@ -245,8 +245,6 @@ export const searchStudentIdsByName = async (
   }
 
   // Fetch all users to filter client-side.
-  // NOTE: This can be inefficient for very large user bases.
-  // For production scale, a dedicated search service like Algolia is recommended.
   const usersQuery = query(usersCollection, where("isDeleted", "==", false));
   const snapshot = await getDocs(usersQuery);
 
@@ -262,49 +260,52 @@ export const searchStudentIdsByName = async (
 
   return matchingIds;
 };
-
 /**
- * Builds an array of Firestore query constraints based on filter criteria.
- *
- * @param eventId - The ID of the event.
- * @param filterProgram - An optional program ID to filter by.
- *- @param studentIds - An optional array of student IDs to filter by (from a search).
- * @returns An array of QueryConstraint objects.
+ * Builds an array of Firestore query constraints for fetching attendance records.
+ * @param eventId - The unique identifier for the event. This is a required filter.
+ * @param filterProgram - (Optional) The program ID to filter attendees by.
+ * @param studentIds - (Optional) An array of student IDs to filter the results with an 'in' query.
+ * @returns An array of QueryConstraint objects to be used with a Firestore query.
  */
 export const buildAttendanceQueryConstraints = (
   eventId: string,
   filterProgram?: string,
   studentIds?: string[]
 ): QueryConstraint[] => {
+  // Start with the mandatory constraint to filter by the specific event.
   const constraints: QueryConstraint[] = [where("eventId", "==", eventId)];
 
+  // If a program filter is provided, add it to the constraints.
+  // This targets a nested field within the 'student' map.
   if (filterProgram) {
     constraints.push(where("student.programId", "==", filterProgram));
   }
 
-  // If studentIds are provided from a search, use a 'where in' clause.
-  // This is more efficient and lifts restrictions on sorting.
+  // If a list of student IDs is provided (e.g., from a separate search),
+  // use a 'where in' clause for efficient filtering.
   if (studentIds && studentIds.length > 0) {
-    // Firestore 'in' queries are limited to 30 items.
-    // We slice the array to prevent errors.
+    // Firestore limits 'in' queries to a maximum of 30 values.
+    // Slice the array to ensure the query does not exceed this limit and cause an error.
     const limitedIds = studentIds.slice(0, 30);
     constraints.push(where("student.studentId", "in", limitedIds));
   }
 
+  // Return the final array of constraints.
   return constraints;
 };
 
 /**
- * Fetches a paginated and sorted list of attendance records for a specific event.
- *
- * @param eventId - The ID of the event.
- * @param page - The page number to fetch (1-indexed).
- * @param pageSize - The number of records per page.
- * @param sort - An object containing the sort field and direction.
- * @param filterProgram - An optional program ID to filter results.
- * @param searchQuery - An optional search query for the student's name.
- * @returns A promise resolving to an object with records and the total count.
- */ export const getAttendanceRecord = async (
+ * Fetches a paginated and sorted list of attendance records for an event.
+ * It first fetches all data based on filters and then applies the search query locally.
+ * @param eventId - The unique identifier for the event to fetch records for.
+ * @param pageSize - The number of records to return per page.
+ * @param sort - An object specifying the field to sort by and the direction ('asc' or 'desc').
+ * @param cursor - (Optional) The Firestore DocumentSnapshot to use as the starting point for the next page.
+ * @param filterProgram - (Optional) The program ID to filter the attendance records by.
+ * @param searchQuery - (Optional) An object containing the search query string and the type of search ('name' or 'id').
+ * @returns A Promise resolving to an object with the list of records, the total count, and the cursor for the next page.
+ */
+export const getAttendanceRecord = async (
   eventId: string,
   pageSize: number,
   sort: { field: string; direction: "asc" | "desc" },
@@ -317,24 +318,30 @@ export const buildAttendanceQueryConstraints = (
   nextCursor: DocumentSnapshot | null;
 }> => {
   try {
+    // Get a reference to the Firestore collection for event attendees.
     const attendanceCollection = collection(db, "eventAttendees");
-    let studentIds: string[] | undefined;
 
-    // --- 2. Build Query Constraints ---
+    // Build the base query constraints from the event and program filters.
+    // The search query is handled client-side, so we pass 'undefined' for studentIds here.
     const baseConstraints = buildAttendanceQueryConstraints(
       eventId,
       filterProgram,
       undefined
     );
 
-    // --- 3. Get Total Count for Pagination ---
+    // Create a query to get the total count of documents matching the base filters.
+    // This is used for displaying total numbers and calculating total pages in the UI.
     const countQuery = query(attendanceCollection, ...baseConstraints);
     const totalSnapshot = await getCountFromServer(countQuery);
     const total = totalSnapshot.data().count;
+
+    // If there are no records at all, return early to avoid unnecessary processing.
     if (total === 0) {
       return { records: [], total: 0, nextCursor: null };
     }
 
+    // Helper function to map front-end sort field names to their corresponding
+    // paths in the Firestore document (e.g., 'firstName' -> 'student.firstName').
     const getFirestoreSortField = (field: string): string => {
       switch (field) {
         case "firstName":
@@ -342,27 +349,34 @@ export const buildAttendanceQueryConstraints = (
         case "studentId":
           return `student.studentId`;
         default:
-          return field;
+          return field; // For fields like 'timeIn', which are at the top level.
       }
     };
 
+    // Assemble the final query constraints for fetching the actual data.
+    // This includes the base filters, sorting, and page size limit.
     const queryConstraints: QueryConstraint[] = [
       ...baseConstraints,
-      // This orderBy clause is essential for startAfter to work.
       orderBy(getFirestoreSortField(sort.field), sort.direction),
       limit(pageSize),
     ];
 
+    // If a cursor is provided (meaning we are fetching page 2 or beyond),
+    // add the 'startAfter' constraint to begin fetching from the last document of the previous page.
     if (cursor) {
       queryConstraints.push(startAfter(cursor));
     }
 
+    // Execute the final query to get the documents for the current page.
     const dataQuery = query(attendanceCollection, ...queryConstraints);
     const querySnapshot = await getDocs(dataQuery);
 
-    // --- 5. Map Documents and Determine Next Cursor ---
+    // Store the raw documents for later use in determining the next cursor.
     const docs = querySnapshot.docs;
-    let records = querySnapshot.docs.map((doc) => {
+
+    // Map the raw Firestore documents to a clean array of EventAttendance objects.
+    // This includes converting Firestore Timestamps to JavaScript Date objects.
+    let records = docs.map((doc) => {
       const data = doc.data();
       return {
         id: doc.id,
@@ -372,12 +386,15 @@ export const buildAttendanceQueryConstraints = (
       } as EventAttendance;
     });
 
-    if (searchQuery) {
+    // If a search query is provided, perform a client-side filter on the fetched records.
+    if (searchQuery && searchQuery.query) {
       if (searchQuery.type === "id") {
+        // Filter records where the student ID includes the search query string.
         records = records.filter((record) =>
           record.student?.studentId.toString().includes(searchQuery.query)
         );
       } else {
+        // Filter records where the full name includes the search query string (case-insensitive).
         records = records.filter((record) => {
           const fullName =
             `${record.student?.firstName} ${record.student?.lastName}`.toLowerCase();
@@ -386,8 +403,12 @@ export const buildAttendanceQueryConstraints = (
       }
     }
 
+    // Determine the cursor for the next page. If the number of fetched documents
+    // equals the page size, it's likely there's more data. The last document
+    // of the current set becomes the cursor for the next set.
     const nextCursor = docs.length === pageSize ? docs[docs.length - 1] : null;
 
+    // Return the final data structure.
     return { records, total, nextCursor };
   } catch (error) {
     handleFirestoreError(error, `getting attendance for event ${eventId}`);
