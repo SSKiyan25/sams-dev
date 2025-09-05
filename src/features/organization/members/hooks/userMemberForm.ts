@@ -6,11 +6,14 @@ export const useMemberForm = () => {
   return useForm<MemberFormData>({
     resolver: zodResolver(memberSchema),
     defaultValues: {
+      studentId: "",
+      email: "",
       firstName: "",
       lastName: "",
       programId: "",
       facultyId: "",
       role: "user",
+      yearLevel: undefined,
     },
   });
 };

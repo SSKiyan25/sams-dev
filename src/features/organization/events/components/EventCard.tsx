@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,9 +14,11 @@ import {
   MoreHorizontalIcon,
   UserPlusIcon,
   UsersIcon,
+  StarIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { Event } from "../types";
+import { formatDate } from "@/utils/useGeneralUtils";
 
 interface EventCardProps {
   event: Event;
@@ -32,8 +33,6 @@ export function EventCard({
   onArchive,
   onDelete,
 }: EventCardProps) {
-  //   const [isOpen, setIsOpen] = useState(false);
-
   // Format time to 12-hour format
   const formatTime = (time: string | null) => {
     if (!time) return null;
@@ -49,34 +48,48 @@ export function EventCard({
   // Format time range
   const formatTimeRange = (
     timeStart: string | null,
-    timeOutStart: string | null
+    timeEnd: string | null
   ) => {
-    if (!timeStart || !timeOutStart) return null;
-    return `${formatTime(timeStart)} - ${formatTime(timeOutStart)}`;
+    if (!timeStart || !timeEnd) return null;
+    return `${formatTime(timeStart)} - ${formatTime(timeEnd)}`;
   };
 
   // Function to display the time information with proper terminology
-  const getTimeDisplay = (
-    timeInStart: string | null,
-    timeInEnd: string | null,
-    timeOutStart: string | null,
-    timeOutEnd: string | null
-  ) => {
-    if (timeInStart && timeInEnd && timeOutStart && timeOutEnd) {
+  const getTimeDisplay = () => {
+    const { timeInStart, timeInEnd, timeOutStart, timeOutEnd } = event;
+
+    const hasTimeIn = timeInStart && timeInEnd;
+    const hasTimeOut = timeOutStart && timeOutEnd;
+
+    if (hasTimeIn && hasTimeOut) {
       return (
-        <>
-          <div>Time-in: {formatTimeRange(timeInStart, timeInEnd)}</div>
-          <div>Time-out: {formatTimeRange(timeOutStart, timeOutEnd)}</div>
-        </>
+        <div className="space-y-1">
+          <div className="flex items-center">
+            <span className="text-xs font-medium mr-1">Time-in:</span>
+            {formatTimeRange(timeInStart, timeInEnd)}
+          </div>
+          <div className="flex items-center">
+            <span className="text-xs font-medium mr-1">Time-out:</span>
+            {formatTimeRange(timeOutStart, timeOutEnd)}
+          </div>
+        </div>
       );
-    } else if (timeInStart && !timeOutStart) {
-      return <div>Time-in only: {formatTimeRange(timeInStart, timeInEnd)}</div>;
-    } else if (!timeInStart && timeOutStart) {
+    } else if (hasTimeIn) {
       return (
-        <div>Time-out only: {formatTimeRange(timeOutStart, timeOutEnd)}</div>
+        <div>
+          <span className="text-xs font-medium mr-1">Time-in only:</span>
+          {formatTimeRange(timeInStart, timeInEnd)}
+        </div>
+      );
+    } else if (hasTimeOut) {
+      return (
+        <div>
+          <span className="text-xs font-medium mr-1">Time-out only:</span>
+          {formatTimeRange(timeOutStart, timeOutEnd)}
+        </div>
       );
     } else {
-      return "No time set";
+      return <span className="text-muted-foreground">No time set</span>;
     }
   };
 
@@ -101,103 +114,116 @@ export function EventCard({
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-        <div>
-          <CardTitle className="text-xl">{event.name}</CardTitle>
-          <div className="mt-1 flex items-center text-sm text-muted-foreground">
-            <CalendarIcon className="mr-1 h-4 w-4" />
-            {new Date(event.date).toLocaleDateString()}
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Badge variant={getBadgeVariant()}>
-            {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
-          </Badge>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreHorizontalIcon className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleEditEvent}>
-                Edit Event
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() =>
-                  event.status === "archived"
-                    ? onDelete(event)
-                    : onArchive(event)
-                }
-                className="text-destructive"
-              >
-                {event.status === "archived" ? "Delete" : "Archive"}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <div className="flex items-start">
-                <MapPinIcon className="mr-2 h-4 w-4 mt-0.5" />
-                <span>{event.location}</span>
-              </div>
-              <div className="flex items-start">
-                <ClockIcon className="mr-2 h-4 w-4 mt-0.5" />
-                <div className="flex flex-col">
-                  {getTimeDisplay(
-                    event.timeInStart ?? null,
-                    event.timeInEnd ?? null,
-                    event.timeOutStart ?? null,
-                    event.timeOutEnd ?? null
-                  )}
-                </div>
-              </div>
-              {event.note && (
-                <div className="mt-2 text-sm">
-                  <span className="font-medium">Note:</span> {event.note}
-                </div>
+    <Card className="overflow-hidden pt-8">
+      <CardHeader className="space-y-1 px-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <CardTitle className="text-lg leading-tight mr-1">
+                {event.name}
+              </CardTitle>
+              {event.majorEvent && (
+                <Badge
+                  variant="outline"
+                  className="bg-amber-50 text-amber-600 border-amber-200 flex items-center h-5"
+                >
+                  <StarIcon className="h-3 w-3 mr-1 fill-amber-500" />
+                  <span className="text-xs">Major</span>
+                </Badge>
               )}
             </div>
-            <div className="flex flex-col space-y-2">
-              <div className="flex items-center">
-                <UsersIcon className="mr-2 h-4 w-4" />
-                <span>
-                  {event.status === "upcoming"
-                    ? "Not started"
-                    : `${event.attendees} attendees`}
-                </span>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2 mt-2">
-                {event.status !== "upcoming" && (
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 p-2"
-                  >
-                    <Link href={`/org-events/${event.id}/attendees`}>
-                      <UsersIcon className="mr-2 h-4 w-4" />
-                      View Attendees
-                    </Link>
-                  </Button>
-                )}
-                {event.status === "ongoing" && (
-                  <Button asChild size="sm" className="flex-1 p-2">
-                    <Link href={`/org-events/${event.id}/log-attendance`}>
-                      <UserPlusIcon className="mr-2 h-4 w-4" />
-                      Log Attendance
-                    </Link>
-                  </Button>
-                )}
-              </div>
+            <div className="flex items-center text-xs text-muted-foreground">
+              <CalendarIcon className="mr-1.5 h-3 w-3 flex-shrink-0" />
+              {formatDate(event.date)}
             </div>
           </div>
+
+          <div className="flex items-center gap-2">
+            <Badge variant={getBadgeVariant()} className="h-6">
+              {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+            </Badge>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreHorizontalIcon className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleEditEvent}>
+                  Edit Event
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    event.status === "archived"
+                      ? onDelete(event)
+                      : onArchive(event)
+                  }
+                  className="text-destructive"
+                >
+                  {event.status === "archived" ? "Delete" : "Archive"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
+        <div className="border-t" />
+      </CardHeader>
+
+      <CardContent className="px-4 pb-4 pt-0 space-y-3">
+        <div className="flex items-start">
+          <MapPinIcon className="mr-2 h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
+          <span className="text-sm">{event.location}</span>
+        </div>
+
+        <div className="flex items-start">
+          <ClockIcon className="mr-2 h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
+          <div className="text-sm">{getTimeDisplay()}</div>
+        </div>
+
+        <div className="flex items-center">
+          <UsersIcon className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+          <span className="text-sm">
+            {event.status === "upcoming"
+              ? "Not started"
+              : `${event.attendees} attendees`}
+          </span>
+        </div>
+
+        {event.note && (
+          <div className="border-t pt-2 mt-2 text-xs">
+            <span className="font-medium">Note:</span> {event.note}
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        {event.status !== "upcoming" && (
+          <div className="flex flex-col sm:flex-row gap-2 pt-1 mt-2 w-full justify-center">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="h-10 w-full sm:w-40 justify-center"
+            >
+              <Link href={`/org-events/${event.id}/attendees`}>
+                <UsersIcon className="mr-1.5 h-4 w-4" />
+                View Attendees
+              </Link>
+            </Button>
+
+            {event.status === "ongoing" && (
+              <Button
+                asChild
+                size="sm"
+                className="h-10 w-full sm:w-40 justify-center"
+              >
+                <Link href={`/org-events/${event.id}/log-attendance`}>
+                  <UserPlusIcon className="mr-1.5 h-4 w-4" />
+                  Log Attendance
+                </Link>
+              </Button>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

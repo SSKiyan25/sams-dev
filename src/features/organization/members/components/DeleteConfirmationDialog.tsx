@@ -27,7 +27,7 @@ export function DeleteConfirmationDialog({
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
             This action cannot be undone. This will permanently delete the
-            member's record.
+            member&apos;s record.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -1,9 +1,10 @@
-import { Event } from "../data";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon, ArrowLeftIcon, ClockIcon, StarIcon } from "lucide-react";
 import Link from "next/link";
 import { formatTimeRange } from "../utils";
+import { Event } from "../../events/types";
+import { formatDate } from "@/utils/useGeneralUtils";
 
 interface PageHeaderProps {
   event: Event;
@@ -28,7 +29,7 @@ export function PageHeader({ event }: PageHeaderProps) {
             {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
           </Badge>
 
-          {event.isMajor && (
+          {event.majorEvent && (
             <Badge
               variant="default"
               className="bg-amber-500 hover:bg-amber-600"
@@ -42,16 +43,19 @@ export function PageHeader({ event }: PageHeaderProps) {
       <div className="flex flex-col sm:flex-row gap-4 mt-2 text-sm text-muted-foreground">
         <div className="flex items-center">
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {new Date(event.date).toLocaleDateString()}
+          {formatDate(event.date)}
         </div>
 
         <div className="flex items-center">
           <ClockIcon className="mr-2 h-4 w-4" />
-          {event.timeIn
-            ? `Time-in: ${formatTimeRange(event.timeIn)}`
+          {event.timeInStart && event.timeInEnd
+            ? `Time-in: ${formatTimeRange(event.timeInStart, event.timeInEnd)}`
             : "No time-in set"}
-          {event.timeOut
-            ? ` • Time-out: ${formatTimeRange(event.timeOut)}`
+          {event.timeOutStart && event.timeOutEnd
+            ? ` • Time-out: ${formatTimeRange(
+                event.timeOutStart,
+                event.timeOutEnd
+              )}`
             : ""}
         </div>
       </div>

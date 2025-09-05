@@ -11,10 +11,22 @@ interface EventsHeaderProps {
 
 export function EventsHeader({ onSearch, onEventAdded }: EventsHeaderProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
 
   const handleEventAdded = () => {
     setIsAddDialogOpen(false);
     onEventAdded?.();
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchValue(value);
+    onSearch(value);
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSearch(searchValue);
   };
 
   return (
@@ -27,17 +39,21 @@ export function EventsHeader({ onSearch, onEventAdded }: EventsHeaderProps) {
       </div>
 
       <div className="flex flex-col space-y-2 sm:flex-row sm:space-x-2 sm:space-y-0">
-        <div className="relative">
+        <form onSubmit={handleSearchSubmit} className="relative">
           <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
             placeholder="Search events..."
             className="w-full pl-8 sm:w-[200px] md:w-[250px]"
-            onChange={(e) => onSearch(e.target.value)}
+            value={searchValue}
+            onChange={handleSearchChange}
           />
-        </div>
+        </form>
 
-        <Button onClick={() => setIsAddDialogOpen(true)}>
+        <Button
+          onClick={() => setIsAddDialogOpen(true)}
+          className="hover:cursor-pointer hover:bg-primary/90"
+        >
           <PlusIcon className="mr-2 h-4 w-4" />
           Add Event
         </Button>

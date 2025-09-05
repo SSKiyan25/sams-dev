@@ -69,7 +69,7 @@ export function AppSidebar({
               asChild
               className="hover:bg-sidebar-accent/20 transition-colors"
             >
-              <Link href="/" className="flex items-center gap-2 p-4">
+              <Link href="/" className="flex items-center gap-2 p-4 py-6.5">
                 <Image
                   src="/logo.svg"
                   alt=""
@@ -78,7 +78,7 @@ export function AppSidebar({
                   className="text-primary"
                 />
                 <span className="text-3xl font-semibold text-primary">
-                  SAMS
+                  CORAL
                 </span>
               </Link>
             </SidebarMenuButton>

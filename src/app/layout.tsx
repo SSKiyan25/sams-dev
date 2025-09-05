@@ -24,7 +24,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <title>SAMS - Simple Attendance Management System</title>
+        <title>
+          Coral - Centralized Online Record for Attendance and Logging
+        </title>
         <meta
           name="description"
           content="Your platform for modern productivity and collaboration"

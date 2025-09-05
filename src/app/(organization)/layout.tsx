@@ -34,7 +34,7 @@ const organizationData = {
     },
     {
       title: "Members",
-      url: "/organization/members",
+      url: "/org-members",
       icon: "users",
     },
     {
@@ -52,17 +52,17 @@ const organizationData = {
     {
       label: "Dashboard",
       icon: "dashboard",
-      href: "/organization/dashboard",
+      href: "/org-dashboard",
     },
     {
       label: "Events",
       icon: "calendar",
-      href: "/organization/events",
+      href: "/org-events",
     },
     {
       label: "Members",
       icon: "users",
-      href: "/organization/members",
+      href: "/org-members",
     },
   ],
 };

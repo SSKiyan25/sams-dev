@@ -1,9 +1,15 @@
+import { Timestamp } from "firebase/firestore";
+
 export type Member = {
   firstName: string;
   lastName: string;
   programId: string;
   facultyId: string;
+  studentId: string;
+  email: string;
   role: "admin" | "user";
+  createdAt?: Timestamp;
+  yearLevel?: number; // Adding year level
 };
 
 export type Program = {
