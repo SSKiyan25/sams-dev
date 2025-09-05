@@ -40,8 +40,8 @@ export function SiteHeader({ user, isAuthenticated }: SiteHeaderProps) {
             <Image
               src="/enhanced-logo-final.svg"
               alt="Coral Logo"
-              width={32}
-              height={32}
+              width={45}
+              height={45}
               className="text-primary"
             />
             <h1 className="text-xl lg:text-2xl font-bold text-foreground dark:text-foreground ml-3">CORAL</h1>
