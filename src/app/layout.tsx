@@ -35,18 +35,21 @@ export default function RootLayout({
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AuthProvider>
-            <SidebarProvider>{children}</SidebarProvider>
-          </AuthProvider>
-        </ThemeProvider>
-        <Toaster />
+        <div suppressHydrationWarning style={{ display: 'contents' }}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <AuthProvider>
+              <SidebarProvider>{children}</SidebarProvider>
+            </AuthProvider>
+          </ThemeProvider>
+          <Toaster />
+        </div>
       </body>
     </html>
   );
