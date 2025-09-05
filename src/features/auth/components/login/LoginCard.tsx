@@ -61,7 +61,7 @@ export function LoginCard() {
       {isLoading && <LoginLoadingOverlay />}
 
       {/* Main Content Container */}
-      <div className="max-w-6xl mx-auto px-2 sm:px-4 lg:px-6 py-2 sm:py-4 lg:py-6 w-full">
+      <div className="max-w-6xl mx-auto px-2 sm:px-4 lg:px-6 py-2 sm:py-4 lg:py-6 pb-8 sm:pb-4 lg:pb-6 w-full">
         <div className="flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-16 items-center min-h-[500px]">
           {/* Mobile Image - Shows on top for mobile */}
           <div className="lg:hidden w-full flex justify-center items-center order-1 animate-fade-in-up animation-delay-200">
@@ -69,9 +69,9 @@ export function LoginCard() {
               <Image
                 src="/images/enhanced-logo-final.png"
                 alt="SAMS Illustration"
-                width={300}
-                height={225}
-                className="w-auto h-auto object-contain max-w-full max-h-[280px]"
+                width={200}
+                height={150}
+                className="w-auto h-auto object-contain max-w-full max-h-[180px]"
                 priority
               />
             </div>

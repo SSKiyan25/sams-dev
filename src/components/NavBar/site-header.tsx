@@ -6,6 +6,7 @@ import { useTheme } from "next-themes";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 // Define the User interface
 interface User {
@@ -24,8 +25,15 @@ interface SiteHeaderProps {
 export function SiteHeader({ user, isAuthenticated }: SiteHeaderProps) {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  
   // Use avatar from user.avatar or user.image (fallback) if user exists
   const avatarSrc = user?.avatar || user?.image;
+
+  // Ensure component is mounted before showing theme-dependent content
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
@@ -42,7 +50,7 @@ export function SiteHeader({ user, isAuthenticated }: SiteHeaderProps) {
               alt="Coral Logo"
               width={45}
               height={45}
-              className="text-primary"
+              className="text-primary hidden md:block"
             />
             <h1 className="text-xl lg:text-2xl font-bold text-foreground dark:text-foreground ml-3">CORAL</h1>
           </Link>
@@ -94,12 +102,22 @@ export function SiteHeader({ user, isAuthenticated }: SiteHeaderProps) {
               onClick={toggleTheme}
               className="font-instrument text-lg sm:text-xl text-[#202020] dark:text-foreground hover:text-[#008ACF] dark:hover:text-primary transition-colors flex items-center gap-1"
             >
-              {theme === "dark" ? (
-                <Sun className="h-4 w-4" />
+              {mounted ? (
+                <>
+                  {theme === "dark" ? (
+                    <Sun className="h-4 w-4" />
+                  ) : (
+                    <Moon className="h-4 w-4" />
+                  )}
+                  {theme === "dark" ? "Light" : "Dark"}
+                </>
               ) : (
-                <Moon className="h-4 w-4" />
+                // Show a neutral state during SSR/before hydration
+                <>
+                  <Moon className="h-4 w-4" />
+                  Theme
+                </>
               )}
-              {theme === "dark" ? "Light" : "Dark"}
             </button>
           </div>
         </div>
