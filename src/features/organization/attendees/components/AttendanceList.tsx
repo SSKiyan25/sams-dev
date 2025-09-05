@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AttendanceRecord } from "../../log-attendance/types";
+import { AttendanceRecord, EventAttendance } from "../../log-attendance/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   UserIcon,
@@ -10,20 +10,54 @@ import {
   InfoIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getProgramName } from "../data";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { getProgramById } from "@/firebase";
+import { Program } from "../../members/types";
+import { useEffect, useState } from "react";
 
-interface AttendanceListProps {
-  attendees: AttendanceRecord[];
-  onRefresh: () => void;
+// --- NEW COMPONENT ---
+// This component is responsible for fetching and displaying the program name for a single student.
+// It manages its own state and data fetching, preventing the infinite loop.
+function ProgramBadge({ programId }: { programId: string }) {
+  const [programName, setProgramName] = useState("Loading...");
+
+  useEffect(() => {
+    // useEffect runs after the component renders, preventing the infinite loop.
+    // The dependency array [programId] ensures this effect only runs when the programId changes.
+    const fetchProgramName = async () => {
+      try {
+        const result = (await getProgramById(programId)) as unknown as Program;
+        setProgramName(result?.name || "Unknown Program");
+      } catch (error) {
+        console.error("Error fetching program:", error);
+        setProgramName("Unknown Program"); // Set a fallback name on error
+      }
+    };
+
+    fetchProgramName();
+  }, [programId]); // Dependency array is crucial here
+
+  return (
+    <Badge variant="outline" className="text-xs py-0 px-1.5 h-5">
+      {programName}
+    </Badge>
+  );
 }
 
-export function AttendanceList({ attendees, onRefresh }: AttendanceListProps) {
+// --- REFACTORED PARENT COMPONENT ---
+interface AttendanceListProps {
+  attendees: EventAttendance[];
+}
+
+export function AttendanceList({ attendees }: AttendanceListProps) {
+  // We no longer need the getProgramName function or programName state here.
+
   const formatTime = (timestamp: string) => {
+    if (!timestamp) return "Not recorded";
     const date = new Date(timestamp);
     const hours = date.getHours();
     const minutes = date.getMinutes().toString().padStart(2, "0");
@@ -32,39 +66,6 @@ export function AttendanceList({ attendees, onRefresh }: AttendanceListProps) {
 
     return `${formattedHours}:${minutes} ${ampm}`;
   };
-
-  // Format program with year level
-  const formatProgram = (programId: string, yearLevel?: number) => {
-    const programName = getProgramName(programId);
-    return yearLevel ? `${programName}-${yearLevel}` : programName;
-  };
-
-  // Group attendees by studentId
-  const groupedByStudentId = attendees.reduce((groups, record) => {
-    const studentId = record.student.studentId;
-    if (!groups[studentId]) {
-      groups[studentId] = [];
-    }
-    groups[studentId].push(record);
-    return groups;
-  }, {} as Record<string, AttendanceRecord[]>);
-
-  // For each student, find their time-in and time-out records
-  const processedAttendees = Object.values(groupedByStudentId).map(
-    (records) => {
-      const timeInRecord = records.find((r) => r.type === "time-in");
-      const timeOutRecord = records.find((r) => r.type === "time-out");
-
-      // Use the student from any record (they're the same)
-      const student = records[0].student;
-
-      return {
-        student,
-        timeIn: timeInRecord ? formatTime(timeInRecord.timestamp) : null,
-        timeOut: timeOutRecord ? formatTime(timeOutRecord.timestamp) : null,
-      };
-    }
-  );
 
   return (
     <Card>
@@ -120,24 +121,14 @@ export function AttendanceList({ attendees, onRefresh }: AttendanceListProps) {
             </Badge>
             <span>Check-out</span>
           </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onRefresh}
-            className="h-8"
-          >
-            <RefreshCcw className="h-3.5 w-3.5 mr-1" />
-            Refresh
-          </Button>
         </div>
       </CardHeader>
 
-      {processedAttendees.length > 0 ? (
+      {attendees.length > 0 ? (
         <CardContent className="p-0">
           <ScrollArea className="max-h-auto">
             <div className="divide-y">
-              {processedAttendees.map(({ student, timeIn, timeOut }) => (
+              {attendees.map(({ student, timeIn, timeOut }) => (
                 <div
                   key={student.studentId}
                   className="p-4 hover:bg-secondary/10 transition-colors"
@@ -156,15 +147,8 @@ export function AttendanceList({ attendees, onRefresh }: AttendanceListProps) {
                           <p className="text-xs text-muted-foreground">
                             {student.studentId}
                           </p>
-                          <Badge
-                            variant="outline"
-                            className="text-xs py-0 px-1.5 h-5"
-                          >
-                            {formatProgram(
-                              student.programId,
-                              student.yearLevel
-                            )}
-                          </Badge>
+                          {/* Use the new component here */}
+                          <ProgramBadge programId={student.programId} />
                         </div>
                       </div>
                     </div>
@@ -182,7 +166,7 @@ export function AttendanceList({ attendees, onRefresh }: AttendanceListProps) {
                       >
                         <ArrowRight className="h-3 w-3 mr-1.5 flex-shrink-0" />
                         <span className="text-xs whitespace-nowrap">
-                          {timeIn || "Not recorded"}
+                          {formatTime(timeIn) || "Not recorded"}
                         </span>
                       </Badge>
 
@@ -197,7 +181,7 @@ export function AttendanceList({ attendees, onRefresh }: AttendanceListProps) {
                       >
                         <ArrowLeft className="h-3 w-3 mr-1.5 flex-shrink-0" />
                         <span className="text-xs whitespace-nowrap">
-                          {timeOut || "Not recorded"}
+                          {formatTime(timeOut) || "Not recorded"}
                         </span>
                       </Badge>
                     </div>

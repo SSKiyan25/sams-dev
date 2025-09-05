@@ -1,5 +1,7 @@
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "./firebase.config";
+import { get } from "http";
+import { Program } from "@/features/organization/members/types";
 
 const handleFirestoreError = (error: any, context: string) => {
   console.error(`Error ${context}:`, error);
@@ -16,5 +18,14 @@ export const getPrograms = async () => {
     }));
   } catch (error) {
     handleFirestoreError(error, "fetch programs");
+  }
+};
+
+export const getProgramById = async (programId: string) => {
+  try {
+    const programs = (await getPrograms()) as Program[];
+    return programs.find((program) => program.id === programId);
+  } catch (error) {
+    handleFirestoreError(error, "fetch program by ID");
   }
 };

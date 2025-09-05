@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Select,
   SelectContent,
@@ -8,11 +8,13 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { SearchIcon, XIcon } from "lucide-react";
-import { getUniquePrograms } from "../data";
+import { RotateCcwIcon, SearchIcon, XIcon } from "lucide-react";
+import { getPrograms } from "@/firebase";
+import { Program } from "../../members/types";
+import { SearchParams } from "../types";
 
 interface AttendeesFiltersProps {
-  onSearch: (query: string) => void;
+  onSearch: (params: SearchParams) => void;
   onSortChange: (field: string, direction: "asc" | "desc") => void;
   onProgramFilter: (programId: string | undefined) => void;
 }
@@ -23,7 +25,16 @@ export function AttendeesFilters({
   onProgramFilter,
 }: AttendeesFiltersProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const programs = getUniquePrograms();
+  const [searchType, setSearchType] = useState<"name" | "id">("name");
+  const [programs, setPrograms] = useState<Program[]>([]);
+
+  useEffect(() => {
+    const fetchPrograms = async () => {
+      const programsData = await getPrograms();
+      setPrograms(programsData as unknown as Program[]);
+    };
+    fetchPrograms();
+  }, []);
 
   const handleSortChange = (value: string) => {
     const [field, direction] = value.split("-");
@@ -32,35 +43,39 @@ export function AttendeesFilters({
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch(searchQuery);
+    onSearch({ query: searchQuery, type: searchType });
+  };
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setSearchType("name");
+    onSearch({ query: "", type: "name" });
+    onSortChange("firstName", "asc");
+    onProgramFilter(undefined);
   };
 
   const clearSearch = () => {
     setSearchQuery("");
-    onSearch("");
+    onSearch({ query: "", type: searchType });
   };
 
   return (
     <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
       <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-        {/* Sort options */}
-        <Select defaultValue="name-asc" onValueChange={handleSortChange}>
+        <Select defaultValue="firstName-asc" onValueChange={handleSortChange}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="name-asc">Name (A-Z)</SelectItem>
-            <SelectItem value="name-desc">Name (Z-A)</SelectItem>
-            <SelectItem value="program-asc">Program (A-Z)</SelectItem>
-            <SelectItem value="program-desc">Program (Z-A)</SelectItem>
-            <SelectItem value="timestamp-asc">Time (Earliest)</SelectItem>
-            <SelectItem value="timestamp-desc">Time (Latest)</SelectItem>
-            <SelectItem value="id-asc">ID (Asc)</SelectItem>
-            <SelectItem value="id-desc">ID (Desc)</SelectItem>
+            <SelectItem value="firstName-asc">Name (A-Z)</SelectItem>
+            <SelectItem value="firstName-desc">Name (Z-A)</SelectItem>
+            <SelectItem value="timeIn-asc">Time (Earliest)</SelectItem>
+            <SelectItem value="timeOut-desc">Time (Latest)</SelectItem>
+            <SelectItem value="studentId-asc">ID (Asc)</SelectItem>
+            <SelectItem value="studentId-desc">ID (Desc)</SelectItem>
           </SelectContent>
         </Select>
 
-        {/* Program filter */}
         <Select
           onValueChange={(value) =>
             onProgramFilter(value === "all" ? undefined : value)
@@ -78,38 +93,58 @@ export function AttendeesFilters({
             ))}
           </SelectContent>
         </Select>
+        <Button variant="outline" onClick={handleResetFilters}>
+          <RotateCcwIcon className="mr-2 h-4 w-4" />
+          Reset
+        </Button>
       </div>
 
-      {/* Search */}
       <form
         onSubmit={handleSearch}
-        className="relative w-full sm:w-auto flex-1 sm:max-w-[300px]"
+        className="relative w-full sm:w-auto flex-1 sm:max-w-[400px] flex items-center"
       >
-        <Input
-          placeholder="Search by name or ID..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pr-8"
-        />
-        {searchQuery && (
+        {/* Search Type Dropdown */}
+        <Select
+          defaultValue="name"
+          onValueChange={(value) => setSearchType(value as "name" | "id")}
+        >
+          <SelectTrigger className="w-[90px] rounded-r-none focus:ring-0">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="name">Name</SelectItem>
+            <SelectItem value="id">ID</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Search Input Field */}
+        <div className="relative w-full">
+          <Input
+            placeholder={`Search by ${searchType}...`}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="rounded-l-none pr-8"
+          />
+          {searchQuery && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute right-8 top-0 h-full"
+              onClick={clearSearch}
+            >
+              <XIcon className="h-4 w-4" />
+            </Button>
+          )}
           <Button
-            type="button"
+            type="submit"
             variant="ghost"
             size="icon"
-            className="absolute right-8 top-0 h-full"
-            onClick={clearSearch}
+            className="absolute right-0 top-0 h-full"
           >
-            <XIcon className="h-4 w-4" />
+            <SearchIcon className="h-4 w-4" />
           </Button>
-        )}
-        <Button
-          type="submit"
-          variant="ghost"
-          size="icon"
-          className="absolute right-0 top-0 h-full"
-        >
-          <SearchIcon className="h-4 w-4" />
-        </Button>
+        </div>
       </form>
     </div>
   );

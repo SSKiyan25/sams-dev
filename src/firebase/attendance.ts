@@ -14,13 +14,30 @@ import {
   DocumentData,
   CollectionReference,
   Query,
+  startAt,
+  startAfter,
+  QueryConstraint,
+  getCountFromServer,
+  DocumentSnapshot,
+  documentId,
+  or,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { getAuth } from "firebase/auth";
-import { getUserById, searchUserByStudentId } from "./users"; // Assuming this is optimized
-import { AttendanceRecord } from "@/features/organization/log-attendance/types";
+import {
+  getUserById,
+  getUsers,
+  searchUserByName,
+  searchUserByStudentId,
+} from "./users"; // Assuming this is optimized
+import {
+  AttendanceRecord,
+  EventAttendance,
+} from "@/features/organization/log-attendance/types";
 import { Member } from "@/features/organization/members/types";
 import { incrementEventAttendees } from "./events";
+import { eventAttendance } from "@/features/organization/dashboard/data";
+import { SearchParams } from "@/features/organization/attendees/types";
 
 // --- Reusable Constants & Helpers ---
 
@@ -72,10 +89,15 @@ export const logAttendance = async ({
   try {
     const querySnapshot = await getDocs(q);
     const now = Timestamp.now();
+    const student = await searchUserByStudentId(
+      studentId,
+      getAuth().currentUser!
+    );
     if (querySnapshot.empty) {
       // Create a new attendance record if one doesn't exist.
       await addDoc(attendanceCollection, {
         eventId,
+        student: student == null ? "unknown" : student,
         userId: studentId,
         timeIn: type === "time-in" ? now : null,
         timeOut: type === "time-out" ? now : null,
@@ -144,8 +166,8 @@ export const getRecentAttendance = async (
         id: doc.id,
         userId: data.userId,
         eventId: data.eventId,
-        timeIn: data.timeIn,
-        timeOut: data.timeOut,
+        timeIn: data.timeIn ? data.timeIn.toDate() : null,
+        timeOut: data.timeOut ? data.timeOut.toDate() : null,
         status: data.status,
         timestamp: (data[timestampField] as Timestamp)?.toDate(),
       } as unknown as AttendanceRecord;
@@ -175,8 +197,7 @@ export const getRecentAttendance = async (
       }
 
       return acc;
-    }, [] as AttendanceRecord[]); // Initialize the accumulator as an empty array.
-
+    }, [] as AttendanceRecord[]);
     return validRecords;
   } catch (error) {
     handleFirestoreError(
@@ -204,5 +225,172 @@ export const checkLogAttendanceExist = async (
   } catch (error) {
     console.error("Error checking attendance log:", error);
     return false;
+  }
+};
+const usersCollection = collection(db, "users");
+
+/**
+ * Searches users whose full name (firstName + lastName) contains the search query.
+ * This is more flexible than a simple "starts-with" query.
+ *
+ * @param name - The search query string.
+ * @returns A promise that resolves to an array of matching user IDs.
+ */
+export const searchStudentIdsByName = async (
+  name: string
+): Promise<string[]> => {
+  const trimmedName = name.trim().toLowerCase();
+  if (!trimmedName) {
+    return [];
+  }
+
+  // Fetch all users to filter client-side.
+  // NOTE: This can be inefficient for very large user bases.
+  // For production scale, a dedicated search service like Algolia is recommended.
+  const usersQuery = query(usersCollection, where("isDeleted", "==", false));
+  const snapshot = await getDocs(usersQuery);
+
+  const matchingIds = snapshot.docs
+    .filter((doc) => {
+      const userData = doc.data();
+      const fullName = `${userData.firstName || ""} ${
+        userData.lastName || ""
+      }`.toLowerCase();
+      return fullName.includes(trimmedName);
+    })
+    .map((doc) => doc.id);
+
+  return matchingIds;
+};
+
+/**
+ * Builds an array of Firestore query constraints based on filter criteria.
+ *
+ * @param eventId - The ID of the event.
+ * @param filterProgram - An optional program ID to filter by.
+ *- @param studentIds - An optional array of student IDs to filter by (from a search).
+ * @returns An array of QueryConstraint objects.
+ */
+export const buildAttendanceQueryConstraints = (
+  eventId: string,
+  filterProgram?: string,
+  studentIds?: string[]
+): QueryConstraint[] => {
+  const constraints: QueryConstraint[] = [where("eventId", "==", eventId)];
+
+  if (filterProgram) {
+    constraints.push(where("student.programId", "==", filterProgram));
+  }
+
+  // If studentIds are provided from a search, use a 'where in' clause.
+  // This is more efficient and lifts restrictions on sorting.
+  if (studentIds && studentIds.length > 0) {
+    // Firestore 'in' queries are limited to 30 items.
+    // We slice the array to prevent errors.
+    const limitedIds = studentIds.slice(0, 30);
+    constraints.push(where("student.studentId", "in", limitedIds));
+  }
+
+  return constraints;
+};
+
+/**
+ * Fetches a paginated and sorted list of attendance records for a specific event.
+ *
+ * @param eventId - The ID of the event.
+ * @param page - The page number to fetch (1-indexed).
+ * @param pageSize - The number of records per page.
+ * @param sort - An object containing the sort field and direction.
+ * @param filterProgram - An optional program ID to filter results.
+ * @param searchQuery - An optional search query for the student's name.
+ * @returns A promise resolving to an object with records and the total count.
+ */ export const getAttendanceRecord = async (
+  eventId: string,
+  pageSize: number,
+  sort: { field: string; direction: "asc" | "desc" },
+  cursor?: DocumentSnapshot,
+  filterProgram?: string,
+  searchQuery?: SearchParams | null
+): Promise<{
+  records: EventAttendance[];
+  total: number;
+  nextCursor: DocumentSnapshot | null;
+}> => {
+  try {
+    const attendanceCollection = collection(db, "eventAttendees");
+    let studentIds: string[] | undefined;
+
+    // --- 2. Build Query Constraints ---
+    const baseConstraints = buildAttendanceQueryConstraints(
+      eventId,
+      filterProgram,
+      undefined
+    );
+
+    // --- 3. Get Total Count for Pagination ---
+    const countQuery = query(attendanceCollection, ...baseConstraints);
+    const totalSnapshot = await getCountFromServer(countQuery);
+    const total = totalSnapshot.data().count;
+    if (total === 0) {
+      return { records: [], total: 0, nextCursor: null };
+    }
+
+    const getFirestoreSortField = (field: string): string => {
+      switch (field) {
+        case "firstName":
+          return `student.firstName`;
+        case "studentId":
+          return `student.studentId`;
+        default:
+          return field;
+      }
+    };
+
+    const queryConstraints: QueryConstraint[] = [
+      ...baseConstraints,
+      // This orderBy clause is essential for startAfter to work.
+      orderBy(getFirestoreSortField(sort.field), sort.direction),
+      limit(pageSize),
+    ];
+
+    if (cursor) {
+      queryConstraints.push(startAfter(cursor));
+    }
+
+    const dataQuery = query(attendanceCollection, ...queryConstraints);
+    const querySnapshot = await getDocs(dataQuery);
+
+    // --- 5. Map Documents and Determine Next Cursor ---
+    const docs = querySnapshot.docs;
+    let records = querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        timeIn: data.timeIn?.toDate() ?? null,
+        timeOut: data.timeOut?.toDate() ?? null,
+      } as EventAttendance;
+    });
+
+    if (searchQuery) {
+      if (searchQuery.type === "id") {
+        records = records.filter((record) =>
+          record.student?.studentId.toString().includes(searchQuery.query)
+        );
+      } else {
+        records = records.filter((record) => {
+          const fullName =
+            `${record.student?.firstName} ${record.student?.lastName}`.toLowerCase();
+          return fullName.includes(searchQuery.query.toLowerCase());
+        });
+      }
+    }
+
+    const nextCursor = docs.length === pageSize ? docs[docs.length - 1] : null;
+
+    return { records, total, nextCursor };
+  } catch (error) {
+    handleFirestoreError(error, `getting attendance for event ${eventId}`);
+    return { records: [], total: 0, nextCursor: null };
   }
 };
