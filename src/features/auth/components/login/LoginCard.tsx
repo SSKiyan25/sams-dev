@@ -67,11 +67,11 @@ export function LoginCard() {
           <div className="lg:hidden w-full flex justify-center items-center order-1 animate-fade-in-up animation-delay-200">
             <div className="w-full max-w-[1200px] flex justify-center">
               <Image
-                src="/images/sample-logo.png"
+                src="/images/enhanced-logo-final.png"
                 alt="SAMS Illustration"
                 width={300}
                 height={225}
-                className="w-auto h-auto object-contain max-w-full max-h-[250px]"
+                className="w-auto h-auto object-contain max-w-full max-h-[280px]"
                 priority
               />
             </div>
@@ -216,13 +216,13 @@ export function LoginCard() {
 
           {/* Right Side - Illustration (Desktop only) */}
           <div className="hidden lg:flex justify-center items-center order-3 lg:order-2 animate-fade-in-left animation-delay-400">
-            <div className="w-full max-w-[540px] flex justify-center">
+            <div className="w-full max-w-[450px] flex justify-center">
               <Image
-                src="/images/sample-logo.png"
+                src="/images/enhanced-logo-final.png"
                 alt="SAMS Illustration"
-                width={400}
-                height={300}
-                className="w-auto h-auto object-contain max-w-full max-h-[400px]"
+                width={450}
+                height={340}
+                className="w-auto h-auto object-contain max-w-full max-h-[380px]"
                 priority
               />
             </div>

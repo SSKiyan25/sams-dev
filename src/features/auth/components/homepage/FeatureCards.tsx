@@ -1,21 +1,28 @@
 import Image from "next/image";
+import { useTheme } from "next-themes";
 
 interface FeatureCardProps {
   icon: string;
+  iconWhite: string;
   iconAlt: string;
   title: string;
   description: string;
   animationClass: string;
 }
 
-function FeatureCard({ icon, iconAlt, title, description, animationClass }: FeatureCardProps) {
+function FeatureCard({ icon, iconWhite, iconAlt, title, description, animationClass }: FeatureCardProps) {
+  const { theme, resolvedTheme } = useTheme();
+  
+  // Determine which icon to use based on theme
+  const currentIcon = (resolvedTheme === 'dark' || theme === 'dark') ? iconWhite : icon;
+
   return (
     <div className={`bg-white dark:bg-card border border-black/30 dark:border-border rounded-[22px] p-8 backdrop-blur-sm shadow-sm dark:shadow-lg h-[200px] flex items-center ${animationClass}`}>
       <div className="flex items-center gap-6 w-full">
         <div className="flex-shrink-0">
           <div className="w-24 h-24 bg-gray-100 dark:bg-muted rounded-full flex items-center justify-center">
             <Image
-              src={icon}
+              src={currentIcon}
               alt={iconAlt}
               width={48}
               height={48}
@@ -40,6 +47,7 @@ export function FeatureCards() {
   const features = [
     {
       icon: "/calendar.svg",
+      iconWhite: "/calendar-white.svg",
       iconAlt: "Calendar icon",
       title: "Event Attendance Tracking",
       description: "Record attendance at meetings, seminars, and special events.",
@@ -47,6 +55,7 @@ export function FeatureCards() {
     },
     {
       icon: "/analytics.svg",
+      iconWhite: "/analytics-white.svg",
       iconAlt: "Analytics icon",
       title: "Simple Attendance Analytics",
       description: "Instantly see how many members attended each event and track participation trends at a glance.",
@@ -62,6 +71,7 @@ export function FeatureCards() {
             <FeatureCard
               key={index}
               icon={feature.icon}
+              iconWhite={feature.iconWhite}
               iconAlt={feature.iconAlt}
               title={feature.title}
               description={feature.description}
