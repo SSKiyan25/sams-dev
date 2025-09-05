@@ -71,7 +71,7 @@ export function AppSidebar({
             >
               <Link href="/" className="flex items-center gap-2 p-4 py-6.5">
                 <Image
-                  src="/logo.svg"
+                  src="/enhanced-logo-final.svg"
                   alt=""
                   width={36}
                   height={36}

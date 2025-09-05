@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { useTheme } from "next-themes";
+import { useState, useEffect } from "react";
 
 interface FeatureCardProps {
   icon: string;
@@ -10,14 +11,30 @@ interface FeatureCardProps {
   animationClass: string;
 }
 
-function FeatureCard({ icon, iconWhite, iconAlt, title, description, animationClass }: FeatureCardProps) {
-  const { theme, resolvedTheme } = useTheme();
-  
-  // Determine which icon to use based on theme
-  const currentIcon = (resolvedTheme === 'dark' || theme === 'dark') ? iconWhite : icon;
+function FeatureCard({
+  icon,
+  iconWhite,
+  iconAlt,
+  title,
+  description,
+  animationClass,
+}: FeatureCardProps) {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Only show the themed icon after client-side hydration
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Use the default icon during server rendering and first mount
+  // Only switch to the themed icon after hydration is complete
+  const currentIcon = mounted && resolvedTheme === "dark" ? iconWhite : icon;
 
   return (
-    <div className={`bg-white dark:bg-card border border-black/30 dark:border-border rounded-[22px] p-8 backdrop-blur-sm shadow-sm dark:shadow-lg h-[200px] flex items-center ${animationClass}`}>
+    <div
+      className={`bg-white dark:bg-card border border-black/30 dark:border-border rounded-[22px] p-8 backdrop-blur-sm shadow-sm dark:shadow-lg h-[200px] flex items-center ${animationClass}`}
+    >
       <div className="flex items-center gap-6 w-full">
         <div className="flex-shrink-0">
           <div className="w-24 h-24 bg-gray-100 dark:bg-muted rounded-full flex items-center justify-center">
@@ -50,17 +67,19 @@ export function FeatureCards() {
       iconWhite: "/calendar-white.svg",
       iconAlt: "Calendar icon",
       title: "Event Attendance Tracking",
-      description: "Record attendance at meetings, seminars, and special events.",
-      animationClass: "animate-fade-in-left animation-delay-1200"
+      description:
+        "Record attendance at meetings, seminars, and special events.",
+      animationClass: "animate-fade-in-left animation-delay-1200",
     },
     {
       icon: "/analytics.svg",
       iconWhite: "/analytics-white.svg",
       iconAlt: "Analytics icon",
       title: "Simple Attendance Analytics",
-      description: "Instantly see how many members attended each event and track participation trends at a glance.",
-      animationClass: "animate-fade-in-right animation-delay-1400"
-    }
+      description:
+        "Instantly see how many members attended each event and track participation trends at a glance.",
+      animationClass: "animate-fade-in-right animation-delay-1400",
+    },
   ];
 
   return (
