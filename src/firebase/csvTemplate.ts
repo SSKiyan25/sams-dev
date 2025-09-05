@@ -40,15 +40,15 @@ const CSV_TEMPLATE_COLUMNS: CSVTemplateColumn[] = [
   },
   {
     name: 'programId',
-    description: 'Program ID (see available programs)',
+    description: 'Full program name (e.g., "BS in Computer Science")',
     required: true,
-    example: 'CS101'
+    example: 'BS in Computer Science'
   },
   {
     name: 'facultyId',
-    description: 'Faculty ID (see available faculties)',
+    description: 'Full faculty name (e.g., "Faculty of Computing")',
     required: true,
-    example: 'CICS'
+    example: 'Faculty of Computing'
   },
   {
     name: 'yearLevel',
@@ -65,8 +65,8 @@ const SAMPLE_TEMPLATE_DATA = [
     firstName: 'John',
     lastName: 'Doe',
     email: 'john.doe@example.com',
-    programId: 'CS101',
-    facultyId: 'CICS',
+    programId: 'BS in Computer Science',
+    facultyId: 'Faculty of Computing',
     yearLevel: '3'
   },
   {
@@ -74,8 +74,8 @@ const SAMPLE_TEMPLATE_DATA = [
     firstName: 'Jane',
     lastName: 'Smith',
     email: 'jane.smith@example.com',
-    programId: 'CS102',
-    facultyId: 'CICS',
+    programId: 'BS in Environmental Science',
+    facultyId: 'Faculty of Forestry and Environmental Sciences',
     yearLevel: '2'
   },
   {
@@ -83,9 +83,117 @@ const SAMPLE_TEMPLATE_DATA = [
     firstName: 'Mike',
     lastName: 'Johnson',
     email: 'mike.johnson@example.com',
-    programId: 'CS103',
-    facultyId: 'CICS',
+    programId: 'BS in Civil Engineering',
+    facultyId: 'Faculty of Engineering',
     yearLevel: '4'
+  },
+  {
+    studentId: '22-1-01704',
+    firstName: 'Sarah',
+    lastName: 'Williams',
+    email: 'sarah.williams@example.com',
+    programId: 'BS in Computer Science',
+    facultyId: 'Faculty of Computing',
+    yearLevel: '1'
+  },
+  {
+    studentId: '21-3-01705',
+    firstName: 'David',
+    lastName: 'Brown',
+    email: 'david.brown@example.com',
+    programId: 'BS in Environmental Science',
+    facultyId: 'Faculty of Forestry and Environmental Sciences',
+    yearLevel: '3'
+  },
+  {
+    studentId: '20-2-01706',
+    firstName: 'Emily',
+    lastName: 'Davis',
+    email: 'emily.davis@example.com',
+    programId: 'BS in Civil Engineering',
+    facultyId: 'Faculty of Engineering',
+    yearLevel: '4'
+  },
+  {
+    studentId: '22-1-01707',
+    firstName: 'James',
+    lastName: 'Wilson',
+    email: 'james.wilson@example.com',
+    programId: 'BS in Computer Science',
+    facultyId: 'Faculty of Computing',
+    yearLevel: '1'
+  },
+  {
+    studentId: '21-2-01708',
+    firstName: 'Lisa',
+    lastName: 'Martinez',
+    email: 'lisa.martinez@example.com',
+    programId: 'BS in Environmental Science',
+    facultyId: 'Faculty of Forestry and Environmental Sciences',
+    yearLevel: '2'
+  },
+  {
+    studentId: '20-3-01709',
+    firstName: 'Robert',
+    lastName: 'Garcia',
+    email: 'robert.garcia@example.com',
+    programId: 'BS in Civil Engineering',
+    facultyId: 'Faculty of Engineering',
+    yearLevel: '5'
+  },
+  {
+    studentId: '22-2-01710',
+    firstName: 'Michelle',
+    lastName: 'Anderson',
+    email: 'michelle.anderson@example.com',
+    programId: 'BS in Computer Science',
+    facultyId: 'Faculty of Computing',
+    yearLevel: '1'
+  },
+  {
+    studentId: '21-1-01711',
+    firstName: 'Kevin',
+    lastName: 'Taylor',
+    email: 'kevin.taylor@example.com',
+    programId: 'BS in Environmental Science',
+    facultyId: 'Faculty of Forestry and Environmental Sciences',
+    yearLevel: '3'
+  },
+  {
+    studentId: '20-1-01712',
+    firstName: 'Amanda',
+    lastName: 'Thomas',
+    email: 'amanda.thomas@example.com',
+    programId: 'BS in Civil Engineering',
+    facultyId: 'Faculty of Engineering',
+    yearLevel: '4'
+  },
+  {
+    studentId: '22-3-01713',
+    firstName: 'Christopher',
+    lastName: 'Jackson',
+    email: 'christopher.jackson@example.com',
+    programId: 'BS in Computer Science',
+    facultyId: 'Faculty of Computing',
+    yearLevel: '1'
+  },
+  {
+    studentId: '21-2-01714',
+    firstName: 'Nicole',
+    lastName: 'White',
+    email: 'nicole.white@example.com',
+    programId: 'BS in Environmental Science',
+    facultyId: 'Faculty of Forestry and Environmental Sciences',
+    yearLevel: '2'
+  },
+  {
+    studentId: '20-3-01715',
+    firstName: 'Ryan',
+    lastName: 'Harris',
+    email: 'ryan.harris@example.com',
+    programId: 'BS in Civil Engineering',
+    facultyId: 'Faculty of Engineering',
+    yearLevel: '5'
   }
 ];
 
