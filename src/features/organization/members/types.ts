@@ -15,11 +15,13 @@ export type Member = {
 export type Program = {
   id: string;
   name: string;
+  code?: string; // Program code like "BSCS", "BSES", "BSCE"
 };
 
 export type Faculty = {
   id: string;
   name: string;
+  code?: string; // Faculty code like "FC", "FFES", "FE"
 };
 
 export type MemberData = {

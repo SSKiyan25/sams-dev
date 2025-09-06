@@ -3,3 +3,4 @@ export * from "./users";
 export * from "./programs";
 export * from "./faculties";
 export * from "./attendance";
+export * from "./bulkImport";
