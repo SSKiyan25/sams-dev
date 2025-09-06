@@ -63,49 +63,71 @@ export function EventCard({
 
     if (hasTimeIn && hasTimeOut) {
       return (
-        <div className="space-y-1">
+        <div className="space-y-2">
           <div className="flex items-center">
-            <span className="text-xs font-medium mr-1">Time-in:</span>
-            {formatTimeRange(timeInStart, timeInEnd)}
+            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 mr-2 uppercase tracking-wider min-w-[30px]">In:</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatTimeRange(timeInStart, timeInEnd)}</span>
           </div>
           <div className="flex items-center">
-            <span className="text-xs font-medium mr-1">Time-out:</span>
-            {formatTimeRange(timeOutStart, timeOutEnd)}
+            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 mr-2 uppercase tracking-wider min-w-[30px]">Out:</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatTimeRange(timeOutStart, timeOutEnd)}</span>
           </div>
         </div>
       );
     } else if (hasTimeIn) {
       return (
-        <div>
-          <span className="text-xs font-medium mr-1">Time-in only:</span>
-          {formatTimeRange(timeInStart, timeInEnd)}
+        <div className="flex items-center">
+          <span className="text-xs font-bold text-gray-500 dark:text-gray-400 mr-2 uppercase tracking-wider">Time-in:</span>
+          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatTimeRange(timeInStart, timeInEnd)}</span>
         </div>
       );
     } else if (hasTimeOut) {
       return (
-        <div>
-          <span className="text-xs font-medium mr-1">Time-out only:</span>
-          {formatTimeRange(timeOutStart, timeOutEnd)}
+        <div className="flex items-center">
+          <span className="text-xs font-bold text-gray-500 dark:text-gray-400 mr-2 uppercase tracking-wider">Time-out:</span>
+          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatTimeRange(timeOutStart, timeOutEnd)}</span>
         </div>
       );
     } else {
-      return <span className="text-muted-foreground">No time set</span>;
+      return <span className="text-sm font-medium text-gray-600 dark:text-gray-400 italic">No time set</span>;
     }
   };
 
-  // Get the appropriate badge color based on event status
-  const getBadgeVariant = () => {
+  // Get the appropriate badge color and style based on event status
+  const getStatusBadge = () => {
     switch (event.status) {
       case "ongoing":
-        return "default";
+        return (
+          <Badge className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-300 dark:from-green-900/30 dark:to-emerald-900/30 dark:text-green-400 dark:border-green-600 px-3 py-1.5 font-bold text-xs shadow-sm">
+            <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+            Ongoing
+          </Badge>
+        );
       case "upcoming":
-        return "secondary";
+        return (
+          <Badge variant="secondary" className="bg-gradient-to-r from-blue-100 to-sky-100 text-blue-800 border-blue-300 dark:from-blue-900/30 dark:to-sky-900/30 dark:text-blue-400 dark:border-blue-600 px-3 py-1.5 font-bold text-xs shadow-sm">
+            <CalendarIcon className="w-3 h-3 mr-1" />
+            Upcoming
+          </Badge>
+        );
       case "completed":
-        return "secondary";
+        return (
+          <Badge variant="outline" className="bg-gradient-to-r from-gray-100 to-slate-100 text-gray-800 border-gray-300 dark:from-gray-800/50 dark:to-slate-800/50 dark:text-gray-300 dark:border-gray-600 px-3 py-1.5 font-bold text-xs shadow-sm">
+            Completed
+          </Badge>
+        );
       case "archived":
-        return "outline";
+        return (
+          <Badge variant="outline" className="text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600 px-3 py-1.5 font-bold text-xs">
+            Archived
+          </Badge>
+        );
       default:
-        return "secondary";
+        return (
+          <Badge variant="secondary" className="px-3 py-1.5 font-bold text-xs">
+            {((event.status as string).charAt(0).toUpperCase() + (event.status as string).slice(1))}
+          </Badge>
+        );
     }
   };
 
@@ -114,42 +136,49 @@ export function EventCard({
   };
 
   return (
-    <Card className="overflow-hidden pt-8">
-      <CardHeader className="space-y-1 px-4">
-        <div className="flex items-start justify-between gap-2">
+    <Card className="group hover:shadow-lg transition-all duration-300 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden h-full flex flex-col">
+      {/* Card Header */}
+      <CardHeader className=" px-6 pt-6">
+        <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              <CardTitle className="text-lg leading-tight mr-1">
-                {event.name}
-              </CardTitle>
+            {/* Title that spans full width - no truncation */}
+            <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100 break-words leading-tight mb-4 hyphens-auto">
+              {event.name}
+            </CardTitle>
+            
+            {/* Badges row - flexible wrapping layout */}
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              {getStatusBadge()}
               {event.majorEvent && (
                 <Badge
                   variant="outline"
-                  className="bg-amber-50 text-amber-600 border-amber-200 flex items-center h-5"
+                  className="bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-800 border-amber-300 dark:from-amber-900/30 dark:to-yellow-900/30 dark:text-amber-400 dark:border-amber-600 px-3 py-1.5 w-fit font-bold text-xs shadow-sm"
                 >
-                  <StarIcon className="h-3 w-3 mr-1 fill-amber-500" />
-                  <span className="text-xs">Major</span>
+                  <StarIcon className="h-3 w-3 mr-1 fill-amber-600 dark:fill-amber-400" />
+                  Major Event
                 </Badge>
               )}
             </div>
-            <div className="flex items-center text-xs text-muted-foreground">
-              <CalendarIcon className="mr-1.5 h-3 w-3 flex-shrink-0" />
-              {formatDate(event.date)}
+            
+            <div className="flex items-center text-sm font-semibold text-gray-600 dark:text-gray-400">
+              <CalendarIcon className="mr-2 h-4 w-4 flex-shrink-0" />
+              <span className="break-words">{formatDate(event.date)}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Badge variant={getBadgeVariant()} className="h-6">
-              {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
-            </Badge>
+          <div className="flex items-center gap-2 flex-shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreHorizontalIcon className="h-4 w-4" />
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="h-10 w-10 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 flex-shrink-0 hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
+                >
+                  <MoreHorizontalIcon className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleEditEvent}>
+              <DropdownMenuContent align="end" className="w-48 shadow-lg">
+                <DropdownMenuItem onClick={handleEditEvent} className="font-medium">
                   Edit Event
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -158,7 +187,7 @@ export function EventCard({
                       ? onDelete(event)
                       : onArchive(event)
                   }
-                  className="text-destructive"
+                  className="text-red-600 dark:text-red-400 font-medium"
                 >
                   {event.status === "archived" ? "Delete" : "Archive"}
                 </DropdownMenuItem>
@@ -166,62 +195,96 @@ export function EventCard({
             </DropdownMenu>
           </div>
         </div>
-        <div className="border-t" />
       </CardHeader>
 
-      <CardContent className="px-4 pb-4 pt-0 space-y-3">
-        <div className="flex items-start">
-          <MapPinIcon className="mr-2 h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
-          <span className="text-sm">{event.location}</span>
-        </div>
+      {/* Divider */}
+      <div className="border-t border-gray-200 dark:border-gray-700"></div>
 
-        <div className="flex items-start">
-          <ClockIcon className="mr-2 h-4 w-4 mt-0.5 flex-shrink-0 text-muted-foreground" />
-          <div className="text-sm">{getTimeDisplay()}</div>
-        </div>
-
-        <div className="flex items-center">
-          <UsersIcon className="mr-2 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-          <span className="text-sm">
-            {event.status === "upcoming"
-              ? "Not started"
-              : `${event.attendees} attendees`}
-          </span>
-        </div>
-
-        {event.note && (
-          <div className="border-t pt-2 mt-2 text-xs">
-            <span className="font-medium">Note:</span> {event.note}
+      {/* Card Content */}
+      <CardContent className="px-6 pb-6 space-y-5 flex-1 flex flex-col">
+        <div className="space-y-5 flex-1">
+          {/* Location */}
+          <div className="flex items-start gap-4">
+            <div className="w-11 h-11 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center flex-shrink-0">
+              <MapPinIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Location</p>
+              <p className="text-base font-semibold text-gray-900 dark:text-gray-100 break-words leading-relaxed">{event.location}</p>
+            </div>
           </div>
-        )}
+
+          {/* Time */}
+          <div className="flex items-start gap-4">
+            <div className="w-11 h-11 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center flex-shrink-0">
+              <ClockIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Schedule</p>
+              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-relaxed">{getTimeDisplay()}</div>
+            </div>
+          </div>
+
+          {/* Attendees */}
+          <div className="flex items-start gap-4">
+            <div className="w-11 h-11 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center flex-shrink-0">
+              <UsersIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Attendance</p>
+              <p className="text-base font-semibold text-gray-900 dark:text-gray-100 leading-relaxed">
+                {event.status === "upcoming"
+                  ? "Not started"
+                  : `${event.attendees} attendees`}
+              </p>
+            </div>
+          </div>
+
+          {/* Notes */}
+          {event.note && (
+            <>
+              <div className="border-t border-gray-100 dark:border-gray-700 pt-5">
+                <div className="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-800/50 dark:to-slate-800/50 rounded-xl p-5 border border-gray-200/50 dark:border-gray-700/50">
+                  <p className="text-xs font-bold text-gray-600 dark:text-gray-300 mb-3 uppercase tracking-wider flex items-center">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
+                    Additional Notes
+                  </p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 break-words leading-relaxed">{event.note}</p>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Action Buttons */}
         {event.status !== "upcoming" && (
-          <div className="flex flex-col sm:flex-row gap-2 pt-1 mt-2 w-full justify-center">
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="h-10 w-full sm:w-40 justify-center"
-            >
-              <Link href={`/org-events/${event.id}/attendees`}>
-                <UsersIcon className="mr-1.5 h-4 w-4" />
-                View Attendees
-              </Link>
-            </Button>
-
-            {event.status === "ongoing" && (
+          <div className="pt-5 border-t border-gray-100 dark:border-gray-700 mt-auto">
+            <div className="flex flex-col gap-3">
               <Button
                 asChild
+                variant="outline"
                 size="sm"
-                className="h-10 w-full sm:w-40 justify-center"
+                className="w-full justify-center hover:bg-gray-50 dark:hover:bg-gray-700 font-semibold text-sm h-11 border-2"
               >
-                <Link href={`/org-events/${event.id}/log-attendance`}>
-                  <UserPlusIcon className="mr-1.5 h-4 w-4" />
-                  Log Attendance
+                <Link href={`/org-events/${event.id}/attendees`}>
+                  <UsersIcon className="mr-2 h-4 w-4" />
+                  View Attendees
                 </Link>
               </Button>
-            )}
+
+              {event.status === "ongoing" && (
+                <Button
+                  asChild
+                  size="sm"
+                  className="w-full justify-center bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 font-bold text-sm h-12 shadow-md hover:shadow-lg transition-all duration-200"
+                >
+                  <Link href={`/org-events/${event.id}/log-attendance`}>
+                    <UserPlusIcon className="mr-2 h-4 w-4" />
+                    Log Attendance
+                  </Link>
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </CardContent>
