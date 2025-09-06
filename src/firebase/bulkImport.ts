@@ -33,7 +33,15 @@ import {
   doc,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
-import { Member, Faculty, Program } from "@/features/organization/members/types";
+import {
+  Member,
+  Faculty,
+  Program,
+  ReferenceDataCache,
+  RawMemberData,
+  BulkImportResult,
+  ValidatedMemberData,
+} from "@/features/organization/members/types";
 import { getFaculties } from "./faculties";
 import { getPrograms } from "./programs";
 
@@ -44,12 +52,11 @@ const usersCollection: CollectionReference<DocumentData> = collection(
   "users"
 );
 
-// Interface for reference data cache to improve performance
-// This prevents multiple Firebase calls during batch processing
-interface ReferenceDataCache {
-  faculties: Map<string, Faculty>;  // Map faculty NAME to faculty object (e.g., "Faculty of Computing" -> {id: "doc_id", name: "Faculty of Computing"})
-  programs: Map<string, Program>;   // Map program NAME to program object (e.g., "BS in Computer Science" -> {id: "doc_id", name: "BS in Computer Science"})
-}
+// Centralized error handler for consistent error logging and messaging
+const handleFirestoreError = (error: unknown, context: string) => {
+  console.error(`Error ${context}:`, error);
+  throw new Error(`Failed to ${context}.`);
+}; 
 
 // Global cache for reference data (faculties and programs)
 // This will be populated once per bulk import operation
@@ -143,44 +150,6 @@ export const getAvailableReferenceData = async (): Promise<{
   }
 };
 
-// Interface for raw CSV row data before validation
-// Includes rowNumber for error reporting and optional fields since CSV parsing may have missing values
-interface RawMemberData {
-  rowNumber: number;           // Track original CSV row for error reporting
-  studentId?: string;          // Optional because validation will check for required fields
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  programId?: string;          // Contains full program name (e.g., "BS in Computer Science")
-  facultyId?: string;          // Contains full faculty name (e.g., "Faculty of Computing")
-  yearLevel?: string | number; // Can be string from CSV or number after parsing
-  [key: string]: unknown;      // Allow additional CSV columns that we don't explicitly handle
-}
-
-// Centralized error handler for consistent error logging and messaging
-const handleFirestoreError = (error: unknown, context: string) => {
-  console.error(`Error ${context}:`, error);
-  throw new Error(`Failed to ${context}.`);
-};
-
-// Interface for bulk import result - provides comprehensive feedback to the UI
-export interface BulkImportResult {
-  success: boolean;                    // Overall operation success status
-  totalProcessed: number;              // Total number of rows attempted to process
-  successfulImports: number;           // Number of members successfully added to database
-  errors: Array<{                     // Detailed error information for failed rows
-    row: number;                       // Original CSV row number for easy reference
-    studentId: string;                 // Student ID from the failed row (or 'N/A' if missing)
-    error: string;                     // Human-readable error description
-  }>;
-  duplicates: string[];                // List of student IDs that already exist in database
-}
-
-// Interface for validated member data that passed all validation checks
-// Extends Member interface but includes rowNumber for tracking during processing
-interface ValidatedMemberData extends Member {
-  rowNumber: number;                   // Keep track of original CSV row for error reporting
-}
 
 /**
  * Validates required fields for a member record from CSV data

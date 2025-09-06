@@ -6,6 +6,7 @@ import {
   Faculty,
   Program,
   MemberData,
+  BulkImportResult,
 } from "@/features/organization/members/types";
 import { MemberForm } from "@/features/organization/members/components/MemberForm";
 import { DeleteConfirmationDialog } from "@/features/organization/members/components/DeleteConfirmationDialog";
@@ -28,15 +29,20 @@ import {
   getFaculties,
   getPrograms,
   getUsers,
+  processFileForBulkImport,
   updateUser,
 } from "@/firebase";
 import { toast } from "sonner";
+import { BulkImportResultModal } from "@/features/organization/members/components/BulkImportResultDialog";
 
 export default function MembersPage() {
   const [members, setMembers] = useState<MemberData[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
+  const [isBulkImportOpenResult, setIsBulkImportOpenResult] = useState(false);
+  const [bulkImportResult, setBulkImportResult] =
+    useState<BulkImportResult | null>(null);
   const [selectedMember, setSelectedMember] = useState<MemberData | null>(null);
   const [faculties, setFaculties] = useState<Faculty[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
@@ -117,12 +123,12 @@ export default function MembersPage() {
     }
   };
 
-  const handleBulkImport = (file: File) => {
-    // This would normally connect to backend processing
-    // For now, we'll just show a success message
-    toast.success(`File "${file.name}" ready for import.`, {
-      description: "Backend processing not implemented in this demo.",
-    });
+  const handleBulkImport = async (file: File) => {
+    const result = (await processFileForBulkImport(file)) as BulkImportResult;
+    setBulkImportResult(result);
+    setIsBulkImportOpen(false);
+    setIsBulkImportOpenResult(true);
+    fetchData(); // Refresh member list after imports
   };
 
   const getProgramName = (programId: string) => {
@@ -259,6 +265,12 @@ export default function MembersPage() {
         open={isBulkImportOpen}
         onOpenChange={setIsBulkImportOpen}
         onImport={handleBulkImport}
+      />
+
+      <BulkImportResultModal
+        open={isBulkImportOpenResult}
+        onOpenChange={setIsBulkImportOpenResult}
+        result={bulkImportResult}
       />
     </div>
   );

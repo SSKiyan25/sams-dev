@@ -26,6 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { FileSpreadsheet, Upload, Info, CheckCircle2 } from "lucide-react";
+import { downloadCSVTemplate } from "../csv.utils";
 
 interface BulkImportDialogProps {
   open: boolean;
@@ -95,6 +96,14 @@ export function BulkImportDialog({
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
+  };
+
+  const handleDownloadTemplate = async () => {
+    downloadCSVTemplate();
+  };
+
+  const handleBrowseFile = () => {
+    document.getElementById("file-upload")?.click();
   };
 
   const handleClose = () => {
@@ -234,7 +243,12 @@ export function BulkImportDialog({
                 </Table>
               </div>
               <div className="mt-4 flex justify-center">
-                <Button variant="outline" size="sm" className="text-xs">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                  onClick={handleDownloadTemplate}
+                >
                   <FileSpreadsheet className="h-3.5 w-3.5 mr-1.5" />
                   Download Template
                 </Button>
@@ -287,7 +301,11 @@ export function BulkImportDialog({
                   Supported formats: CSV, Excel (.xlsx)
                 </p>
                 <Label htmlFor="file-upload" asChild>
-                  <Button variant="secondary" size="sm">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleBrowseFile}
+                  >
                     Browse Files
                   </Button>
                 </Label>
