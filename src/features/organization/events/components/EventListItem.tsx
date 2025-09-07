@@ -64,14 +64,14 @@ export function EventListItem({
     if (hasTimeIn && hasTimeOut) {
       return (
         <div className="space-y-1">
-          <div>Time In: {formatTimeRange(timeInStart, timeInEnd)}</div>
-          <div>Time Out: {formatTimeRange(timeOutStart, timeOutEnd)}</div>
+          <div className="text-xs font-bold mr-2 uppercase tracking-wider min-w-[30px]">Time In: {formatTimeRange(timeInStart, timeInEnd)}</div>
+          <div className="text-xs font-bold mr-2 uppercase tracking-wider min-w-[30px]">Time Out: {formatTimeRange(timeOutStart, timeOutEnd)}</div>
         </div>
       );
     } else if (hasTimeIn) {
-      return `Time In: ${formatTimeRange(timeInStart, timeInEnd)}`;
+      return <div className="text-xs font-bold mr-2 uppercase tracking-wider min-w-[30px]">Time In: {formatTimeRange(timeInStart, timeInEnd)}</div>
     } else if (hasTimeOut) {
-      return `Time Out: ${formatTimeRange(timeOutStart, timeOutEnd)}`;
+      return <div className="text-xs font-bold mr-2 uppercase tracking-wider min-w-[30px]">Time Out: {formatTimeRange(timeOutStart, timeOutEnd)}</div>
     } else {
       return "No time set";
     }
@@ -119,20 +119,10 @@ export function EventListItem({
     onEdit(event);
   };
 
-  // Get status-based styling for the card
+  // Get status-based styling for the card - unified neutral background
   const getStatusCardStyles = () => {
-    switch (event.status) {
-      case "ongoing":
-        return "border-green-300 dark:border-green-600 bg-green-50/30 dark:bg-green-900/10 shadow-green-200/50 dark:shadow-green-800/30 shadow-lg animate-pulse-subtle ring-2 ring-green-300/30 dark:ring-green-600/30 scale-[1.02] hover:scale-[1.03]";
-      case "upcoming":
-        return "border-blue-300 dark:border-blue-600 bg-blue-50/30 dark:bg-blue-900/10";
-      case "completed":
-        return "border-gray-300 dark:border-gray-600 bg-gray-50/30 dark:bg-gray-800/50";
-      case "archived":
-        return "border-gray-200 dark:border-gray-700 bg-gray-50/20 dark:bg-gray-800/30";
-      default:
-        return "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800";
-    }
+    // Use consistent neutral styling for all events
+    return "border-blue-300 dark:border-blue-600 bg-blue-50/30 dark:bg-blue-900/10";
   };
 
   return (
@@ -140,46 +130,31 @@ export function EventListItem({
       <CardContent className="p-0">
         {/* Header Section */}
         <div className="p-6">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center justify-between gap-4 mb-4">
             <div className="flex-1 min-w-0">
-              {/* Title and badges row - responsive layout */}
-              <div className="flex flex-wrap items-baseline gap-3 mb-4">
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 break-words leading-tight hyphens-auto min-w-0 flex-1">
-                  {event.name}
-                </h3>
-                
-                {/* Badges - mobile only (below title) - force to new line */}
-                <div className="flex flex-wrap items-center gap-2 sm:hidden w-full basis-full">
-                  {getStatusBadge()}
-                  {event.majorEvent && (
-                    <Badge
-                      variant="outline"
-                      className="bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-800 border-amber-300 dark:from-amber-900/30 dark:to-yellow-900/30 dark:text-amber-400 dark:border-amber-600 px-3 py-1 font-bold text-xs shadow-sm"
-                    >
-                      <StarIcon className="h-3 w-3 mr-1 fill-amber-600 dark:fill-amber-400" />
-                      Major Event
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Major Event badge - desktop (beside title, wraps if needed) */}
-                <div className="hidden sm:flex items-center flex-shrink-0">
-                  {event.majorEvent && (
-                    <Badge
-                      variant="outline"
-                      className="bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-800 border-amber-300 dark:from-amber-900/30 dark:to-yellow-900/30 dark:text-amber-400 dark:border-amber-600 px-3 py-1 font-bold text-xs shadow-sm"
-                    >
-                      <StarIcon className="h-3 w-3 mr-1 fill-amber-600 dark:fill-amber-400" />
-                      Major Event
-                    </Badge>
-                  )}
-                </div>
-              </div>
+              {/* Title */}
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 break-words leading-tight hyphens-auto">
+                {event.name}
+              </h3>
             </div>
 
-            {/* Status badge and Dropdown Menu - Desktop layout */}
+            {/* Desktop: All badges and controls in one row */}
             <div className="hidden sm:flex items-center gap-3 flex-shrink-0">
+              {/* Major Event badge */}
+              {event.majorEvent && (
+                <Badge
+                  variant="outline"
+                  className="bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-800 border-amber-300 dark:from-amber-900/30 dark:to-yellow-900/30 dark:text-amber-400 dark:border-amber-600 px-3 py-1 font-bold text-xs shadow-sm"
+                >
+                  <StarIcon className="h-3 w-3 mr-1 fill-amber-600 dark:fill-amber-400" />
+                  Major Event
+                </Badge>
+              )}
+              
+              {/* Status badge */}
               {getStatusBadge()}
+              
+              {/* Dropdown Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
@@ -208,7 +183,7 @@ export function EventListItem({
               </DropdownMenu>
             </div>
 
-            {/* Dropdown Menu only - Mobile layout */}
+            {/* Mobile: Just dropdown menu */}
             <div className="flex sm:hidden items-center gap-3 flex-shrink-0">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -238,6 +213,21 @@ export function EventListItem({
               </DropdownMenu>
             </div>
           </div>
+
+          {/* Mobile: Badges below title */}
+          <div className="flex flex-wrap items-center gap-2 sm:hidden mb-4">
+            
+            {event.majorEvent && (
+              <Badge
+                variant="outline"
+                className="bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-800 border-amber-300 dark:from-amber-900/30 dark:to-yellow-900/30 dark:text-amber-400 dark:border-amber-600 px-3 py-1 font-bold text-xs shadow-sm"
+              >
+                <StarIcon className="h-3 w-3 mr-1 fill-amber-600 dark:fill-amber-400" />
+                Major Event
+              </Badge>
+            )}
+            {getStatusBadge()}
+          </div>
           
           {/* Date display below the main header content */}
           <div className="flex items-center text-sm font-semibold text-gray-600 dark:text-gray-400">
@@ -252,8 +242,8 @@ export function EventListItem({
         {/* Content Section */}
         <div className="p-6 pt-6">
           <div className="flex flex-col gap-6">
-            {/* Event attributes - Full width responsive grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Event attributes - Custom grid with wider schedule column on desktop */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr] gap-6">
               {/* Date */}
               {/* <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center flex-shrink-0">

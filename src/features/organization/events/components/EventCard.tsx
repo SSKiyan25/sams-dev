@@ -63,33 +63,17 @@ export function EventCard({
 
     if (hasTimeIn && hasTimeOut) {
       return (
-        <div className="space-y-2">
-          <div className="flex items-center">
-            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 mr-2 uppercase tracking-wider min-w-[30px]">In:</span>
-            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatTimeRange(timeInStart, timeInEnd)}</span>
-          </div>
-          <div className="flex items-center">
-            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 mr-2 uppercase tracking-wider min-w-[30px]">Out:</span>
-            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatTimeRange(timeOutStart, timeOutEnd)}</span>
-          </div>
+        <div className="space-y-1">
+          <div className="text-xs font-bold mr-2 uppercase tracking-wider min-w-[30px]">Time In: {formatTimeRange(timeInStart, timeInEnd)}</div>
+          <div className="text-xs font-bold mr-2 uppercase tracking-wider min-w-[30px]">Time Out: {formatTimeRange(timeOutStart, timeOutEnd)}</div>
         </div>
       );
     } else if (hasTimeIn) {
-      return (
-        <div className="flex items-center">
-          <span className="text-xs font-bold text-gray-500 dark:text-gray-400 mr-2 uppercase tracking-wider">Time-in:</span>
-          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatTimeRange(timeInStart, timeInEnd)}</span>
-        </div>
-      );
+      return <div className="text-xs font-bold mr-2 uppercase tracking-wider min-w-[30px]">Time In: {formatTimeRange(timeInStart, timeInEnd)}</div>
     } else if (hasTimeOut) {
-      return (
-        <div className="flex items-center">
-          <span className="text-xs font-bold text-gray-500 dark:text-gray-400 mr-2 uppercase tracking-wider">Time-out:</span>
-          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatTimeRange(timeOutStart, timeOutEnd)}</span>
-        </div>
-      );
+      return <div className="text-xs font-bold mr-2 uppercase tracking-wider min-w-[30px]">Time Out: {formatTimeRange(timeOutStart, timeOutEnd)}</div>
     } else {
-      return <span className="text-sm font-medium text-gray-600 dark:text-gray-400 italic">No time set</span>;
+      return "No time set";
     }
   };
 
@@ -136,7 +120,7 @@ export function EventCard({
   };
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-300 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden h-full flex flex-col">
+    <Card className="group hover:shadow-lg transition-all duration-300 border-blue-300 dark:border-blue-600 bg-blue-50/30 dark:bg-blue-900/10 overflow-hidden h-full flex flex-col">
       {/* Card Header */}
       <CardHeader className=" px-6 pt-6">
         <div className="flex items-start justify-between gap-4">
@@ -205,34 +189,34 @@ export function EventCard({
         <div className="space-y-5 flex-1">
           {/* Location */}
           <div className="flex items-start gap-4">
-            <div className="w-11 h-11 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center flex-shrink-0">
-              <MapPinIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center flex-shrink-0">
+              <MapPinIcon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Location</p>
-              <p className="text-base font-semibold text-gray-900 dark:text-gray-100 break-words leading-relaxed">{event.location}</p>
+              <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Location</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 break-words leading-relaxed">{event.location}</p>
             </div>
           </div>
 
           {/* Time */}
           <div className="flex items-start gap-4">
-            <div className="w-11 h-11 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center flex-shrink-0">
-              <ClockIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center flex-shrink-0">
+              <ClockIcon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Schedule</p>
+              <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Schedule</p>
               <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-relaxed">{getTimeDisplay()}</div>
             </div>
           </div>
 
           {/* Attendees */}
           <div className="flex items-start gap-4">
-            <div className="w-11 h-11 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center flex-shrink-0">
-              <UsersIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center flex-shrink-0">
+              <UsersIcon className="h-6 w-6 text-gray-600 dark:text-gray-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Attendance</p>
-              <p className="text-base font-semibold text-gray-900 dark:text-gray-100 leading-relaxed">
+              <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Attendance</p>
+              <p className="text-base font-bold text-gray-900 dark:text-gray-100 leading-relaxed">
                 {event.status === "upcoming"
                   ? "Not started"
                   : `${event.attendees} attendees`}
@@ -245,10 +229,10 @@ export function EventCard({
             <>
               <div className="border-t border-gray-100 dark:border-gray-700 pt-5">
                 <div className="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-800/50 dark:to-slate-800/50 rounded-xl p-5 border border-gray-200/50 dark:border-gray-700/50">
-                  <p className="text-xs font-bold text-gray-600 dark:text-gray-300 mb-3 uppercase tracking-wider flex items-center">
+                  <div className="text-xs font-bold text-gray-600 dark:text-gray-300 mb-3 uppercase tracking-wider flex items-center">
                     <div className="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
                     Additional Notes
-                  </p>
+                  </div>
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300 break-words leading-relaxed">{event.note}</p>
                 </div>
               </div>
