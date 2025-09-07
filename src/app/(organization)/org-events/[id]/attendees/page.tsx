@@ -12,13 +12,16 @@ import { AttendeesPagination } from "@/features/organization/attendees/component
 import { AttendeesFilters } from "@/features/organization/attendees/components/AttendeesFilters";
 import { AttendanceListSkeleton } from "@/features/organization/attendees/components/AttendanceListSkeleton";
 import { useEventAttendees } from "@/features/organization/attendees/hooks/useEventAttendees";
-import { use, useEffect, useState } from "react";
-import { getEventById } from "@/firebase";
+import { exportEventAttendance, downloadCsvFile } from "@/features/organization/attendees/csv.export.utils";
+import { useState } from "react";
 import { Event } from "@/features/organization/events/types";
+import { toast } from "sonner";
 
 export default function EventAttendeesPage() {
   const params = useParams();
   const eventId = params.id as string;
+  const [isExporting, setIsExporting] = useState(false);
+  
   // All logic is now handled by the custom hook
   const {
     eventData, // FIXED: Use this instead of fetching again
@@ -37,6 +40,32 @@ export default function EventAttendeesPage() {
     hasNextPage,
     hasPrevPage,
   } = useEventAttendees(eventId);
+
+  // Handle CSV export
+  const handleExportAttendance = async () => {
+    try {
+      setIsExporting(true);
+      
+      // Step 1: Generate CSV content
+      const result = await exportEventAttendance(eventId);
+      
+      if (result.success) {
+        // Step 2: Trigger download with auto-generated filename
+        downloadCsvFile(result.csvContent!, result.eventName);
+        
+        // Show success message
+        toast.success(`Successfully exported ${result.totalRecords} attendance records`);
+      } else {
+        // Handle export failure
+        toast.error(result.error || 'Failed to export attendance data');
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('An unexpected error occurred during export');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // REMOVED: The local useState and useEffect for fetching the event
   // have been removed to avoid fetching the same data twice.
@@ -58,7 +87,7 @@ export default function EventAttendeesPage() {
     return <EventSkeleton />;
   }
 
-  if (error || !event) {
+  if (error || !eventData) {
     return (
       <div className="p-4 md:p-6 space-y-6">
         <Button asChild variant="ghost" className="mb-4 p-0 h-auto">
@@ -92,9 +121,8 @@ export default function EventAttendeesPage() {
 
       <AttendeesHeader
         event={eventData as unknown as Event}
-        onExport={() => {
-          /* Export logic */
-        }}
+        onExport={handleExportAttendance}
+        isExporting={isExporting}
       />
 
       <AttendeesFilters

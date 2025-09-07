@@ -1,14 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Event } from "../../events/types";
-import { UserPlus, Upload } from "lucide-react";
+import { UserPlus, Upload, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 interface AttendeesHeaderProps {
   event: Event;
   onExport: () => void;
+  isExporting?: boolean;
 }
 
-export function AttendeesHeader({ event, onExport }: AttendeesHeaderProps) {
+export function AttendeesHeader({ event, onExport, isExporting = false }: AttendeesHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
       <h2 className="text-lg font-semibold">Attendees</h2>
@@ -27,10 +28,20 @@ export function AttendeesHeader({ event, onExport }: AttendeesHeaderProps) {
         <Button
           variant="outline"
           onClick={onExport}
+          disabled={isExporting}
           className="w-full sm:w-auto hover:cursor-pointer"
         >
-          <Upload className="h-4 w-4 mr-2" />
-          Export
+          {isExporting ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Exporting...
+            </>
+          ) : (
+            <>
+              <Upload className="h-4 w-4 mr-2" />
+              Export
+            </>
+          )}
         </Button>
       </div>
     </div>
