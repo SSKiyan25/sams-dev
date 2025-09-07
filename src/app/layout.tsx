@@ -1,19 +1,21 @@
 "use client";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Nunito, Nunito_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const nunito = Nunito({
+  variable: "--font-nunito",
   subsets: ["latin"],
+  weight: ["200", "300", "400", "500", "600", "700", "800", "900"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const nunitoSans = Nunito_Sans({
+  variable: "--font-nunito-sans",
   subsets: ["latin"],
+  weight: ["200", "300", "400", "500", "600", "700", "800", "900"],
 });
 
 export default function RootLayout({
@@ -34,7 +36,7 @@ export default function RootLayout({
         <link rel="icon" href="/logo.svg" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${nunito.variable} ${nunitoSans.variable} antialiased`}
         suppressHydrationWarning
       >
         <div suppressHydrationWarning style={{ display: 'contents' }}>
