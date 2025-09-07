@@ -19,14 +19,14 @@ export function HeroSection() {
 
         {/* Main Title */}
         <div className="text-center mt-2 mb-5 animate-fade-in-up animation-delay-900">
-          <h1 className="font-nunito text-3xl sm:text-4xl lg:text-5xl font-bold text-black dark:text-foreground leading-tight">
+          <h1 className="font-nunito text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-extrabold text-black dark:text-foreground leading-[1.1] sm:leading-[1.15] lg:leading-tight tracking-tight">
             CORAL for Student Organizations
           </h1>
         </div>
 
         {/* Subtitle */}
         <div className="text-center mb-8 animate-fade-in-up animation-delay-600">
-          <p className="font-nunito text-lg sm:text-xl lg:text-2xl text-[#5B5B5B] dark:text-muted-foreground leading-relaxed max-w-4xl mx-auto">
+          <p className="font-nunito-sans text-base sm:text-lg lg:text-xl xl:text-2xl text-[#5B5B5B] dark:text-muted-foreground leading-relaxed max-w-4xl mx-auto font-medium tracking-wide">
             Centralized Online Record for Attendance and Logging
           </p>
         </div>
@@ -35,7 +35,7 @@ export function HeroSection() {
         <div className="flex justify-center mb-13 animate-fade-in-up animation-delay-800">
           <Button
             asChild
-            className="bg-[#008ACF] dark:bg-primary hover:bg-[#0f73a5] dark:hover:bg-primary/90 text-white dark:text-primary-foreground font-nunito text-lg sm:text-2lg font-medium px-16 sm:px-24 py-4 sm:py-8 rounded-xl transition-colors duration-200 shadow-lg hover:shadow-xl"
+            className="bg-[#008ACF] dark:bg-primary hover:bg-[#0f73a5] dark:hover:bg-primary/90 text-white dark:text-primary-foreground font-nunito-sans text-base sm:text-lg lg:text-xl font-semibold px-12 sm:px-16 lg:px-20 py-3 sm:py-4 lg:py-5 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] tracking-wide"
           >
             <Link href="/login">Login</Link>
           </Button>
