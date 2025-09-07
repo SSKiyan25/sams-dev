@@ -5,10 +5,10 @@
  * The system validates CSV data against Firebase reference data to ensure data integrity.
  * 
  * Expected CSV Format:
- * studentId,firstName,lastName,email,programId,facultyId,yearLevel
+ * Student ID,First Name,Last Name,Email,Program Name,Faculty Name,Year Level
  * 
- * facultyId values should match the full names in the 'faculties' collection (e.g., "Faculty of Computing", "Faculty of Engineering")
- * programId values should match the full names in the 'programs' collection (e.g., "BS in Computer Science", "BS in Environmental Science")
+ * Faculty Name values should match the full names in the 'faculties' collection (e.g., "Faculty of Computing", "Faculty of Engineering")
+ * Program Name values should match the full names in the 'programs' collection (e.g., "BS in Computer Science", "BS in Environmental Science")
  * 
  * Example CSV row:
  * 2021001,John,Doe,john.doe@example.com,"BS in Computer Science","Faculty of Computing",3
@@ -282,7 +282,7 @@ export const parseCSVContent = (csvContent: string): RawMemberData[] => {
   );
   
   // Validate that all required headers are present
-  const requiredHeaders = ['studentId', 'firstName', 'lastName', 'email', 'programId', 'facultyId'];
+  const requiredHeaders = ['Student ID', 'First Name', 'Last Name', 'Email', 'Program Name', 'Faculty Name'];
   const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
   
   if (missingHeaders.length > 0) {
@@ -308,9 +308,21 @@ export const parseCSVContent = (csvContent: string): RawMemberData[] => {
     // Create member data object with row tracking
     const memberData: RawMemberData = { rowNumber: i + 1 }; // i + 1 gives actual CSV row number
     
-    // Map each value to its corresponding header
+    // Create a mapping from user-friendly headers to internal field names
+    const headerMapping: { [key: string]: string } = {
+      'Student ID': 'studentId',
+      'First Name': 'firstName',
+      'Last Name': 'lastName',
+      'Email': 'email',
+      'Program Name': 'programId',
+      'Faculty Name': 'facultyId',
+      'Year Level': 'yearLevel'  // Optional field
+    };
+    
+    // Map each value to its corresponding internal field name
     headers.forEach((header, index) => {
-      memberData[header] = values[index] || null; // Use null for empty values
+      const internalFieldName = headerMapping[header] || header; // Fallback to original header if not mapped
+      memberData[internalFieldName] = values[index] || null; // Use null for empty values
     });
     
     members.push(memberData);
