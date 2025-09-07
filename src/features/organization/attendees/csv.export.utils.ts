@@ -6,13 +6,13 @@
  * 
  * CSV Format:
  * Row 1: Event Name
- * Row 2: Column Headers (studentId, lastName, firstName, programId, facultyId, timeIn, timeOut)
+ * Row 2: Column Headers (Student ID, Last Name, First Name, Program ID, Time In, Time Out)
  * Row 3+: Attendance data
  * 
  * Example CSV:
  * "Annual Tech Conference 2024"
- * studentId,lastName,firstName,programId,facultyId,timeIn,timeOut
- * 20-1-01701,Doe,John,"BS in Computer Science","Faculty of Computing","9:30 AM","5:00 PM"
+ * Student ID,Last Name,First Name,Program ID,Time In,Time Out
+ * 20-1-01701,Doe,John,"BS in Computer Science","9:30 AM","5:00 PM"
  */
 
 import { 
@@ -21,11 +21,11 @@ import {
   where, 
   getDocs
 } from "firebase/firestore";
-import { db } from "./firebase.config";
-import { EventAttendance } from "../features/organization/log-attendance/types";
-import { Event } from "../features/organization/events/types";
-import { getEventById } from "./events";
-import { getProgramById } from "./programs";
+import { db } from "../../../firebase/firebase.config";
+import { EventAttendance } from "../log-attendance/types";
+import { Event } from "../events/types";
+import { getEventById } from "../../../firebase/events";
+import { getProgramById } from "../../../firebase/programs";
 
 // Interface for enriched attendance data with resolved names
 interface EnrichedAttendanceData {
@@ -41,7 +41,7 @@ interface EnrichedAttendanceData {
 export interface AttendanceExportResult {
   success: boolean;
   csvContent?: string;
-  filename?: string;
+  eventName?: string;
   totalRecords?: number;
   error?: string;
 }
@@ -68,26 +68,6 @@ const formatTimeForExport = (timestamp: Date | string | null): string => {
   } catch {
     return "Invalid time";
   }
-};
-
-/**
- * Generates a CSV-safe filename from event name
- * @param eventName - The name of the event
- * @returns Sanitized filename with .csv extension
- */
-const generateExportFilename = (eventName: string): string => {
-  // Remove special characters and replace spaces with underscores
-  const sanitized = eventName
-    .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special characters except spaces
-    .replace(/\s+/g, '_') // Replace spaces with underscores
-    .trim()
-    .toLowerCase();
-  
-  // Add timestamp to prevent filename conflicts
-  const now = new Date();
-  const timestamp = now.toISOString().slice(0, 19).replace(/[:-]/g, '');
-  
-  return `${sanitized}_attendance_${timestamp}.csv`;
 };
 
 /**
@@ -208,12 +188,12 @@ const generateCsvContent = (eventName: string, enrichedData: EnrichedAttendanceD
   
   // Row 2: Column headers
   const headers = [
-    'studentId',
-    'lastName', 
-    'firstName',
-    'programId',  // Note: Column name is programId but contains program name
-    'timeIn',
-    'timeOut'
+    'Student ID',
+    'Last Name',
+    'First Name',
+    'Program ID',  // Note: Column name is programId but contains program name
+    'Time In',
+    'Time Out'
   ];
   csvLines.push(headers.join(','));
   
@@ -266,13 +246,10 @@ export const exportEventAttendance = async (eventId: string): Promise<Attendance
     // Step 4: Generate CSV content
     const csvContent = generateCsvContent(event.name, enrichedData);
     
-    // Step 5: Generate filename
-    const filename = generateExportFilename(event.name);
-    
     return {
       success: true,
       csvContent,
-      filename,
+      eventName: event.name, // Pass event name for filename generation
       totalRecords: enrichedData.length
     };
     
@@ -288,11 +265,29 @@ export const exportEventAttendance = async (eventId: string): Promise<Attendance
 /**
  * Utility function to trigger browser download of CSV content
  * This function should be called from the frontend to download the exported data
+ * Automatically generates a timestamped filename for consistency
  * @param csvContent - The CSV content to download
- * @param filename - The filename for the download
+ * @param eventName - The name of the event (optional, for filename generation)
  */
-export const downloadCsvFile = (csvContent: string, filename: string): void => {
+export const downloadCsvFile = (csvContent: string, eventName?: string): void => {
   try {
+    // Generate filename automatically with timestamp
+    const now = new Date();
+    const timestamp = now.toISOString().slice(0, 19).replace(/[:-]/g, '');
+    
+    let filename = `attendance_export_${timestamp}.csv`;
+    
+    // If event name is provided, include it in filename
+    if (eventName) {
+      const sanitizedEventName = eventName
+        .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special characters
+        .replace(/\s+/g, '_') // Replace spaces with underscores
+        .trim()
+        .toLowerCase();
+      
+      filename = `${sanitizedEventName}_attendance_${timestamp}.csv`;
+    }
+    
     // Create blob with CSV content
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     
