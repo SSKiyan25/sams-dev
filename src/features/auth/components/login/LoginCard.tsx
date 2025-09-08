@@ -9,11 +9,15 @@ import { useRouter } from "next/navigation";
 import { Loader2, Mail, Lock } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import {
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
 import { auth } from "@/firebase/firebase.config";
 import { LoginLoadingOverlay } from "@/features/auth/components/login/LoginLoadingOverlay";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { set } from "zod";
 
 export function LoginCard() {
   const [isLoading, setIsLoading] = useState(false);
@@ -21,12 +25,26 @@ export function LoginCard() {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const router = useRouter();
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+    setError(null);
+    setSuccessMessage(null);
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+    setError(null);
+    setSuccessMessage(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setSuccessMessage(null);
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
@@ -49,6 +67,33 @@ export function LoginCard() {
         setError("Too many failed login attempts. Please try again later.");
       } else {
         setError("An error occurred during sign in. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!email) {
+      setError("Please enter your email to reset your password.");
+      setSuccessMessage(null);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setSuccessMessage("Password reset email sent. Please check your inbox.");
+    } catch (error: any) {
+      if (error.code === "auth/user-not-found") {
+        setError("No account found with this email.");
+      } else if (error.code === "auth/invalid-email") {
+        setError("Please enter a valid email address.");
+      } else {
+        setError("Failed to send password reset email. Please try again.");
       }
     } finally {
       setIsLoading(false);
@@ -99,118 +144,127 @@ export function LoginCard() {
               </div>
             )}
 
+            {/* Success Message Display */}
+            {successMessage && (
+              <div className="mb-6 animate-fade-in-up animation-delay-400">
+                <Alert variant="default">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{successMessage}</AlertDescription>
+                </Alert>
+              </div>
+            )}
+
             {/* Login Form Container */}
             <div className="bg-white dark:bg-card border border-[#767676] dark:border-border rounded-[30px] lg:rounded-[40px] p-6 sm:p-7 lg:p-8 w-full max-w-[520px] mx-auto lg:mx-0 shadow-lg dark:shadow-2xl animate-fade-in-up animation-delay-500">
-              <form onSubmit={handleSubmit} className="space-y-5">
-                {/* Email Field */}
-                <div className="space-y-2 animate-fade-in-up animation-delay-600">
-                  <label className="block font-instrument text-xl text-[#272727] dark:text-foreground">
-                    Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#696969] dark:text-muted-foreground" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full h-[50px] pl-11 pr-4 border border-[#696969] dark:border-border rounded-[14px] bg-white dark:bg-input font-instrument text-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#008ACF] dark:focus:ring-primary focus:border-transparent transition-all"
-                      required
-                      disabled={isLoading}
-                      placeholder="Enter your email"
-                    />
-                  </div>
-                </div>
-
-                {/* Password Field */}
-                <div className="space-y-2 animate-fade-in-up animation-delay-700">
-                  <label className="block font-instrument text-xl text-[#272727] dark:text-foreground">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#696969] dark:text-muted-foreground" />
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full h-[50px] pl-11 pr-4 border border-[#696969] dark:border-border rounded-[14px] bg-white dark:bg-input font-instrument text-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#008ACF] dark:focus:ring-primary focus:border-transparent transition-all"
-                      required
-                      disabled={isLoading}
-                      placeholder="Enter your password"
-                    />
-                  </div>
-                </div>
-
-                {/* Remember Me and Forgot Password */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-3 pb-1 space-y-3 sm:space-y-0 animate-fade-in-up animation-delay-800">
-                  <div className="flex items-center space-x-2">
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        id="remember"
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                        className="sr-only"
-                        disabled={isLoading}
-                      />
-                      <label
-                        htmlFor="remember"
-                        className="flex items-center cursor-pointer"
-                      >
-                        <div className="w-6 h-6 mr-3 relative">
-                          {rememberMe ? (
-                            <svg
-                              width="24"
-                              height="24"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                d="M19 3H5C3.89 3 3 3.9 3 5V19C3 20.1 3.89 21 5 21H19C20.11 21 21 20.1 21 19V5C21 3.9 20.11 3 19 3ZM10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z"
-                                fill="currentColor"
-                                className="text-[#111111] dark:text-foreground"
-                              />
-                            </svg>
-                          ) : (
-                            <div className="w-6 h-6 border-2 border-gray-400 dark:border-border rounded"></div>
-                          )}
-                        </div>
-                        <span className="font-poppins text-base text-[#333] dark:text-foreground">
-                          Remember me
-                        </span>
-                      </label>
-                    </div>
-                  </div>
-                  <div className="text-left sm:text-right">
-                    <Link
-                      href="/forgot-password"
-                      className="font-instrument text-base text-[#008ACF] dark:text-primary underline hover:text-[#0f73a5] dark:hover:text-primary/80 transition-colors inline-block"
-                      tabIndex={isLoading ? -1 : 0}
-                      aria-disabled={isLoading}
-                    >
-                      Forgot password?
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Sign In Button */}
-                <div className="pt-6 animate-fade-in-up animation-delay-900">
-                  <button
-                    type="submit"
-                    className="w-full max-w-[200px] h-16 bg-[#008ACF] dark:bg-primary text-white dark:text-primary-foreground font-poppins text-[18px] rounded-xl hover:bg-[#0f73a5] dark:hover:bg-primary/90 transition-all duration-200 mx-auto disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105"
+              {/* Email Field */}
+              <div className="space-y-2 animate-fade-in-up animation-delay-600">
+                <label className="block font-instrument text-xl text-[#272727] dark:text-foreground">
+                  Email
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#696969] dark:text-muted-foreground" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={handleEmailChange}
+                    className="w-full h-[50px] pl-11 pr-4 border border-[#696969] dark:border-border rounded-[14px] bg-white dark:bg-input font-instrument text-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#008ACF] dark:focus:ring-primary focus:border-transparent transition-all"
+                    required
                     disabled={isLoading}
+                    placeholder="Enter your email"
+                  />
+                </div>
+              </div>
+
+              {/* Password Field */}
+              <div className="space-y-2 animate-fade-in-up animation-delay-700">
+                <label className="block font-instrument text-xl text-[#272727] dark:text-foreground">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#696969] dark:text-muted-foreground" />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={handlePasswordChange}
+                    className="w-full h-[50px] pl-11 pr-4 border border-[#696969] dark:border-border rounded-[14px] bg-white dark:bg-input font-instrument text-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#008ACF] dark:focus:ring-primary focus:border-transparent transition-all"
+                    required
+                    disabled={isLoading}
+                    placeholder="Enter your password"
+                  />
+                </div>
+              </div>
+
+              {/* Remember Me and Forgot Password */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-3 pb-1 space-y-3 sm:space-y-0 animate-fade-in-up animation-delay-800">
+                <div className="flex items-center space-x-2">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      id="remember"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="sr-only"
+                      disabled={isLoading}
+                    />
+                    <label
+                      htmlFor="remember"
+                      className="flex items-center cursor-pointer"
+                    >
+                      <div className="w-6 h-6 mr-3 relative">
+                        {rememberMe ? (
+                          <svg
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M19 3H5C3.89 3 3 3.9 3 5V19C3 20.1 3.89 21 5 21H19C20.11 21 21 20.1 21 19V5C21 3.9 20.11 3 19 3ZM10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z"
+                              fill="currentColor"
+                              className="text-[#111111] dark:text-foreground"
+                            />
+                          </svg>
+                        ) : (
+                          <div className="w-6 h-6 border-2 border-gray-400 dark:border-border rounded"></div>
+                        )}
+                      </div>
+                      <span className="font-poppins text-base text-[#333] dark:text-foreground">
+                        Remember me
+                      </span>
+                    </label>
+                  </div>
+                </div>
+                <div className="text-left sm:text-right">
+                  <button
+                    onClick={handlePasswordReset}
+                    className="font-instrument text-base text-[#008ACF] dark:text-primary underline hover:text-[#0f73a5] dark:hover:text-primary/80 transition-colors inline-block"
+                    tabIndex={isLoading ? -1 : 0}
+                    aria-disabled={isLoading}
                   >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Signing in
-                      </>
-                    ) : (
-                      "Sign in"
-                    )}
+                    Forgot password?
                   </button>
                 </div>
-              </form>
+              </div>
+
+              {/* Sign In Button */}
+              <div className="pt-6 animate-fade-in-up animation-delay-900">
+                <button
+                  onClick={handleSubmit}
+                  type="submit"
+                  className="w-full max-w-[200px] h-16 bg-[#008ACF] dark:bg-primary text-white dark:text-primary-foreground font-poppins text-[18px] rounded-xl hover:bg-[#0f73a5] dark:hover:bg-primary/90 transition-all duration-200 mx-auto disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Signing in
+                    </>
+                  ) : (
+                    "Sign in"
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
