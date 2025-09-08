@@ -45,6 +45,13 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
     setSelectedEvent(null);
   };
 
+  const handleUnarchiveClick = async (event: Event) => {
+    if (window.confirm(`Are you sure you want to unarchive "${event.name}"?`)) {
+      window.alert("Unarchive logic to be implemented!");
+      
+    }
+  };
+
   if (!events || events.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg border shadow-sm">
@@ -73,6 +80,7 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
               event={event}
               onEdit={handleEditClick}
               onArchive={handleArchiveClick}
+              onUnarchive={handleUnarchiveClick}
               onDelete={handleDeleteClick}
             />
           ))}
@@ -85,6 +93,7 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
               event={event}
               onEdit={handleEditClick}
               onArchive={handleArchiveClick}
+              onUnarchive={handleUnarchiveClick}
               onDelete={handleDeleteClick}
             />
           ))}

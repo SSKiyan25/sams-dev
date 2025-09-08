@@ -24,6 +24,7 @@ interface EventCardProps {
   event: Event;
   onEdit: (event: Event) => void;
   onArchive: (event: Event) => void;
+  onUnarchive: (event: Event) => void;
   onDelete: (event: Event) => void;
 }
 
@@ -31,6 +32,7 @@ export function EventCard({
   event,
   onEdit,
   onArchive,
+  onUnarchive,
   onDelete,
 }: EventCardProps) {
   // Format time to 12-hour format
@@ -162,19 +164,34 @@ export function EventCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 shadow-lg">
-                <DropdownMenuItem onClick={handleEditEvent} className="font-medium">
-                  Edit Event
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() =>
-                    event.status === "archived"
-                      ? onDelete(event)
-                      : onArchive(event)
-                  }
-                  className="text-red-600 dark:text-red-400 font-medium"
-                >
-                  {event.status === "archived" ? "Delete" : "Archive"}
-                </DropdownMenuItem>
+                {event.status === "archived" ? (
+                  <>
+                    <DropdownMenuItem 
+                      onClick={() => onUnarchive(event)} 
+                      className="font-medium"
+                    >
+                      Unarchive
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => onDelete(event)}
+                      className="text-red-600 dark:text-red-400 font-medium"
+                    >
+                      Delete
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  <>
+                    <DropdownMenuItem onClick={handleEditEvent} className="font-medium">
+                      Edit Event
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => onArchive(event)}
+                      className="text-red-600 dark:text-red-400 font-medium"
+                    >
+                      Archive
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
