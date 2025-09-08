@@ -50,7 +50,12 @@ export default function RootLayout({
               <SidebarProvider>{children}</SidebarProvider>
             </AuthProvider>
           </ThemeProvider>
-          <Toaster />
+          <Toaster 
+            position="top-right"
+            expand={false}
+            richColors
+            closeButton
+          />
         </div>
       </body>
     </html>
