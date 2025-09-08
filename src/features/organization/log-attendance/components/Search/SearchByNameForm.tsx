@@ -44,7 +44,7 @@ export function SearchByNameForm({
         <div className="flex space-x-2">
           <Input
             id="student-name"
-            placeholder="Enter student name"
+            placeholder="Start typing student name..."
             value={searchName}
             onChange={(e) => setSearchName(e.target.value)}
             onKeyDown={handleKeyDown}

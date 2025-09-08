@@ -1,4 +1,3 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { AttendanceForm } from "./AttendanceForm";
 import { RecentAttendance } from "./RecentAttendance";
@@ -41,64 +40,25 @@ export function AttendanceInterface({
     await onLogAttendance(studentId, activeTab);
   };
 
-  // If only one type is available, don't show tabs
-  if ((!hasTimeIn || !hasTimeOut) && (hasTimeIn || hasTimeOut)) {
-    const type = hasTimeIn ? "time-in" : "time-out";
-    const title = type === "time-in" ? "Time-In" : "Time-Out";
-
-    return (
-      <>
-        <div className="mt-6">
-          <h2 className="text-lg font-medium mb-4">{title} Attendance</h2>
-          <AttendanceForm event={event} type={type} onSubmit={handleSubmit} />
-        </div>
-
-        <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-4">
-            Recent {title} Activity
-          </h2>
-          <RecentAttendance eventId={event.id.toString()} type={type} />
-        </div>
-      </>
-    );
-  }
-
-  // If Both time-in and time-out are available, show tabs
   return (
-    <>
-      <Tabs
-        value={activeTab}
-        onValueChange={(value) => setActiveTab(value as "time-in" | "time-out")}
-        className="mt-6"
-      >
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="time-in">Time-In</TabsTrigger>
-          <TabsTrigger value="time-out">Time-Out</TabsTrigger>
-        </TabsList>
+    <div className="space-y-6">
+      {/* Attendance Form */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border shadow-sm p-6">
+        <AttendanceForm 
+          event={event} 
+          type={activeTab} 
+          onSubmit={handleSubmit}
+          hasTimeIn={hasTimeIn}
+          hasTimeOut={hasTimeOut}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+      </div>
 
-        <TabsContent value="time-in" className="mt-4">
-          <AttendanceForm
-            event={event}
-            type="time-in"
-            onSubmit={handleSubmit}
-          />
-        </TabsContent>
-
-        <TabsContent value="time-out" className="mt-4">
-          <AttendanceForm
-            event={event}
-            type="time-out"
-            onSubmit={handleSubmit}
-          />
-        </TabsContent>
-      </Tabs>
-
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-4">
-          Recent {activeTab.replace("-", " ")} Activity
-        </h2>
+      {/* Recent Activity */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border shadow-sm p-6">
         <RecentAttendance eventId={event.id.toString()} type={activeTab} />
       </div>
-    </>
+    </div>
   );
 }

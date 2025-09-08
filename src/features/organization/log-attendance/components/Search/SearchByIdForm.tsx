@@ -1,11 +1,12 @@
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SearchIcon } from "lucide-react";
+import { StudentIdInput } from "@/components/ui/student-id-input";
 
 interface SearchByIdFormProps {
   studentId: string;
   setStudentId: (id: string) => void;
   handleSearch: () => void;
+  handleAutoSearch?: () => void; // Optional auto-search for completion
   isSubmitting: boolean;
   searchStatus:
     | "idle"
@@ -14,7 +15,6 @@ interface SearchByIdFormProps {
     | "error"
     | "not-found"
     | "invalid-format";
-  handleKeyDown: (e: React.KeyboardEvent) => void;
   successMessage: string | null;
   showLabel?: boolean;
 }
@@ -23,9 +23,9 @@ export function SearchByIdForm({
   studentId,
   setStudentId,
   handleSearch,
+  handleAutoSearch,
   isSubmitting,
   searchStatus,
-  handleKeyDown,
   successMessage,
   showLabel = false,
 }: SearchByIdFormProps) {
@@ -40,44 +40,44 @@ export function SearchByIdForm({
       {showLabel && (
         <label
           htmlFor="student-id"
-          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 block mb-2"
+          className="font-nunito-sans text-sm font-semibold text-gray-900 dark:text-gray-100 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 block mb-3"
         >
           Enter Student ID
         </label>
       )}
-      <div className="flex space-x-2">
-        <Input
-          id="student-id"
-          placeholder="Enter student ID number"
+      <div className="flex flex-col sm:flex-row sm:space-x-3 space-y-3 sm:space-y-0">
+        <StudentIdInput
           value={studentId}
-          onChange={(e) => setStudentId(e.target.value)}
-          onKeyDown={handleKeyDown}
+          onChange={setStudentId}
+          onComplete={handleAutoSearch || handleSearch}
           disabled={isDisabled}
           className="flex-1"
+          autoFocus
         />
         <Button
           type="button"
           onClick={handleSearch}
           disabled={isDisabled || !studentId.trim()}
+          className="h-10 px-6 font-nunito-sans font-semibold bg-primary hover:bg-primary/90 shadow-sm w-full sm:w-auto"
         >
           {isLoading ? (
-            <span className="flex items-center">
+            <span className="flex items-center justify-center">
               <span className="h-4 w-4 border-2 border-current border-t-transparent animate-spin rounded-full mr-2"></span>
               Checking
             </span>
           ) : (
-            <span className="flex items-center">
+            <span className="flex items-center justify-center">
               <SearchIcon className="h-4 w-4 mr-2" />
               Find
             </span>
           )}
         </Button>
       </div>
-      {searchStatus === "invalid-format" && (
-        <p className="text-sm text-destructive mt-2">
+      {/* {searchStatus === "invalid-format" && (
+        <p className="font-nunito-sans text-sm text-red-600 dark:text-red-400 mt-2">
           Please enter a valid student ID format.
         </p>
-      )}
+      )} */}
     </div>
   );
 }
