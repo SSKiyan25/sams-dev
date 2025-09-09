@@ -126,10 +126,10 @@ export function LoginCard() {
           <div className="w-full max-w-lg mx-auto lg:mx-0 lg:max-w-none flex flex-col justify-center order-2 lg:order-1">
             {/* Title and Subtitle */}
             <div className="mb-4 lg:mb-6 text-center lg:text-left animate-fade-in-up animation-delay-300">
-              <h1 className="font-instrument text-3xl sm:text-4xl lg:text-[42px] font-bold text-black dark:text-foreground leading-tight mb-2 lg:mb-3">
+              <h1 className="font-nunito text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-black dark:text-foreground leading-[1.1] lg:leading-tight mb-2 lg:mb-3 tracking-tight">
                 Sign in to CORAL
               </h1>
-              <p className="font-instrument text-lg sm:text-xl lg:text-[24px] text-[#5B5B5B] dark:text-muted-foreground leading-relaxed">
+              <p className="font-nunito-sans text-base sm:text-lg lg:text-xl xl:text-2xl text-[#5B5B5B] dark:text-muted-foreground leading-relaxed font-medium tracking-wide">
                 Enter your credentials to access your account
               </p>
             </div>

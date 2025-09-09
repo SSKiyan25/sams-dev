@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { MembersStats } from "./MembersStats";
 import { ShortcutLinks } from "./ShortcutLinks";
 import { RecentMembers } from "./RecentMembers";
@@ -10,7 +12,6 @@ import {
   getUsers,
 } from "@/firebase";
 import { Event } from "../types";
-import { eventAttendance } from "../data";
 import { Member } from "../../members/types";
 
 // Type for Firebase event data

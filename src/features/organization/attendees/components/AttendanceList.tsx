@@ -1,15 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AttendanceRecord, EventAttendance } from "../../log-attendance/types";
+import { EventAttendance } from "../../log-attendance/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  UserIcon,
-  ArrowRight,
-  ArrowLeft,
-  RefreshCcw,
-  InfoIcon,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { UserIcon, ArrowRight, ArrowLeft, InfoIcon } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
