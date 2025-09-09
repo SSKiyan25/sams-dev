@@ -33,7 +33,9 @@ export default function RootLayout({
           name="description"
           content="Your platform for modern productivity and collaboration"
         />
-        <link rel="icon" href="/logo.svg" />
+        <link rel="icon" href="/enhanced-logo-final.svg" />
+        <link rel="apple-touch-icon" href="/images/enhanced-logo-final.png" />
+        <meta name="theme-color" content="#3b82f6" />
       </head>
       <body
         className={`${nunito.variable} ${nunitoSans.variable} antialiased`}

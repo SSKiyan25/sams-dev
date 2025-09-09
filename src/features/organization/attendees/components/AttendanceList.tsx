@@ -1,20 +1,16 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AttendanceRecord, EventAttendance } from "../../log-attendance/types";
+import { EventAttendance } from "../../log-attendance/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  UserIcon,
   ArrowRight,
   ArrowLeft,
-  RefreshCcw,
-  InfoIcon,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Users,
+  Timer,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getProgramById } from "@/firebase";
 import { Program } from "../../members/types";
 import { useEffect, useState } from "react";
@@ -54,8 +50,6 @@ interface AttendanceListProps {
 }
 
 export function AttendanceList({ attendees }: AttendanceListProps) {
-  // We no longer need the getProgramName function or programName state here.
-
   const formatTime = (timestamp: string) => {
     if (!timestamp) return "Not recorded";
     const date = new Date(timestamp);
@@ -68,134 +62,168 @@ export function AttendanceList({ attendees }: AttendanceListProps) {
   };
 
   return (
-    <Card>
-      <CardHeader className="pt-4 px-4 flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between border-b">
-        <CardTitle className="text-lg flex items-center gap-2">
-          Attendance Records
-          <Tooltip>
-            <TooltipTrigger>
-              <InfoIcon className="h-4 w-4 text-muted-foreground" />
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              <div className="space-y-2 p-1">
+    <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/20 dark:from-gray-800 dark:via-gray-800 dark:to-gray-700/50 rounded-xl border border-gray-200/60 dark:border-gray-700/60 shadow-lg shadow-blue-100/50 dark:shadow-gray-900/20">
+      {/* Enhanced Header */}
+      <div className="p-6 border-b border-gray-200/60 dark:border-gray-700/60">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+              <Users className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-nunito text-xl font-bold text-gray-900 dark:text-gray-100">
+                Attendance Records
+              </h3>
+              <p className="font-nunito-sans text-sm text-gray-600 dark:text-gray-400">
+                {attendees.length} total attendees
+              </p>
+            </div>
+          </div>
+
+          {/* Summary Statistics */}
+          <div className="flex flex-wrap gap-3">
+            {/* <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700">
+              <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <span className="text-sm font-medium text-green-700 dark:text-green-400">
+                {completeAttendance} Complete
+              </span>
+            </div> */}
+            {/* Legend */}
+            <div className="mt-4 p-3 rounded-lg bg-gray-50/80 dark:bg-gray-800/40 border border-gray-200/60 dark:border-gray-700/60">
+              <div className="flex flex-wrap items-center gap-4 text-xs">
                 <div className="flex items-center gap-2">
                   <Badge
                     variant="outline"
-                    className="bg-green-50 text-green-700 border-green-200"
+                    className="h-5 bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-700"
                   >
                     <ArrowRight className="h-3 w-3 mr-1" />
-                    Time
                   </Badge>
-                  <span className="text-xs">Check-in time</span>
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Time-In
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge
                     variant="outline"
-                    className="bg-amber-50 text-amber-700 border-amber-200"
+                    className="h-5 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700"
                   >
                     <ArrowLeft className="h-3 w-3 mr-1" />
-                    Time
                   </Badge>
-                  <span className="text-xs">Check-out time</span>
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Time-Out
+                  </span>
                 </div>
               </div>
-            </TooltipContent>
-          </Tooltip>
-        </CardTitle>
-
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Badge
-              variant="outline"
-              className="h-5 bg-green-50 text-green-700 border-green-200"
-            >
-              <ArrowRight className="h-3 w-3 mr-1" />
-            </Badge>
-            <span>Check-in</span>
-
-            <Badge
-              variant="outline"
-              className="h-5 ml-2 bg-amber-50 text-amber-700 border-amber-200"
-            >
-              <ArrowLeft className="h-3 w-3 mr-1" />
-            </Badge>
-            <span>Check-out</span>
+            </div>
+            {/* <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700">
+              <Timer className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
+                {checkedInOnly} Checked In
+              </span>
+            </div> */}
           </div>
         </div>
-      </CardHeader>
+      </div>
 
+      {/* Attendance List */}
       {attendees.length > 0 ? (
-        <CardContent className="p-0">
-          <ScrollArea className="max-h-auto">
-            <div className="divide-y">
-              {attendees.map(({ student, timeIn, timeOut }) => (
-                <div
-                  key={student.studentId}
-                  className="p-4 hover:bg-secondary/10 transition-colors"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-                    {/* Student info */}
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-full bg-secondary/20 flex items-center justify-center flex-shrink-0">
-                        <UserIcon className="h-5 w-5" />
+        <div className="p-6">
+          <ScrollArea className="max-h-[600px]">
+            <div className="space-y-3">
+              {attendees.map(({ student, timeIn, timeOut }) => {
+                return (
+                  <div
+                    key={student.studentId}
+                    className="group relative p-4 rounded-lg border border-gray-200/60 dark:border-gray-700/60 bg-white/80 dark:bg-gray-800/40 backdrop-blur-sm hover:bg-white/90 dark:hover:bg-gray-800/60 hover:border-gray-300/80 dark:hover:border-gray-600/80 transition-all duration-200 hover:shadow-md"
+                  >
+                    <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                      {/* Student Info */}
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-semibold">
+                            {student.firstName?.[0]}
+                            {student.lastName?.[0]}
+                          </AvatarFallback>
+                        </Avatar>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-nunito font-semibold text-gray-900 dark:text-gray-100 truncate">
+                              {student.firstName} {student.lastName}
+                            </h4>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-sm text-gray-600 dark:text-gray-400 font-mono">
+                              {student.studentId}
+                            </span>
+                            <ProgramBadge programId={student.programId} />
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm">
-                          {student.firstName} {student.lastName}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-2 mt-1">
-                          <p className="text-xs text-muted-foreground">
-                            {student.studentId}
-                          </p>
-                          {/* Use the new component here */}
-                          <ProgramBadge programId={student.programId} />
+
+                      {/* Time Records */}
+                      <div className="flex flex-col sm:flex-row gap-3 lg:flex-shrink-0">
+                        {/* Check-in Badge */}
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className={`flex items-center h-8 px-3 font-medium ${
+                              timeIn
+                                ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-700"
+                                : "bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800/20 dark:text-gray-400 dark:border-gray-700"
+                            }`}
+                          >
+                            <ArrowRight className="h-3 w-3 mr-2 flex-shrink-0" />
+                            <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
+                            <span className="text-xs whitespace-nowrap">
+                              {formatTime(timeIn) || "Not recorded"}
+                            </span>
+                          </Badge>
+                        </div>
+
+                        {/* Check-out Badge */}
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className={`flex items-center h-8 px-3 font-medium ${
+                              timeOut
+                                ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700"
+                                : "bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800/20 dark:text-gray-400 dark:border-gray-700"
+                            }`}
+                          >
+                            <ArrowLeft className="h-3 w-3 mr-2 flex-shrink-0" />
+                            <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
+                            <span className="text-xs whitespace-nowrap">
+                              {formatTime(timeOut) || "Not recorded"}
+                            </span>
+                          </Badge>
                         </div>
                       </div>
                     </div>
-
-                    {/* Time badges */}
-                    <div className="flex flex-wrap gap-2 mt-2 sm:mt-0 sm:self-center">
-                      {/* Time-in badge */}
-                      <Badge
-                        variant="outline"
-                        className={`flex items-center h-7 px-2 ${
-                          timeIn
-                            ? "bg-green-50 text-green-700 border-green-200"
-                            : "bg-gray-50 text-gray-500 border-gray-200"
-                        }`}
-                      >
-                        <ArrowRight className="h-3 w-3 mr-1.5 flex-shrink-0" />
-                        <span className="text-xs whitespace-nowrap">
-                          {formatTime(timeIn) || "Not recorded"}
-                        </span>
-                      </Badge>
-
-                      {/* Time-out badge */}
-                      <Badge
-                        variant="outline"
-                        className={`flex items-center h-7 px-2 ${
-                          timeOut
-                            ? "bg-amber-50 text-amber-700 border-amber-200"
-                            : "bg-gray-50 text-gray-500 border-gray-200"
-                        }`}
-                      >
-                        <ArrowLeft className="h-3 w-3 mr-1.5 flex-shrink-0" />
-                        <span className="text-xs whitespace-nowrap">
-                          {formatTime(timeOut) || "Not recorded"}
-                        </span>
-                      </Badge>
-                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </ScrollArea>
-        </CardContent>
+        </div>
       ) : (
-        <CardContent className="py-12 text-center">
-          <p className="text-muted-foreground">No attendance records found</p>
-        </CardContent>
+        <div className="p-12 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+              <Users className="h-6 w-6 text-gray-400" />
+            </div>
+            <div>
+              <h4 className="font-nunito font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                No attendance records
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Attendance data will appear here once students check in
+              </p>
+            </div>
+          </div>
+        </div>
       )}
-    </Card>
+    </div>
   );
 }
