@@ -52,7 +52,7 @@ export function BulkImportResultModal({
 
   if (!result) return null;
 
-  const { errors, duplicates, successfulImports, totalProcessed } = result;
+  const { errors, duplicates, successfulImports } = result;
   const errorCount = errors.length;
   const duplicateCount = duplicates.length;
   const successCount = successfulImports;

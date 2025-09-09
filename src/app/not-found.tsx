@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Home, ArrowLeft, Search } from "lucide-react";
+import { Home, ArrowLeft } from "lucide-react";
 
 export default function NotFound() {
   const [canGoBack, setCanGoBack] = useState(false);
@@ -14,7 +14,7 @@ export default function NotFound() {
   }, []);
 
   const handleGoBack = () => {
-    if (typeof window !== 'undefined' && canGoBack) {
+    if (typeof window !== "undefined" && canGoBack) {
       window.history.back();
     }
   };
@@ -23,7 +23,6 @@ export default function NotFound() {
       {/* Main Content Container */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 w-full">
         <div className="flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-16 items-center min-h-[80vh]">
-          
           {/* Mobile Image - Shows on top for mobile */}
           <div className="lg:hidden w-full flex justify-center items-center order-1 animate-fade-in-up animation-delay-200">
             <div className="w-full max-w-[300px] flex justify-center">
@@ -40,7 +39,6 @@ export default function NotFound() {
 
           {/* Left Side - 404 Content */}
           <div className="w-full max-w-lg mx-auto lg:mx-0 lg:max-w-none flex flex-col justify-center order-2 lg:order-1">
-            
             {/* 404 Number */}
             <div className="mb-4 lg:mb-6 text-center lg:text-left animate-fade-in-up animation-delay-300">
               <div className="font-nunito text-8xl sm:text-9xl lg:text-[120px] font-bold text-[#008ACF] dark:text-primary leading-none mb-2 opacity-80">
@@ -50,19 +48,19 @@ export default function NotFound() {
                 Page Not Found
               </h1>
               <p className="font-nunito text-lg sm:text-xl lg:text-[24px] text-[#5B5B5B] dark:text-muted-foreground leading-relaxed">
-                The page you&apos;re looking for doesn&apos;t exist or has been moved.
+                The page you&apos;re looking for doesn&apos;t exist or has been
+                moved.
               </p>
             </div>
 
             {/* Action Buttons Container */}
             <div className="bg-white dark:bg-card border border-[#767676] dark:border-border rounded-[30px] lg:rounded-[40px] p-6 sm:p-7 lg:p-8 w-full max-w-[520px] mx-auto lg:mx-0 shadow-lg dark:shadow-2xl animate-fade-in-up animation-delay-500">
-              
               {/* Suggested Actions */}
               <div className="space-y-4 animate-fade-in-up animation-delay-600">
                 <h2 className="font-nunito text-xl text-[#272727] dark:text-foreground mb-4">
                   What would you like to do?
                 </h2>
-                
+
                 {/* Go Home Button */}
                 <Link
                   href="/"

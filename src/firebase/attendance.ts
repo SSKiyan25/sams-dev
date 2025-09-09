@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   collection,
   addDoc,
@@ -7,36 +8,25 @@ import {
   updateDoc,
   query,
   where,
-  getDoc,
   orderBy,
   limit,
-  writeBatch,
   DocumentData,
   CollectionReference,
   Query,
-  startAt,
   startAfter,
   QueryConstraint,
   getCountFromServer,
   DocumentSnapshot,
-  documentId,
-  or,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { getAuth } from "firebase/auth";
-import {
-  getUserById,
-  getUsers,
-  searchUserByName,
-  searchUserByStudentId,
-} from "./users"; // Assuming this is optimized
+import { searchUserByStudentId } from "./users"; // Assuming this is optimized
 import {
   AttendanceRecord,
   EventAttendance,
 } from "@/features/organization/log-attendance/types";
 import { Member } from "@/features/organization/members/types";
 import { incrementEventAttendees } from "./events";
-import { eventAttendance } from "@/features/organization/dashboard/data";
 import { SearchParams } from "@/features/organization/attendees/types";
 
 // --- Reusable Constants & Helpers ---

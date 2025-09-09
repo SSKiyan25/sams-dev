@@ -25,7 +25,6 @@ interface EventsTabNavigationProps {
 export function EventsTabNavigation({
   currentTab,
   setCurrentTab,
-  loading,
   isDesktop,
 }: EventsTabNavigationProps) {
   if (isDesktop) {

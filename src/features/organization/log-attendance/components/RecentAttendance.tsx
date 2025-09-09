@@ -23,7 +23,6 @@ import { getInitials } from "../utils";
 import Link from "next/link";
 import { getRecentAttendance } from "@/firebase";
 import { AttendanceRecord } from "../types";
-import { formatDate } from "@/utils/useGeneralUtils";
 
 interface RecentAttendanceProps {
   eventId: string;
