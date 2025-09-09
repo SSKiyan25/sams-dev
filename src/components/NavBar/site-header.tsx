@@ -94,7 +94,7 @@ export function SiteHeader({ user, isAuthenticated }: SiteHeaderProps) {
               // Show login link with consistent styling
               <Link
                 href="/login"
-                className={`font-instrument text-lg sm:text-xl text-[#202020] dark:text-foreground hover:text-[#008ACF] dark:hover:text-primary transition-colors ${
+                className={`font-nunito text-lg sm:text-xl text-[#202020] dark:text-foreground hover:text-[#008ACF] dark:hover:text-primary transition-colors ${
                   pathname === "/login" ? "font-medium" : ""
                 }`}
               >
@@ -104,7 +104,7 @@ export function SiteHeader({ user, isAuthenticated }: SiteHeaderProps) {
             {/* Custom Mode Toggle with consistent styling */}
             <button
               onClick={toggleTheme}
-              className="font-instrument text-lg sm:text-xl text-[#202020] dark:text-foreground hover:text-[#008ACF] dark:hover:text-primary transition-colors flex items-center gap-1"
+              className="font-nunito text-lg sm:text-xl text-[#202020] dark:text-foreground hover:text-[#008ACF] dark:hover:text-primary transition-colors flex items-center gap-1"
             >
               {mounted ? (
                 <>
