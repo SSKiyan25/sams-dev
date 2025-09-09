@@ -11,18 +11,14 @@ import {
 import { MemberForm } from "@/features/organization/members/components/MemberForm";
 import { DeleteConfirmationDialog } from "@/features/organization/members/components/DeleteConfirmationDialog";
 import { BulkImportDialog } from "@/features/organization/members/components/BulkImportDialog";
-import { Button } from "@/components/ui/button";
 import { MembersList } from "@/features/organization/members/components/MembersList";
+import { MembersTable } from "@/features/organization/members/components/MembersTable";
 import { MembersSkeleton } from "@/features/organization/members/components/MembersSkeleton";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/components/ui/table";
-import { Pencil, Trash2, LayoutGrid, List, Upload, Plus } from "lucide-react";
+import { MembersHeader } from "@/features/organization/members/components/MembersHeader";
+import { MembersFilters } from "@/features/organization/members/components/MembersFilters";
+//import { MembersSearchBar } from "@/features/organization/members/components/MembersSearchBar";
+import { MembersPagination } from "@/features/organization/members/components/MembersPagination";
+import { ViewMode } from "@/features/organization/members/components/ViewToggle";
 import {
   addUser,
   checkStudentIdExist,
@@ -42,13 +38,33 @@ export default function MembersPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [isBulkImportOpenResult, setIsBulkImportOpenResult] = useState(false);
-  const [bulkImportResult, setBulkImportResult] =
-    useState<BulkImportResult | null>(null);
+  const [bulkImportResult, setBulkImportResult] = useState<BulkImportResult | null>(null);
   const [selectedMember, setSelectedMember] = useState<MemberData | null>(null);
   const [faculties, setFaculties] = useState<Faculty[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
-  const [viewMode, setViewMode] = useState<"list" | "table">("list");
+  const [viewMode, setViewMode] = useState<ViewMode>("card");
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [programFilter, setProgramFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Pagination constants
+  const ITEMS_PER_PAGE_CARD = 12;
+  const ITEMS_PER_PAGE_TABLE = 10;
+
+  // Load saved view mode from localStorage
+  useEffect(() => {
+    const savedViewMode = localStorage.getItem("membersViewMode") as ViewMode;
+    if (savedViewMode && (savedViewMode === "card" || savedViewMode === "table")) {
+      setViewMode(savedViewMode);
+    }
+  }, []);
+
+  // Save view mode to localStorage when changed
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
+    localStorage.setItem("membersViewMode", mode);
+  };
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -136,147 +152,153 @@ export default function MembersPage() {
     fetchData(); // Refresh member list after imports
   };
 
-  const getProgramName = (programId: string) => {
-    const program = programs.find((p) => p.id === programId);
-    return program ? program.name : "N/A";
+  // Handle search activation/deactivation
+  const onSearch = (query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1); // Reset to first page when search changes
   };
 
-  const getFacultyName = (facultyId: string) => {
-    const faculty = faculties.find((f) => f.id === facultyId);
-    return faculty ? faculty.name : "N/A";
+  const handleProgramFilter = (programId: string) => {
+    setProgramFilter(programId);
+    setCurrentPage(1); // Reset to first page when filter changes
   };
+
+  const handleSortBy = (sortBy: string) => {
+    // Implement sorting logic here
+    console.log("Sort by:", sortBy);
+    setCurrentPage(1); // Reset to first page when sort changes
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Filter and search members
+  const filteredMembers = members.filter((member) => {
+    const matchesSearch = searchQuery === "" || 
+      member.member.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      member.member.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      member.member.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      member.member.studentId.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesProgram = programFilter === "all" || member.member.programId === programFilter;
+
+    return matchesSearch && matchesProgram;
+  });
+
+  // Pagination
+  const itemsPerPage = viewMode === "card" ? ITEMS_PER_PAGE_CARD : ITEMS_PER_PAGE_TABLE;
+  const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
+  const paginatedMembers = filteredMembers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset to page 1 when search/filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, programFilter]);
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Member Management
-          </h1>
-          <p className="text-muted-foreground">
-            Add, edit, or delete member records.
-          </p>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page Header */}
+        <div className="mb-8">
+          <MembersHeader
+            onSearch={onSearch}
+            onAddMember={handleAddMember}
+            onBulkImport={() => setIsBulkImportOpen(true)}
+            totalMembers={members.length}
+          />
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="border rounded-md p-1 flex">
-            <Button
-              variant={viewMode === "list" ? "default" : "ghost"}
-              size="sm"
-              className="h-8 px-2"
-              onClick={() => setViewMode("list")}
-            >
-              <LayoutGrid className="h-4 w-4 mr-1" />
-              Cards
-            </Button>
-            <Button
-              variant={viewMode === "table" ? "default" : "ghost"}
-              size="sm"
-              className="h-8 px-2"
-              onClick={() => setViewMode("table")}
-            >
-              <List className="h-4 w-4 mr-1" />
-              Table
-            </Button>
+
+        {/* Search results indicator */}
+        {/* {isSearchActive && (
+          <div className="mb-6">
+            <MembersSearchBar
+              searchQuery={searchQuery}
+              resultsCount={filteredMembers.length}
+              onClear={clearSearch}
+            />
           </div>
+        )} */}
 
-          {/* Bulk Import Button */}
-          <Button variant="outline" onClick={() => setIsBulkImportOpen(true)}>
-            <Upload className="h-4 w-4 mr-2" />
-            Bulk Import
-          </Button>
-
-          {/* Add Member Button */}
-          <Button onClick={handleAddMember} className="w-full sm:w-auto">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Member
-          </Button>
+        {/* Filters Section */}
+        <div className="mb-6">
+          <MembersFilters
+            programs={programs}
+            onSearch={onSearch}
+            onProgramFilter={handleProgramFilter}
+            onSortBy={handleSortBy}
+            searchTerm={searchQuery}
+            programFilter={programFilter}
+            disabled={isLoading}
+            viewMode={viewMode}
+            onViewChange={handleViewModeChange}
+          />
         </div>
-      </div>
 
-      {isLoading ? (
-        <MembersSkeleton />
-      ) : viewMode === "list" ? (
-        <MembersList
-          members={members}
-          programs={programs}
-          faculties={faculties}
-          onEdit={handleEditMember}
-          onDelete={handleDeleteMember}
+        {/* Main Content */}
+        <div className="space-y-6">
+          {isLoading ? (
+            <MembersSkeleton />
+          ) : viewMode === "card" ? (
+            <MembersList
+              members={paginatedMembers}
+              programs={programs}
+              faculties={faculties}
+              onEdit={handleEditMember}
+              onDelete={handleDeleteMember}
+            />
+          ) : (
+            <MembersTable
+              members={paginatedMembers}
+              programs={programs}
+              faculties={faculties}
+              onEdit={handleEditMember}
+              onDelete={handleDeleteMember}
+            />
+          )}
+        </div>
+
+        {/* Pagination */}
+        {!isLoading && filteredMembers.length > 0 && totalPages > 1 && (
+          <div className="mt-8">
+            <MembersPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          </div>
+        )}
+
+        <MemberForm
+          open={isFormOpen}
+          onOpenChange={setIsFormOpen}
+          onSubmit={handleFormSubmit}
+          member={selectedMember}
+          facultyData={faculties}
+          programData={programs}
         />
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>First Name</TableHead>
-              <TableHead>Last Name</TableHead>
-              <TableHead>Program</TableHead>
-              <TableHead>Faculty</TableHead>
-              <TableHead>Student ID</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {members.map((memberData) => (
-              <TableRow key={memberData.id}>
-                <TableCell>{memberData.member?.firstName}</TableCell>
-                <TableCell>{memberData.member?.lastName}</TableCell>
-                <TableCell>
-                  {getProgramName(memberData.member?.programId)}
-                  {memberData.member?.yearLevel &&
-                    `-${memberData.member.yearLevel}`}
-                </TableCell>
-                <TableCell>
-                  {getFacultyName(memberData.member?.facultyId)}
-                </TableCell>
-                <TableCell>{memberData.member?.studentId}</TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleEditMember(memberData)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDeleteMember(memberData)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
 
-      <MemberForm
-        open={isFormOpen}
-        onOpenChange={setIsFormOpen}
-        onSubmit={handleFormSubmit}
-        member={selectedMember}
-        facultyData={faculties}
-        programData={programs}
-      />
+        <DeleteConfirmationDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          onConfirm={confirmDelete}
+        />
 
-      <DeleteConfirmationDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        onConfirm={confirmDelete}
-      />
+        <BulkImportDialog
+          open={isBulkImportOpen}
+          onOpenChange={setIsBulkImportOpen}
+          onImport={handleBulkImport}
+        />
 
-      <BulkImportDialog
-        open={isBulkImportOpen}
-        onOpenChange={setIsBulkImportOpen}
-        onImport={handleBulkImport}
-      />
-
-      <BulkImportResultModal
-        open={isBulkImportOpenResult}
-        onOpenChange={setIsBulkImportOpenResult}
-        result={bulkImportResult}
-      />
+        <BulkImportResultModal
+          open={isBulkImportOpenResult}
+          onOpenChange={setIsBulkImportOpenResult}
+          result={bulkImportResult}
+        />
+      </div>
     </div>
   );
 }
