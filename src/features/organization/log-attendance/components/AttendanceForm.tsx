@@ -122,9 +122,19 @@ export function AttendanceForm({
       } 
       return;
     }
+    await performIdSearch(true); 
+  };
 
-    // Proceed with search
-    await performIdSearch(true); // Show toasts for manual search
+  // Handle auto-complete search
+  const handleAutoSearch = async () => {
+    if (!currentUser || !studentId.trim()) {
+      return;
+    }
+
+    if (!isValidStudentId(studentId)) {
+      return;
+    }
+    await performIdSearch(false); 
   };
 
   // Handle ID search triggered by auto-completion (no toast errors) - DISABLED
@@ -224,15 +234,20 @@ export function AttendanceForm({
       await onSubmit(student.studentId);
 
       // Show success toast
-      toast.success(
-        `${
-          showNames
-            ? student.firstName + " " + student.lastName
-            : "Student"
-        } has successfully ${
+      const studentName = showNames
+        ? student.firstName + " " + student.lastName
+        : "Student";
+      
+      const getMessage = () => {
+        if (event.status === "completed") {
+          return `${studentName} - Special attendance logged for ${event.name}.`;
+        }
+        return `${studentName} has successfully ${
           type === "time-in" ? "checked in" : "checked out"
-        } for ${event.name}.`
-      );
+        } for ${event.name}.`;
+      };
+      
+      toast.success(getMessage());
 
       // Reset form after successful submission
       setTimeout(() => {
@@ -283,17 +298,20 @@ export function AttendanceForm({
       await onSubmit(studentId);
 
       // Show success toast
-      toast.success(
-        `${
-          showNames
-            ? searchResult.student.firstName +
-              " " +
-              searchResult.student.lastName
-            : "Student"
-        } has successfully ${
+      const studentName = showNames
+        ? searchResult.student.firstName + " " + searchResult.student.lastName
+        : "Student";
+      
+      const getMessage = () => {
+        if (event.status === "completed") {
+          return `${studentName} - Special attendance logged for ${event.name}.`;
+        }
+        return `${studentName} has successfully ${
           type === "time-in" ? "checked in" : "checked out"
-        } for ${event.name}.`
-      );
+        } for ${event.name}.`;
+      };
+      
+      toast.success(getMessage());
 
       // Reset form after successful submission
       setTimeout(() => {
@@ -429,7 +447,7 @@ export function AttendanceForm({
                     studentId={studentId}
                     setStudentId={setStudentId}
                     handleSearch={handleIdSearch}
-                   
+                    handleAutoSearch={handleAutoSearch}
                     isSubmitting={isSubmitting}
                     searchStatus={searchResult.status}
                     successMessage={null}

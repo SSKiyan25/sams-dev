@@ -58,9 +58,13 @@ export function StudentIdInput({
     const formattedValue = formatValue(newDigits)
     onChange(formattedValue)
     
-    // Check if complete (all 8 digits filled)
+    // Check if complete (all 8 digits filled) AND format is valid
     if (newDigits.every(digit => digit !== '' && digit !== ' ')) {
-      onComplete?.(formattedValue)
+      const finalFormatted = formatValue(newDigits)
+      // Only call onComplete if the format is valid (XX-X-XXXXX pattern)
+      if (/^\d{2}-\d{1}-\d{5}$/.test(finalFormatted)) {
+        onComplete?.(finalFormatted)
+      }
     }
   }
 
@@ -113,9 +117,13 @@ export function StudentIdInput({
         }
       }
       
-      // Check if complete
+      // Check if complete AND format is valid
       if (newDigits.every(digit => digit !== '' && digit !== ' ')) {
-        onComplete?.(formattedValue)
+        const finalFormatted = formatValue(newDigits)
+        // Only call onComplete if the format is valid (XX-X-XXXXX pattern)
+        if (/^\d{2}-\d{1}-\d{5}$/.test(finalFormatted)) {
+          onComplete?.(finalFormatted)
+        }
       }
       
       e.preventDefault()
@@ -145,7 +153,11 @@ export function StudentIdInput({
     if (cleaned.length >= 8) {
       const formattedValue = `${cleaned.slice(0, 2)}-${cleaned.slice(2, 3)}-${cleaned.slice(3, 8)}`
       onChange(formattedValue)
-      onComplete?.(formattedValue)
+      
+      // Only call onComplete if the format is valid
+      if (/^\d{2}-\d{1}-\d{5}$/.test(formattedValue)) {
+        onComplete?.(formattedValue)
+      }
       
       // Focus the last input
       const lastInput = inputRefs.current[7]

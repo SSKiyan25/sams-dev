@@ -48,7 +48,6 @@ export default function LogAttendancePage() {
     type: "time-in" | "time-out"
   ) => {
     if (!event) return;
-    if (event.status !== "ongoing") return;
 
     try {
       const exist = await checkLogAttendanceExist(
@@ -66,9 +65,15 @@ export default function LogAttendancePage() {
         studentId,
         type,
       });
-      // Force a refresh of the recent attendance list if needed
+      
+      // Show success message with appropriate wording for completed events
+      const actionText = type === "time-in" ? "checked in" : "checked out";
+      const eventText = event.status === "completed" ? "special attendance logged" : `${actionText} successfully`;
+      toast.success(`Student ${eventText} for ${event.name}`);
+      
     } catch (error) {
       console.error("Failed to log attendance:", error);
+      toast.error("Failed to log attendance. Please try again.");
     }
   };
 
