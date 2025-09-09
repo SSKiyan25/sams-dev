@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { useState, useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, UserRoundX, Percent } from "lucide-react";
+import { User, UserRoundX, Percent, CalendarDays, UsersRound, UserStar, EqualApproximately } from "lucide-react";
 import { Event } from "../types";
 
 // Custom tooltip component for the chart
@@ -59,8 +59,11 @@ interface MembersStatsProps {
   isLoading?: boolean;
   studentStats: {
     totalStudents: number;
-    totalAbsences: number;
-    attendanceRate: number;
+    totalEvents: number;
+    overallAttendanceRate: number;
+    averageAttendance: number;
+    totalAttendances: number;
+    peakAttendance: number;
   };
   eventAttendance: Event[];
 }
@@ -142,12 +145,11 @@ export function MembersStats({
             )}
           </CardContent>
         </Card>
-        {/* Absences and Attendance Rate share a row on mobile */}
         <Card className="col-span-1 py-4 gap-2">
           <CardHeader className="">
             <CardTitle className="text-sm font-medium flex flex-row gap-2 items-center">
-              <UserRoundX />
-              Total Absences
+              <CalendarDays />
+              Total Events
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -155,24 +157,87 @@ export function MembersStats({
               <Skeleton className="h-4 w-12 sm:h-6 sm:w-10" />
             ) : (
               <div className="text-2xl font-bold sm:text-xl">
-                {studentStats.totalAbsences}
+                {studentStats.totalEvents}
               </div>
             )}
           </CardContent>
         </Card>
+
         <Card className="col-span-1 py-4 gap-2">
           <CardHeader className="">
             <CardTitle className="text-sm font-medium flex flex-row gap-2 items-center">
-              <Percent />
-              Attendance Rate
+              <UsersRound />
+              Total Attendances
             </CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <Skeleton className="h-4 w-20 sm:h-6 sm:w-16" />
+              <Skeleton className="h-4 w-12 sm:h-6 sm:w-10" />
             ) : (
               <div className="text-2xl font-bold sm:text-xl">
-                {studentStats.attendanceRate.toFixed(1)}%
+                {studentStats.totalAttendances}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      <div
+        className="
+          grid
+          grid-cols-2
+          gap-4
+          sm:grid-cols-3
+        "
+      >
+        <Card className="col-span-1 py-4 gap-2">
+          <CardHeader className="">
+            <CardTitle className="text-sm font-medium flex flex-row gap-2 items-center">
+              <UserStar />
+              Peak Attendance
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-4 w-12 sm:h-6 sm:w-10" />
+            ) : (
+              <div className="text-2xl font-bold sm:text-xl">
+                {studentStats.peakAttendance}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="col-span-1 py-4 gap-2">
+          <CardHeader className="">
+            <CardTitle className="text-sm font-medium flex flex-row gap-2 items-center">
+              <Percent />
+              Overall Attendance Rate
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-4 w-12 sm:h-6 sm:w-10" />
+            ) : (
+              <div className="text-2xl font-bold sm:text-xl">
+                {studentStats.overallAttendanceRate}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="col-span-1 py-4 gap-2">
+          <CardHeader className="">
+            <CardTitle className="text-sm font-medium flex flex-row gap-2 items-center">
+              <EqualApproximately />
+              Average Attendance
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-4 w-12 sm:h-6 sm:w-10" />
+            ) : (
+              <div className="text-2xl font-bold sm:text-xl">
+                {studentStats.averageAttendance}
               </div>
             )}
           </CardContent>

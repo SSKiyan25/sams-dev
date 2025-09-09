@@ -86,8 +86,8 @@ export function RecentAttendance({
 
   // Determine the attendees page URL
   const attendeesUrl = organizationId
-    ? `/organization/${organizationId}/events/${eventId}/attendance`
-    : `/org-events/${eventId}/attendance`;
+    ? `/organization/${organizationId}/events/${eventId}/attendees`
+    : `/org-events/${eventId}/attendees`;
 
   return (
     <Card>
