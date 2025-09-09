@@ -1,6 +1,5 @@
 import { Badge } from "@/components/ui/badge";
 import { EventAttendance } from "../../log-attendance/types";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ArrowRight,
   ArrowLeft,
@@ -44,9 +43,17 @@ function ProgramBadge({ programId }: { programId: string }) {
 // --- REFACTORED PARENT COMPONENT ---
 interface AttendanceListProps {
   attendees: EventAttendance[];
+  totalAttendees?: number;
+  currentPage?: number;
+  totalPages?: number;
 }
 
-export function AttendanceList({ attendees }: AttendanceListProps) {
+export function AttendanceList({ 
+  attendees, 
+  totalAttendees, 
+  currentPage, 
+  totalPages 
+}: AttendanceListProps) {
   const formatTime = (timestamp: string) => {
     if (!timestamp) return "Not recorded";
     const date = new Date(timestamp);
@@ -71,9 +78,15 @@ export function AttendanceList({ attendees }: AttendanceListProps) {
               <h3 className="font-nunito text-xl font-bold text-gray-900 dark:text-gray-100">
                 Attendance Records
               </h3>
-              <p className="font-nunito-sans text-sm text-gray-600 dark:text-gray-400">
-                {attendees.length} total attendees
-              </p>
+              <div className="flex items-center gap-2 font-nunito-sans text-sm text-gray-600 dark:text-gray-400">
+                <span>{attendees.length} of {totalAttendees || attendees.length} attendees</span>
+                {currentPage && totalPages && totalPages > 1 && (
+                  <>
+                    <span>•</span>
+                    <span>Page {currentPage} of {totalPages}</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
@@ -125,84 +138,82 @@ export function AttendanceList({ attendees }: AttendanceListProps) {
       {/* Attendance List */}
       {attendees.length > 0 ? (
         <div className="p-6">
-          <ScrollArea className="max-h-[600px]">
-            <div className="space-y-3">
-              {attendees.map(({ student, timeIn, timeOut }) => {
-                return (
-                  <div
-                    key={student.studentId}
-                    className="group relative p-4 rounded-lg border border-gray-200/60 dark:border-gray-700/60 bg-white/80 dark:bg-gray-800/40 backdrop-blur-sm hover:bg-white/90 dark:hover:bg-gray-800/60 hover:border-gray-300/80 dark:hover:border-gray-600/80 transition-all duration-200 hover:shadow-md"
-                  >
-                    <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                      {/* Student Info */}
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
-                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-semibold">
-                            {student.firstName?.[0]}
-                            {student.lastName?.[0]}
-                          </AvatarFallback>
-                        </Avatar>
+          <div className="space-y-3">
+            {attendees.map(({ student, timeIn, timeOut }) => {
+              return (
+                <div
+                  key={student.studentId}
+                  className="group relative p-4 rounded-lg border border-gray-200/60 dark:border-gray-700/60 bg-white/80 dark:bg-gray-800/40 backdrop-blur-sm hover:bg-white/90 dark:hover:bg-gray-800/60 hover:border-gray-300/80 dark:hover:border-gray-600/80 transition-all duration-200 hover:shadow-md"
+                >
+                  <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                    {/* Student Info */}
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-semibold">
+                          {student.firstName?.[0]}
+                          {student.lastName?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
 
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-nunito font-semibold text-gray-900 dark:text-gray-100 truncate">
-                              {student.firstName} {student.lastName}
-                            </h4>
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-sm text-gray-600 dark:text-gray-400 font-mono">
-                              {student.studentId}
-                            </span>
-                            <ProgramBadge programId={student.programId} />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Time Records */}
-                      <div className="flex flex-col sm:flex-row gap-3 lg:flex-shrink-0">
-                        {/* Check-in Badge */}
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant="outline"
-                            className={`flex items-center h-8 px-3 font-medium ${
-                              timeIn
-                                ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-700"
-                                : "bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800/20 dark:text-gray-400 dark:border-gray-700"
-                            }`}
-                          >
-                            <ArrowRight className="h-3 w-3 mr-2 flex-shrink-0" />
-                            <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
-                            <span className="text-xs whitespace-nowrap">
-                              {formatTime(timeIn) || "Not recorded"}
-                            </span>
-                          </Badge>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-nunito font-semibold text-gray-900 dark:text-gray-100 truncate">
+                            {student.firstName} {student.lastName}
+                          </h4>
                         </div>
 
-                        {/* Check-out Badge */}
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant="outline"
-                            className={`flex items-center h-8 px-3 font-medium ${
-                              timeOut
-                                ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700"
-                                : "bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800/20 dark:text-gray-400 dark:border-gray-700"
-                            }`}
-                          >
-                            <ArrowLeft className="h-3 w-3 mr-2 flex-shrink-0" />
-                            <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
-                            <span className="text-xs whitespace-nowrap">
-                              {formatTime(timeOut) || "Not recorded"}
-                            </span>
-                          </Badge>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm text-gray-600 dark:text-gray-400 font-mono">
+                            {student.studentId}
+                          </span>
+                          <ProgramBadge programId={student.programId} />
                         </div>
                       </div>
                     </div>
+
+                    {/* Time Records */}
+                    <div className="flex flex-col sm:flex-row gap-3 lg:flex-shrink-0">
+                      {/* Check-in Badge */}
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={`flex items-center h-8 px-3 font-medium ${
+                            timeIn
+                              ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-700"
+                              : "bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800/20 dark:text-gray-400 dark:border-gray-700"
+                          }`}
+                        >
+                          <ArrowRight className="h-3 w-3 mr-2 flex-shrink-0" />
+                          <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
+                          <span className="text-xs whitespace-nowrap">
+                            {formatTime(timeIn) || "Not recorded"}
+                          </span>
+                        </Badge>
+                      </div>
+
+                      {/* Check-out Badge */}
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={`flex items-center h-8 px-3 font-medium ${
+                            timeOut
+                              ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700"
+                              : "bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800/20 dark:text-gray-400 dark:border-gray-700"
+                          }`}
+                        >
+                          <ArrowLeft className="h-3 w-3 mr-2 flex-shrink-0" />
+                          <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
+                          <span className="text-xs whitespace-nowrap">
+                            {formatTime(timeOut) || "Not recorded"}
+                          </span>
+                        </Badge>
+                      </div>
+                    </div>
                   </div>
-                );
-              })}
-            </div>
-          </ScrollArea>
+                </div>
+              );
+            })}
+          </div>
         </div>
       ) : (
         <div className="p-12 text-center">

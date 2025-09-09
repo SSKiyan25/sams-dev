@@ -192,7 +192,12 @@ export default function EventAttendeesPage() {
             {attendeesLoading ? (
               <AttendanceListSkeleton />
             ) : (
-              <AttendanceList attendees={attendees} />
+              <AttendanceList 
+                attendees={attendees} 
+                totalAttendees={totalAttendees}
+                currentPage={currentPage}
+                totalPages={totalPages}
+              />
             )}
           </div>
   

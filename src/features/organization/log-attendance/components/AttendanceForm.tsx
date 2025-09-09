@@ -50,10 +50,11 @@ export function AttendanceForm({
   activeTab, 
   onTabChange 
 }: AttendanceFormProps) {
-  const [studentId, setStudentId] = useState("");
-  const [searchName, setSearchName] = useState("");
+  const [studentId, setStudentId] = useState<string>("");
+  const [searchName, setSearchName] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [searchResult, setSearchResult] = useState<{
     status:
@@ -93,19 +94,6 @@ export function AttendanceForm({
     return () => unsubscribe();
   }, []); // The empty array ensures this effect runs only once on mount
 
-  // Auto-search effect for name search
-  useEffect(() => {
-    if (searchMethod === "name" && searchName.trim()) {
-      const debounceTimer = setTimeout(() => {
-        handleNameSearch(searchName);
-      }, 500); // 500ms debounce
-
-      return () => clearTimeout(debounceTimer);
-    } else if (searchMethod === "name" && !searchName.trim()) {
-      setNameSearchResults([]);
-    }
-  }, [searchName, searchMethod]); // eslint-disable-line react-hooks/exhaustive-deps
-
   // Handle ID search
   const handleIdSearch = async () => {
     if (!currentUser) {
@@ -139,21 +127,9 @@ export function AttendanceForm({
     await performIdSearch(true); // Show toasts for manual search
   };
 
-  // Handle ID search triggered by auto-completion (no toast errors)
-  const handleIdAutoSearch = async () => {
-    if (!currentUser || !studentId.trim()) {
-      return;
-    }
-
-    if (!isValidStudentId(studentId)) {
-      setSearchResult({ status: "invalid-format", student: null });
-      return;
-    }
-
-    // Proceed with search (no toasts for auto-search)
-    await performIdSearch(false); // Don't show toasts for auto-search
-  };
-
+  // Handle ID search triggered by auto-completion (no toast errors) - DISABLED
+  // Auto-search has been disabled to prevent unwanted loading states
+  
   const performIdSearch = async (showToasts: boolean = true) => {
     setSearchResult({ status: "loading", student: null });
     setIsLoading(true);
@@ -190,20 +166,19 @@ export function AttendanceForm({
   // Handle name search
   const handleNameSearch = async (searchTerm?: string) => {
     const nameToSearch = searchTerm || searchName;
-    if (!nameToSearch.trim()) {
+    if (!nameToSearch || typeof nameToSearch !== 'string' || !nameToSearch.trim()) {
       setNameSearchResults([]);
       return;
     }
 
-    setIsLoading(true);
+    setIsSearching(true);
 
     try {
-      // Simulate network request
-      await new Promise((resolve) => setTimeout(resolve, 300)); // Reduced delay for auto-search
-      const results = (await searchUserByName(
-        nameToSearch,
-        currentUser
-      )) as unknown as Member[];
+      // Show loading state for at least 200ms for better UX
+      const [results] = await Promise.all([
+        searchUserByName(nameToSearch, currentUser) as unknown as Member[],
+        new Promise(resolve => setTimeout(resolve, 200))
+      ]);
 
       console.log(results.length);
       setNameSearchResults(results as Member[]);
@@ -222,13 +197,66 @@ export function AttendanceForm({
       console.error("Error searching by name:", error);
       toast.error("Error searching for students");
     } finally {
-      setIsLoading(false);
+      setIsSearching(false);
     }
   };
 
-  const handleNameSelect = (student: Member) => {
+  // Wrapper function for manual name search (called by button)
+  const handleManualNameSearch = () => {
+    handleNameSearch();
+  };
+
+  const handleNameSelect = async (student: Member) => {
     setStudentId(student.studentId);
     setSearchResult({ status: "success", student });
+    // Clear the search results after selection to indicate selection was made
+    setNameSearchResults([]);
+    setSearchName("");
+
+    // Automatically submit attendance after selection
+    setIsSubmitting(true);
+    setIsLoading(true);
+    setIsProcessing(true);
+
+    try {
+      // Simulate network delay
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await onSubmit(student.studentId);
+
+      // Show success toast
+      toast.success(
+        `${
+          showNames
+            ? student.firstName + " " + student.lastName
+            : "Student"
+        } has successfully ${
+          type === "time-in" ? "checked in" : "checked out"
+        } for ${event.name}.`
+      );
+
+      // Reset form after successful submission
+      setTimeout(() => {
+        setStudentId("");
+        setSearchName("");
+        setSearchResult({ status: "idle", student: null });
+        setIsProcessing(false);
+      }, 2000);
+    } catch (error) {
+      console.error("Error logging attendance:", error);
+      toast.error("Failed to record attendance");
+    } finally {
+      setIsSubmitting(false);
+      setIsLoading(false);
+      setIsProcessing(false);
+    }
+  };
+
+  // Handle clearing name search results when search term changes
+  const handleNameSearchChange = (value: string) => {
+    setSearchName(value);
+    if (!value.trim()) {
+      setNameSearchResults([]);
+    }
   };
 
   const handleCancelSearch = () => {
@@ -289,7 +317,7 @@ export function AttendanceForm({
       if (searchMethod === "id" && searchResult.status !== "success") {
         handleIdSearch();
       } else if (searchMethod === "name") {
-        handleNameSearch();
+        handleManualNameSearch();
       } else if (searchResult.status === "success") {
         handleSubmit(e as unknown as React.FormEvent);
       }
@@ -298,7 +326,7 @@ export function AttendanceForm({
 
   return (
     <>
-      {/* Search loading overlay */}
+      {/* Search loading overlay - only for form submission, not for searching */}
       {isLoading && <LoadingOverlay />}
 
       {/* Processing check-in/out overlay */}
@@ -401,7 +429,7 @@ export function AttendanceForm({
                     studentId={studentId}
                     setStudentId={setStudentId}
                     handleSearch={handleIdSearch}
-                    handleAutoSearch={handleIdAutoSearch}
+                   
                     isSubmitting={isSubmitting}
                     searchStatus={searchResult.status}
                     successMessage={null}
@@ -446,18 +474,21 @@ export function AttendanceForm({
             </TabsContent>
 
             <TabsContent value="name">
-              <SearchByNameForm
-                searchName={searchName}
-                setSearchName={setSearchName}
-                handleSearch={handleNameSearch}
-                handleKeyDown={handleKeyDown}
-                isSubmitting={isSubmitting}
-                nameSearchResults={nameSearchResults}
-                showNames={showNames}
-                onStudentSelect={handleNameSelect}
-                showLabel={true}
-                enhancedResults={true}
-              />
+              <div className="space-y-4">                
+                <SearchByNameForm
+                  searchName={searchName}
+                  setSearchName={handleNameSearchChange}
+                  handleSearch={handleManualNameSearch}
+                  handleKeyDown={handleKeyDown}
+                  isSubmitting={isSubmitting}
+                  isSearching={isSearching}
+                  nameSearchResults={nameSearchResults}
+                  showNames={showNames}
+                  onStudentSelect={handleNameSelect}
+                  showLabel={true}
+                  enhancedResults={true}
+                />
+              </div>
 
               {/* Use NoStudentFound component when no results */}
               {nameSearchResults.length === 0 &&
