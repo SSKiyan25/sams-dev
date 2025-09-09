@@ -71,6 +71,7 @@ export function MemberForm({
         facultyId: "",
         studentId: "",
         email: "",
+        yearLevel: undefined,
         role: "user", // Default role is always user
       });
       setAgreed(false);

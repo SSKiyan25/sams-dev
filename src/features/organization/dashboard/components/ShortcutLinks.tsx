@@ -151,7 +151,7 @@ export function ShortcutLinks({
           ) : (
             allEvents.map((event) => (
               <Link
-                href={`/org-events/${event.id}`}
+                href={`/org-events/${event.id}/attendees`}
                 key={event.id}
                 className="block"
               >

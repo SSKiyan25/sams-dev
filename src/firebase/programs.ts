@@ -1,6 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "./firebase.config";
-import { get } from "http";
 import { Program } from "@/features/organization/members/types";
 
 const handleFirestoreError = (error: any, context: string) => {

@@ -1,18 +1,18 @@
 /**
  * Bulk Import System for Student Members
- * 
+ *
  * This module provides functionality to bulk import student members from CSV files.
  * The system validates CSV data against Firebase reference data to ensure data integrity.
- * 
+ *
  * Expected CSV Format:
- * studentId,firstName,lastName,email,programId,facultyId,yearLevel
- * 
- * facultyId values should match the full names in the 'faculties' collection (e.g., "Faculty of Computing", "Faculty of Engineering")
- * programId values should match the full names in the 'programs' collection (e.g., "BS in Computer Science", "BS in Environmental Science")
- * 
+ * Student ID,First Name,Last Name,Email,Program Name,Faculty Name,Year Level
+ *
+ * Faculty Name values should match the full names in the 'faculties' collection (e.g., "Faculty of Computing", "Faculty of Engineering")
+ * Program Name values should match the full names in the 'programs' collection (e.g., "BS in Computer Science", "BS in Environmental Science")
+ *
  * Example CSV row:
  * 2021001,John,Doe,john.doe@example.com,"BS in Computer Science","Faculty of Computing",3
- * 
+ *
  * The system automatically:
  * - Validates all required fields
  * - Checks faculty and program names against Firebase data
@@ -34,7 +34,6 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 import {
-  Member,
   Faculty,
   Program,
   ReferenceDataCache,
@@ -56,7 +55,7 @@ const usersCollection: CollectionReference<DocumentData> = collection(
 const handleFirestoreError = (error: unknown, context: string) => {
   console.error(`Error ${context}:`, error);
   throw new Error(`Failed to ${context}.`);
-}; 
+};
 
 // Global cache for reference data (faculties and programs)
 // This will be populated once per bulk import operation
@@ -77,7 +76,7 @@ const loadReferenceData = async (): Promise<ReferenceDataCache> => {
     // Fetch faculties and programs in parallel for efficiency
     const [facultiesData, programsData] = await Promise.all([
       getFaculties(),
-      getPrograms()
+      getPrograms(),
     ]);
 
     // Create Maps for O(1) lookup performance during validation
@@ -103,7 +102,7 @@ const loadReferenceData = async (): Promise<ReferenceDataCache> => {
     // Cache the reference data for reuse
     referenceCache = {
       faculties: facultiesMap,
-      programs: programsMap
+      programs: programsMap,
     };
 
     return referenceCache;
@@ -112,7 +111,7 @@ const loadReferenceData = async (): Promise<ReferenceDataCache> => {
     // Return empty cache on error to prevent crashes
     return {
       faculties: new Map(),
-      programs: new Map()
+      programs: new Map(),
     };
   }
 };
@@ -136,20 +135,19 @@ export const getAvailableReferenceData = async (): Promise<{
 }> => {
   try {
     const referenceData = await loadReferenceData();
-    
+
     return {
       faculties: Array.from(referenceData.faculties.values()),
-      programs: Array.from(referenceData.programs.values())
+      programs: Array.from(referenceData.programs.values()),
     };
   } catch (error) {
     handleFirestoreError(error, "get available reference data");
     return {
       faculties: [],
-      programs: []
+      programs: [],
     };
   }
 };
-
 
 /**
  * Validates required fields for a member record from CSV data
@@ -161,23 +159,23 @@ export const getAvailableReferenceData = async (): Promise<{
  */
 const validateMemberData = async (data: RawMemberData): Promise<string[]> => {
   const errors: string[] = [];
-  
+
   // Load reference data for faculty and program validation
   const referenceData = await loadReferenceData();
-  
+
   // Check required string fields and ensure they're not empty after trimming
   if (!data.studentId || data.studentId.trim() === "") {
     errors.push("Student ID is required");
   }
-  
+
   if (!data.firstName || data.firstName.trim() === "") {
     errors.push("First name is required");
   }
-  
+
   if (!data.lastName || data.lastName.trim() === "") {
     errors.push("Last name is required");
   }
-  
+
   // Email validation: check if exists and validate format
   if (!data.email || data.email.trim() === "") {
     errors.push("Email is required");
@@ -188,38 +186,53 @@ const validateMemberData = async (data: RawMemberData): Promise<string[]> => {
       errors.push("Invalid email format");
     }
   }
-  
+
   // Faculty name validation: check if required and exists in reference data
   if (!data.facultyId || data.facultyId.trim() === "") {
     errors.push("Faculty ID is required");
   } else {
     const facultyName = data.facultyId.trim(); // facultyId contains the full name
     if (!referenceData.faculties.has(facultyName)) {
-      const availableFaculties = Array.from(referenceData.faculties.keys()).join(', ');
-      errors.push(`Invalid Faculty name "${facultyName}". Available faculties: ${availableFaculties || 'None found'}`);
+      const availableFaculties = Array.from(
+        referenceData.faculties.keys()
+      ).join(", ");
+      errors.push(
+        `Invalid Faculty name "${facultyName}". Available faculties: ${
+          availableFaculties || "None found"
+        }`
+      );
     }
   }
-  
+
   // Program name validation: check if required and exists in reference data
   if (!data.programId || data.programId.trim() === "") {
     errors.push("Program ID is required");
   } else {
     const programName = data.programId.trim(); // programId contains the full name
     if (!referenceData.programs.has(programName)) {
-      const availablePrograms = Array.from(referenceData.programs.keys()).join(', ');
-      errors.push(`Invalid Program name "${programName}". Available programs: ${availablePrograms || 'None found'}`);
+      const availablePrograms = Array.from(referenceData.programs.keys()).join(
+        ", "
+      );
+      errors.push(
+        `Invalid Program name "${programName}". Available programs: ${
+          availablePrograms || "None found"
+        }`
+      );
     }
   }
-  
+
   // Validate year level if provided (optional field)
   if (data.yearLevel !== undefined && data.yearLevel !== null) {
     // Handle both string and number inputs from CSV
-    const yearLevel = typeof data.yearLevel === 'string' ? parseInt(data.yearLevel) : Number(data.yearLevel);
+    const yearLevel =
+      typeof data.yearLevel === "string"
+        ? parseInt(data.yearLevel)
+        : Number(data.yearLevel);
     if (isNaN(yearLevel) || yearLevel < 1) {
       errors.push("Year level must be a positive integer");
     }
   }
-  
+
   return errors;
 };
 
@@ -229,30 +242,32 @@ const validateMemberData = async (data: RawMemberData): Promise<string[]> => {
  * @param studentIds - Array of student IDs to check
  * @returns Array of student IDs that already exist in the database
  */
-const checkExistingStudentIds = async (studentIds: string[]): Promise<string[]> => {
+const checkExistingStudentIds = async (
+  studentIds: string[]
+): Promise<string[]> => {
   try {
     const existingIds: string[] = [];
-    
+
     // batch by 10 due to query limitations ahahahaha
     const batchSize = 10;
     for (let i = 0; i < studentIds.length; i += batchSize) {
       const batch = studentIds.slice(i, i + batchSize);
-      
+
       // Query for existing student IDs in this batch
       const q = query(
         usersCollection,
-        where("studentId", "in", batch),        // Check if studentId exists in current batch
-        where("isDeleted", "==", false)        // Only check non-deleted records
+        where("studentId", "in", batch), // Check if studentId exists in current batch
+        where("isDeleted", "==", false) // Only check non-deleted records
       );
-      
+
       const querySnapshot = await getDocs(q);
       // Extract student IDs from the found documents
-      querySnapshot.docs.forEach(doc => {
+      querySnapshot.docs.forEach((doc) => {
         const data = doc.data();
         existingIds.push(data.studentId);
       });
     }
-    
+
     return existingIds;
   } catch (error) {
     handleFirestoreError(error, "check existing student IDs");
@@ -268,54 +283,81 @@ const checkExistingStudentIds = async (studentIds: string[]): Promise<string[]> 
  */
 export const parseCSVContent = (csvContent: string): RawMemberData[] => {
   // Split content into lines and remove any trailing whitespace
-  const lines = csvContent.trim().split('\n');
-  
+  const lines = csvContent.trim().split("\n");
+
   // Ensure minimum required structure (header + at least one data row)
   if (lines.length < 2) {
-    throw new Error("CSV file must contain at least a header row and one data row");
+    throw new Error(
+      "CSV file must contain at least a header row and one data row"
+    );
   }
-  
+
   // Get headers and normalize them (remove quotes, trim whitespace)
   // This handles CSV files that may have quoted headers
-  const headers = lines[0].split(',').map(header => 
-    header.trim().replace(/^["']|["']$/g, '')
-  );
-  
+  const headers = lines[0]
+    .split(",")
+    .map((header) => header.trim().replace(/^["']|["']$/g, ""));
+
   // Validate that all required headers are present
-  const requiredHeaders = ['studentId', 'firstName', 'lastName', 'email', 'programId', 'facultyId'];
-  const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
-  
+  const requiredHeaders = [
+    "Student ID",
+    "First Name",
+    "Last Name",
+    "Email",
+    "Program Name",
+    "Faculty Name",
+  ];
+  const missingHeaders = requiredHeaders.filter(
+    (header) => !headers.includes(header)
+  );
+
   if (missingHeaders.length > 0) {
-    throw new Error(`Missing required columns: ${missingHeaders.join(', ')}`);
+    throw new Error(`Missing required columns: ${missingHeaders.join(", ")}`);
   }
-  
+
   // Parse data rows starting from index 1 (skipping header row)
   const members: RawMemberData[] = [];
   for (let i = 1; i < lines.length; i++) {
     // Skip completely empty lines
-    if (lines[i].trim() === '') continue;
-    
+    if (lines[i].trim() === "") continue;
+
     // Split row into values and clean them (remove quotes, trim)
-    const values = lines[i].split(',').map(value => 
-      value.trim().replace(/^["']|["']$/g, '')
-    );
-    
+    const values = lines[i]
+      .split(",")
+      .map((value) => value.trim().replace(/^["']|["']$/g, ""));
+
     // Validate that row has correct number of columns
     if (values.length !== headers.length) {
-      throw new Error(`Row ${i + 1}: Number of values (${values.length}) doesn't match number of headers (${headers.length})`);
+      throw new Error(
+        `Row ${i + 1}: Number of values (${
+          values.length
+        }) doesn't match number of headers (${headers.length})`
+      );
     }
-    
+
     // Create member data object with row tracking
     const memberData: RawMemberData = { rowNumber: i + 1 }; // i + 1 gives actual CSV row number
-    
-    // Map each value to its corresponding header
+
+    // Create a mapping from user-friendly headers to internal field names
+    const headerMapping: { [key: string]: string } = {
+      "Student ID": "studentId",
+      "First Name": "firstName",
+      "Last Name": "lastName",
+      Email: "email",
+      "Program Name": "programId",
+      "Faculty Name": "facultyId",
+      "Year Level": "yearLevel", // Optional field
+    };
+
+    // Map each value to its corresponding internal field name
     headers.forEach((header, index) => {
-      memberData[header] = values[index] || null; // Use null for empty values
+      const internalFieldName = headerMapping[header] || header; // Fallback to original header if not mapped
+      memberData[internalFieldName] = values[index] || null; // Use null for empty values
     });
-    
+
     members.push(memberData);
   }
-  
+
   return members;
 };
 
@@ -325,37 +367,39 @@ export const parseCSVContent = (csvContent: string): RawMemberData[] => {
  * @param memberData - Array of parsed member data from CSV
  * @returns Comprehensive result object with success status and detailed feedback
  */
-export const bulkImportUsers = async (memberData: RawMemberData[]): Promise<BulkImportResult> => {
+export const bulkImportUsers = async (
+  memberData: RawMemberData[]
+): Promise<BulkImportResult> => {
   // Initialize result object to track the entire operation
   const result: BulkImportResult = {
     success: false,
     totalProcessed: memberData.length,
     successfulImports: 0,
     errors: [],
-    duplicates: []
+    duplicates: [],
   };
-  
+
   try {
     // Step 1: Load reference data once for all validations
     const referenceData = await loadReferenceData();
-    
+
     // Step 2: Validate all member data before attempting any database operations
     const validatedMembers: ValidatedMemberData[] = [];
-    
+
     for (const data of memberData) {
       // Run validation on current row (now async due to reference data loading)
       const validationErrors = await validateMemberData(data);
-      
+
       // If validation fails, add to errors and skip this record
       if (validationErrors.length > 0) {
         result.errors.push({
           row: data.rowNumber,
-          studentId: (data.studentId as string) || 'N/A',
-          error: validationErrors.join(', ')
+          studentId: (data.studentId as string) || "N/A",
+          error: validationErrors.join(", "),
         });
         continue; // Skip to next record
       }
-      
+
       // Create validated member object with proper typing and data cleaning
       const validatedMember: ValidatedMemberData = {
         rowNumber: data.rowNumber,
@@ -364,15 +408,23 @@ export const bulkImportUsers = async (memberData: RawMemberData[]): Promise<Bulk
         lastName: (data.lastName as string).trim(),
         email: (data.email as string).trim().toLowerCase(), // Normalize email to lowercase
         // Look up the document ID using the full name from CSV (stored in programId/facultyId fields)
-        programId: referenceData.programs.get((data.programId as string).trim())?.id || '',
-        facultyId: referenceData.faculties.get((data.facultyId as string).trim())?.id || '',
+        programId:
+          referenceData.programs.get((data.programId as string).trim())?.id ||
+          "",
+        facultyId:
+          referenceData.faculties.get((data.facultyId as string).trim())?.id ||
+          "",
         role: "user", // Default role for bulk imported members
-        yearLevel: data.yearLevel ? (typeof data.yearLevel === 'string' ? parseInt(data.yearLevel) : Number(data.yearLevel)) : undefined,
+        yearLevel: data.yearLevel
+          ? typeof data.yearLevel === "string"
+            ? parseInt(data.yearLevel)
+            : Number(data.yearLevel)
+          : undefined,
       };
-      
+
       validatedMembers.push(validatedMember);
     }
-    
+
     // Early exit if no valid members to process
     if (validatedMembers.length === 0) {
       result.success = false;
@@ -380,20 +432,20 @@ export const bulkImportUsers = async (memberData: RawMemberData[]): Promise<Bulk
       clearReferenceCache();
       return result;
     }
-    
+
     // Step 3: Check for existing student IDs to prevent duplicates
-    const studentIds = validatedMembers.map(member => member.studentId);
+    const studentIds = validatedMembers.map((member) => member.studentId);
     const existingStudentIds = await checkExistingStudentIds(studentIds);
-    
+
     // Filter out duplicates and track them for reporting
-    const membersToImport = validatedMembers.filter(member => {
+    const membersToImport = validatedMembers.filter((member) => {
       if (existingStudentIds.includes(member.studentId)) {
         result.duplicates.push(member.studentId);
         return false; // Don't import this member
       }
       return true; // Import this member
     });
-    
+
     // If all members were duplicates, return success but with zero imports
     if (membersToImport.length === 0) {
       result.success = true; // No errors, but all were duplicates
@@ -401,43 +453,42 @@ export const bulkImportUsers = async (memberData: RawMemberData[]): Promise<Bulk
       clearReferenceCache();
       return result;
     }
-    
+
     // Step 4: Batch write to Firestore for efficiency
     // Using batch writes ensures atomicity - either all succeed or all fail
     const batch = writeBatch(db);
     const timestamp = Timestamp.now(); // Single timestamp for all records
-    
-    membersToImport.forEach(member => {
+
+    membersToImport.forEach((member) => {
       // Generate new document reference for each member
       const docRef = doc(collection(db, "users"));
-      
+
       // Prepare member data for database storage
       const memberDataForSave = {
         ...member,
-        createdAt: timestamp,           // Add creation timestamp
-        isDeleted: false,               // Default soft delete flag
+        createdAt: timestamp, // Add creation timestamp
+        isDeleted: false, // Default soft delete flag
       };
-      
+
       // Remove rowNumber before saving to database (it's only for error tracking)
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { rowNumber, ...memberDataWithoutRow } = memberDataForSave;
-      
+
       // Add this document creation to the batch
       batch.set(docRef, memberDataWithoutRow);
     });
-    
+
     // Execute the batch write - this is atomic (all or nothing)
     await batch.commit();
-    
+
     // Update result with success information
     result.successfulImports = membersToImport.length;
     result.success = true;
-    
+
     // Clear reference cache to free memory after successful import
     clearReferenceCache();
-    
+
     return result;
-    
   } catch (error) {
     // Handle any unexpected errors during the bulk import process
     // Clear cache even on error to prevent memory leaks
@@ -455,41 +506,46 @@ export const bulkImportUsers = async (memberData: RawMemberData[]): Promise<Bulk
  * @param file - The uploaded File object from the user
  * @returns Complete import result with success status and detailed feedback
  */
-export const processFileForBulkImport = async (file: File): Promise<BulkImportResult> => {
+export const processFileForBulkImport = async (
+  file: File
+): Promise<BulkImportResult> => {
   try {
     // Validate file type to ensure it's a CSV file
-    const validTypes = ['text/csv', 'application/vnd.ms-excel'];
-    const validExtensions = ['.csv'];
-    
+    const validTypes = ["text/csv", "application/vnd.ms-excel"];
+    const validExtensions = [".csv"];
+
     // Check both MIME type and file extension for better compatibility
-    const hasValidType = validTypes.includes(file.type) || 
-                        validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
-    
+    const hasValidType =
+      validTypes.includes(file.type) ||
+      validExtensions.some((ext) => file.name.toLowerCase().endsWith(ext));
+
     if (!hasValidType) {
       throw new Error("Invalid file type. Please upload a CSV file.");
     }
-    
+
     // Read file content as text
     const fileContent = await file.text();
-    
+
     // Parse CSV content into structured data
     const memberData = parseCSVContent(fileContent);
-    
+
     // Process the bulk import with parsed data
     return await bulkImportUsers(memberData);
-    
   } catch (error) {
     // Return error result if any step fails
     return {
       success: false,
       totalProcessed: 0,
       successfulImports: 0,
-      errors: [{
-        row: 0,                        // Row 0 indicates a file-level error
-        studentId: 'N/A',
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
-      }],
-      duplicates: []
+      errors: [
+        {
+          row: 0, // Row 0 indicates a file-level error
+          studentId: "N/A",
+          error:
+            error instanceof Error ? error.message : "Unknown error occurred",
+        },
+      ],
+      duplicates: [],
     };
   }
 };

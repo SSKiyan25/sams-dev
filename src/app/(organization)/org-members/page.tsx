@@ -25,6 +25,7 @@ import {
 import { Pencil, Trash2, LayoutGrid, List, Upload, Plus } from "lucide-react";
 import {
   addUser,
+  checkStudentIdExist,
   deleteUser,
   getFaculties,
   getPrograms,
@@ -108,6 +109,10 @@ export default function MembersPage() {
         await updateUser(selectedMember.id, data);
         toast.success("Member updated successfully");
       } else {
+        if (await checkStudentIdExist(data.studentId)) {
+          toast.error("Student ID already exists. Please use a different one.");
+          return;
+        }
         await addUser(data);
         toast.success("Member added successfully");
       }

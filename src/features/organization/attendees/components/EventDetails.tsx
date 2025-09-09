@@ -2,7 +2,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   CalendarIcon,
-  ClockIcon,
   MapPinIcon,
   UsersIcon,
   StarIcon,
@@ -18,66 +17,6 @@ interface EventDetailsProps {
 }
 
 export function EventDetails({ event, attendeeCount }: EventDetailsProps) {
-  // Format time to 12-hour format
-  const formatTime = (time: string | null | undefined) => {
-    if (!time) return null;
-
-    const [hours, minutes] = time.split(":");
-    const hour = parseInt(hours, 10);
-    const ampm = hour >= 12 ? "PM" : "AM";
-    const formattedHour = hour % 12 || 12;
-
-    return `${formattedHour}:${minutes} ${ampm}`;
-  };
-
-  // Format time range
-  const formatTimeRange = (
-    timeStart: string | null | undefined,
-    timeEnd: string | null | undefined
-  ) => {
-    if (!timeStart || !timeEnd) return null;
-    return `${formatTime(timeStart)} - ${formatTime(timeEnd)}`;
-  };
-
-  // Function to display the time information
-  const getTimeDisplay = () => {
-    const { timeInStart, timeInEnd, timeOutStart, timeOutEnd } = event;
-
-    const hasTimeIn = timeInStart && timeInEnd;
-    const hasTimeOut = timeOutStart && timeOutEnd;
-
-    if (hasTimeIn && hasTimeOut) {
-      return (
-        <div className="space-y-1">
-          <div className="flex items-center">
-            <span className="text-xs font-medium mr-1">Time-in:</span>
-            {formatTimeRange(timeInStart, timeInEnd)}
-          </div>
-          <div className="flex items-center">
-            <span className="text-xs font-medium mr-1">Time-out:</span>
-            {formatTimeRange(timeOutStart, timeOutEnd)}
-          </div>
-        </div>
-      );
-    } else if (hasTimeIn) {
-      return (
-        <div>
-          <span className="text-xs font-medium mr-1">Time-in only:</span>
-          {formatTimeRange(timeInStart, timeInEnd)}
-        </div>
-      );
-    } else if (hasTimeOut) {
-      return (
-        <div>
-          <span className="text-xs font-medium mr-1">Time-out only:</span>
-          {formatTimeRange(timeOutStart, timeOutEnd)}
-        </div>
-      );
-    } else {
-      return <span className="text-muted-foreground">No time set</span>;
-    }
-  };
-
   // Get badge variant based on status
   const getBadgeVariant = () => {
     switch (event.status) {

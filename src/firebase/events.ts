@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   collection,
   addDoc,
@@ -10,8 +11,6 @@ import {
   writeBatch,
   getDoc,
   orderBy,
-  limit,
-  startAfter,
   QueryDocumentSnapshot,
   DocumentData,
   getCountFromServer,

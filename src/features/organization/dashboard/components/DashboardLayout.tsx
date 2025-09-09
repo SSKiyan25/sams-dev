@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { MembersStats } from "./MembersStats";
 import { ShortcutLinks } from "./ShortcutLinks";
 import { RecentMembers } from "./RecentMembers";
@@ -10,7 +12,6 @@ import {
   getUsers,
 } from "@/firebase";
 import { Event } from "../types";
-import { eventAttendance } from "../data";
 import { Member } from "../../members/types";
 
 // Type for Firebase event data
@@ -36,8 +37,11 @@ export function DashboardLayout() {
   const [isLoading, setIsLoading] = useState(true);
   const [studentStats, setStudentStats] = useState({
     totalStudents: 0,
-    totalAbsences: 0,
-    attendanceRate: 0,
+    totalEvents: 0,
+    overallAttendanceRate: 0,
+    averageAttendance: 0,
+    totalAttendances: 0,
+    peakAttendance: 0,
   });
   const [eventAttendance, setEventAttendance] = useState<Event[]>([]);
   const [users, setUsers] = useState<Member[]>([]);
@@ -62,69 +66,101 @@ export function DashboardLayout() {
     isDeleted: event.isDeleted || false,
     note: event.note || "",
   });
+const fetchDashboardData = async () => {
+  setIsLoading(true);
+  try {
+    // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
-  const fetchDashboardData = async () => {
-    setIsLoading(true);
-    try {
-      // Simulate network delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      const [upcoming, ongoing, users, allEvents] = await Promise.all([
+    // Fetch all required data in parallel
+    const [upcoming, ongoing, users, allEvents, recentUser] = await Promise.all(
+      [
         getUpcomingEvents(),
         getOngoingEvents(),
         getUsers(),
         getEvents(),
-      ]);
+        getRecentUsers(),
+      ]
+    );
 
-      const recentUser = await getRecentUsers();
+    // --- Process User Data ---
+    setUsers(
+      recentUser.map((user: any) => ({
+        ...user.member,
+      })) as unknown as Member[]
+    );
 
-      setUsers(
-        recentUser.map((user: any) => ({
-          ...user.member,
-        })) as unknown as Member[]
-      );
+    // --- Process Event Data ---
+    const mappedUpcoming = upcoming.map((event: FirebaseEvent) =>
+      mapToEvent(event, "upcoming")
+    );
+    const mappedOngoing = ongoing.map((event: FirebaseEvent) =>
+      mapToEvent(event, "ongoing")
+    );
+    setUpcomingEvents(mappedUpcoming);
+    setOngoingEvents(mappedOngoing);
+    setEventAttendance(allEvents as unknown as Event[]);
 
-      // Map the Firebase data to our Event type
-      const mappedUpcoming = upcoming.map((event: FirebaseEvent) =>
-        mapToEvent(event, "upcoming")
-      );
+    // --- NEW: Advanced Statistics Calculation ---
 
-      const mappedOngoing = ongoing.map((event: FirebaseEvent) =>
-        mapToEvent(event, "ongoing")
-      );
+    const totalStudents = users.length;
+    const totalEvents = allEvents.length;
 
-      setUpcomingEvents(mappedUpcoming);
-      setOngoingEvents(mappedOngoing);
-      setEventAttendance(allEvents as unknown as Event[]);
-
-      const totalStudents = users.length;
-      const totalAbsences = allEvents.reduce((acc, event) => {
-        const present = (event as unknown as Event).attendees || 0;
-        const absent = totalStudents > present ? totalStudents - present : 0;
-        return acc + absent;
-      }, 0);
-      const totalPossibleAttendees = allEvents.length * totalStudents;
-      const totalAttendees = allEvents.reduce(
-        (acc, event) => acc + ((event as unknown as Event).attendees || 0),
-        0
-      );
-      const attendanceRate =
-        totalPossibleAttendees > 0
-          ? (totalAttendees / totalPossibleAttendees) * 100
-          : 0;
-
+    // Handle case with no events or students to avoid division by zero
+    if (totalEvents === 0 || totalStudents === 0) {
       setStudentStats({
-        totalStudents,
-        totalAbsences,
-        attendanceRate,
+        totalStudents: totalStudents,
+        totalEvents: 0,
+        overallAttendanceRate: 0,
+        averageAttendance: 0,
+        totalAttendances: 0,
+        peakAttendance: 0,
       });
-    } catch (error) {
-      console.error("Error fetching events:", error);
-    } finally {
       setIsLoading(false);
+      return; // Exit early
     }
-  };
 
+    // 1. Get a simple array of attendee counts for each event
+    const eventAttendances = allEvents.map(
+      (event) => (event as unknown as Event).attendees || 0
+    );
+
+    // 2. Calculate Total Attendances (sum of all check-ins across all events)
+    const totalAttendances = eventAttendances.reduce(
+      (sum, count) => sum + count,
+      0
+    );
+
+    // 3. Calculate the maximum possible attendances
+    const totalPossibleAttendances = totalEvents * totalStudents;
+
+    // 4. Calculate Overall Attendance Rate
+    const overallAttendanceRate =
+      (totalAttendances / totalPossibleAttendances) * 100;
+
+    // 5. Calculate Average Attendance Per Event
+    const averageAttendance = totalAttendances / totalEvents;
+
+    // 6. Find the Peak (highest) Attendance for a single event
+    const peakAttendance = Math.max(...eventAttendances);
+
+    // --- Set the new, improved state ---
+    // It's recommended to create a new state object to hold all these stats
+    setStudentStats({
+      totalStudents,
+      totalEvents,
+      totalAttendances,
+      // Use toFixed(1) to show one decimal place for percentages and averages
+      overallAttendanceRate: parseFloat(overallAttendanceRate.toFixed(1)),
+      averageAttendance: parseFloat(averageAttendance.toFixed(1)),
+      peakAttendance,
+    });
+  } catch (error) {
+    console.error("Error fetching dashboard data:", error);
+  } finally {
+    setIsLoading(false);
+  }
+};
   useEffect(() => {
     fetchDashboardData();
   }, []);

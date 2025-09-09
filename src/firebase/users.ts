@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   collection,
   addDoc,
@@ -227,8 +228,9 @@ export const searchUserByName = async (
       }))
       .filter((member) => {
         // Concatenate first and last name to create a full name for searching.
-        const fullName =
-          `${member.firstName || ""} ${member.lastName || ""}`.toLowerCase();
+        const fullName = `${member.firstName || ""} ${
+          member.lastName || ""
+        }`.toLowerCase();
 
         // Check if the full name includes the search term.
         return fullName.includes(trimmedName);

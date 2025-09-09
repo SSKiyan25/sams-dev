@@ -99,8 +99,8 @@ export function RecentAttendance({
 
   // Determine the attendees page URL
   const attendeesUrl = organizationId
-    ? `/organization/${organizationId}/events/${eventId}/attendance`
-    : `/org-events/${eventId}/attendance`;
+    ? `/organization/${organizationId}/events/${eventId}/attendees`
+    : `/org-events/${eventId}/attendees`;
 
   return (
     <div className="space-y-6 flex flex-col flex-1">

@@ -5,10 +5,7 @@ import {
   ArrowRight,
   ArrowLeft,
   Clock,
-  CheckCircle2,
-  AlertCircle,
   Users,
-  Timer,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getProgramById } from "@/firebase";
