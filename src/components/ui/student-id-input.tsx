@@ -180,16 +180,21 @@ export function StudentIdInput({
   }, [autoFocus])
 
   const cellClasses = (index: number) => cn(
-    // Extra small (default): 24px × 32px, very compact for 320px+ screens  
+
+    //For responsive sizing
     "w-6 h-8",
-    // Small (480px+): 28px × 36px, slightly bigger
-    "min-[480px]:w-7 min-[480px]:h-9", 
-    // Small screens (640px+): 40px × 44px, comfortable
-    "sm:w-10 sm:h-11",
-    // Medium+ (768px+): 48px × 48px, spacious
-    "md:w-12 md:h-12",
+    "min-[480px]:w-[100%] min-[480px]:h-9", 
+    "sm:w-[100%] sm:h-11",
+    "md:w-[100%] md:h-12",
+    "min-[790px]:w-[100%] min-[790px]:h-11",
+    "min-[860px]:w-12 min-[861px]:h-12",
+
+    // Large (1024px+): 52px × 52px, optimal for larger screens when button below
+    "lg:w-13 lg:h-13",
+    "min-[1178px]:w-14 min-[1178px]:h-14",
     // Typography scaling
-    "text-center text-xs min-[480px]:text-sm sm:text-base md:text-lg font-nunito-sans font-bold",
+    "text-center text-xs min-[480px]:text-sm sm:text-base md:text-lg lg:text-xl min-[1178px]:text-xl font-nunito-sans font-bold",
+    
     // Border and styling
     "border-2 rounded-md sm:rounded-lg bg-white dark:bg-input transition-all outline-none",
     "focus:ring-2 focus:ring-primary/30 focus:border-primary focus:scale-105",
@@ -202,17 +207,17 @@ export function StudentIdInput({
     digits[index] && "bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600"
   )
 
-  const separatorClasses = "text-sm min-[480px]:text-base sm:text-lg md:text-xl font-bold text-gray-400 dark:text-gray-500 select-none"
+  const separatorClasses = "text-sm min-[480px]:text-base sm:text-lg md:text-xl lg:text-2xl min-[1178px]:text-2xl font-bold text-gray-400 dark:text-gray-500 select-none"
 
   const containerClasses = cn(
-    "relative flex items-center justify-center gap-0.5 min-[480px]:gap-1 sm:gap-2 select-none pb-10",
+    "relative flex items-center justify-center gap-0.5 min-[480px]:gap-1 sm:gap-2 min-[790px]:gap-1.5 min-[861px]:gap-2 lg:gap-3 min-[1178px]:gap-3 select-none pb-10",
     className
   )
 
   return (
     <div className={containerClasses} onPaste={handlePaste}>
       {/* Year digits: XX */}
-      <div className="flex items-center gap-0.5 min-[480px]:gap-1 sm:gap-2">
+      <div className="flex items-center gap-0.5 min-[480px]:gap-1 sm:gap-2 min-[790px]:gap-1.5 min-[861px]:gap-2 lg:gap-3 min-[1178px]:gap-3">
         <input
           ref={(el) => { inputRefs.current[0] = el }}
           type="text"
@@ -225,7 +230,7 @@ export function StudentIdInput({
           onBlur={handleBlur}
           disabled={disabled}
           className={cellClasses(0)}
-          placeholder="2"
+          placeholder="0"
           aria-label="Year first digit"
         />
         <input
@@ -262,7 +267,7 @@ export function StudentIdInput({
           onBlur={handleBlur}
           disabled={disabled}
           className={cellClasses(2)}
-          placeholder="1"
+          placeholder="0"
           aria-label="Semester"
         />
       </div>
@@ -271,7 +276,7 @@ export function StudentIdInput({
       <div className={separatorClasses}>-</div>
 
       {/* ID number digits: XXXXX */}
-      <div className="flex items-center gap-0.5 min-[480px]:gap-1 sm:gap-2">
+      <div className="flex items-center gap-0.5 min-[480px]:gap-1 sm:gap-2 min-[790px]:gap-1.5 min-[861px]:gap-2 lg:gap-3 min-[1178px]:gap-3">
         {[3, 4, 5, 6, 7].map((index) => (
           <input
             key={index}
@@ -286,7 +291,7 @@ export function StudentIdInput({
             onBlur={handleBlur}
             disabled={disabled}
             className={cellClasses(index)}
-            placeholder={['0', '1', '7', '0', '9'][index - 3]}
+            placeholder={['0', '0', '0', '0', '0'][index - 3]}
             aria-label={`ID digit ${index - 2}`}
           />
         ))}

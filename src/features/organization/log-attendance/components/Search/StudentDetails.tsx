@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CheckCircleIcon, XCircleIcon, Loader2Icon } from "lucide-react";
-import { getInitials } from "../../utils";
+import { getInitials, generateProgramCode } from "../../utils";
 import { Member } from "@/features/organization/members/types";
 
 interface StudentDetailsProps {
@@ -12,6 +12,7 @@ interface StudentDetailsProps {
   type: "time-in" | "time-out";
   buttonVariant?: "default" | "success";
   onCancel?: () => void;
+  programName?: string; 
 }
 
 export function StudentDetails({
@@ -21,6 +22,7 @@ export function StudentDetails({
   type,
   buttonVariant = "default",
   onCancel,
+  programName,
 }: StudentDetailsProps) {
   const buttonClasses =
     buttonVariant === "success"
@@ -48,6 +50,11 @@ export function StudentDetails({
             <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700 font-nunito-sans font-semibold">
               ID: {student.studentId}
             </Badge>
+            {programName && showNames && (
+              <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-700 font-nunito-sans font-semibold text-xs">
+                {generateProgramCode(programName, student.yearLevel)}
+              </Badge>
+            )}
           </div>
           {showNames && (
             <p className="font-nunito-sans text-sm text-gray-600 dark:text-gray-400 truncate">
@@ -57,13 +64,13 @@ export function StudentDetails({
         </div>
       </div>
 
-      <div className="flex gap-3 w-full sm:w-auto mt-2 sm:mt-0">
+      <div className="flex flex-wrap gap-3 w-full sm:w-auto mt-2 sm:mt-0">
         {onCancel && !isSubmitting && (
           <Button
             type="button"
             variant="outline"
             onClick={onCancel}
-            className="flex-1 sm:flex-none h-10 font-nunito-sans font-semibold border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="flex-1 sm:flex-none h-10 font-nunito-sans font-semibold border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 min-w-[100px]"
           >
             <XCircleIcon className="h-4 w-4 mr-2" />
             Cancel
@@ -73,7 +80,7 @@ export function StudentDetails({
         <Button
           type="submit"
           disabled={isSubmitting}
-          className={`flex-1 sm:flex-none h-10 font-nunito-sans font-semibold ${buttonClasses} ${
+          className={`flex-1 sm:flex-none h-10 font-nunito-sans font-semibold min-w-[120px] ${buttonClasses} ${
             isSubmitting ? "opacity-80" : ""
           }`}
         >

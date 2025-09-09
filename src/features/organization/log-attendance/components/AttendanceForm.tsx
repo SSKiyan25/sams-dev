@@ -315,7 +315,7 @@ export function AttendanceForm({
       )}
 
       <div className="space-y-6">
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex-1">
             <h3 className="flex items-center gap-3 text-xl font-nunito font-bold text-gray-900 dark:text-gray-100">
               <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -334,7 +334,7 @@ export function AttendanceForm({
             variant="outline"
             size="sm"
             onClick={() => setShowNames(!showNames)}
-            className="h-9 px-4 font-nunito-sans font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 ml-4"
+            className="h-9 px-4 font-nunito-sans font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 w-full sm:w-auto"
           >
             {showNames ? (
               <>
@@ -352,7 +352,7 @@ export function AttendanceForm({
 
         {/* Type Selection - Only show if both are available */}
         {hasTimeIn && hasTimeOut && onTabChange && (
-          <div className="mt-6 flex gap-2">
+          <div className="mt-6 flex flex-wrap gap-2">
             <Button
               variant={activeTab === "time-in" ? "default" : "outline"}
               size="sm"

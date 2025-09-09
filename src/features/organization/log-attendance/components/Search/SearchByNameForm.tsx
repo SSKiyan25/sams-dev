@@ -41,7 +41,7 @@ export function SearchByNameForm({
             Search by Name
           </label>
         )}
-        <div className="flex space-x-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Input
             id="student-name"
             placeholder="Start typing student name..."
@@ -55,6 +55,7 @@ export function SearchByNameForm({
             type="button"
             onClick={handleSearch}
             disabled={isSubmitting || !searchName.trim()}
+            className="w-full sm:w-auto"
           >
             <SearchIcon className="h-4 w-4 mr-2" />
             Search
