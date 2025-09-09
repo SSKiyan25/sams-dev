@@ -29,12 +29,14 @@ export function PageHeader({ event }: PageHeaderProps) {
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <h1 className="font-nunito text-2xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
-              Log Attendance
+              {event.status === "completed" ? "Log Special Attendance" : "Log Attendance"}
             </h1>
             <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></div>
           </div>
           <p className="font-nunito-sans text-base text-gray-600/90 dark:text-gray-400/90 leading-relaxed">
-            Record student attendance for this event
+            {event.status === "completed" 
+              ? "Record special attendance for this completed event" 
+              : "Record student attendance for this event"}
           </p>
         </div>
       </div>

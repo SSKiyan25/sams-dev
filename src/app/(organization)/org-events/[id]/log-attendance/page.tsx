@@ -5,10 +5,9 @@ import { useState, useEffect } from "react";
 import { AttendanceInterface } from "@/features/organization/log-attendance/components/AttendanceInterface";
 import { PageHeader } from "@/features/organization/log-attendance/components/PageHeader";
 import { Event } from "@/features/organization/events/types";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -17,12 +16,7 @@ import {
   BreadcrumbSeparator,
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb";
-import {
-  CalendarIcon,
-  ClockIcon,
-  AlertTriangleIcon,
-  ArrowLeftIcon,
-} from "lucide-react";
+import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
 import {
   checkLogAttendanceExist,
@@ -134,88 +128,6 @@ export default function LogAttendancePage() {
               </Link>
             </Button>
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Check if the event is not ongoing
-  if (event.status !== "ongoing") {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="container mx-auto p-4">
-          {/* Breadcrumb */}
-          <div className="mb-6">
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink asChild>
-                    <Link href="/org-events" className="font-nunito-sans">
-                      Events
-                    </Link>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage className="font-nunito-sans">{event.name}</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-
-          <PageHeader event={event} />
-
-          <Card className="mt-6">
-            <CardContent className="pt-6">
-              <Alert variant="destructive" className="mb-4">
-                <AlertTriangleIcon className="h-4 w-4" />
-                <AlertTitle>Attendance Logging Not Available</AlertTitle>
-                <AlertDescription>
-                  Attendance can only be logged for ongoing events. This event is
-                  currently marked as &quot;{event.status}&quot;.
-                </AlertDescription>
-              </Alert>
-
-              <div className="space-y-4">
-                <div className="flex items-center text-muted-foreground">
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  <span>Date: {new Date(event.date).toLocaleDateString()}</span>
-                </div>
-
-                <div className="flex items-center text-muted-foreground">
-                  <ClockIcon className="mr-2 h-4 w-4" />
-                  <span>
-                    {event.timeInStart && event.timeInEnd
-                      ? `Time-in: ${event.timeInStart} - ${event.timeInEnd}`
-                      : "No time-in set"}
-                  </span>
-                </div>
-
-                {event.status === "upcoming" && (
-                  <p className="text-sm">
-                    You will be able to log attendance when this event begins.
-                  </p>
-                )}
-
-                {(event.status === "completed" ||
-                  event.status === "archived") && (
-                  <p className="text-sm">
-                    This event has ended. You can view the attendance records but
-                    cannot log new entries.
-                  </p>
-                )}
-
-                <div className="flex justify-end">
-                  <Button asChild>
-                    <Link href="/org-events">
-                      <ArrowLeftIcon className="mr-2 h-4 w-4" />
-                      Back to Events
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     );

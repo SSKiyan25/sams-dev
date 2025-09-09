@@ -14,12 +14,12 @@ export function AttendeesHeader({ event, onExport }: AttendeesHeaderProps) {
       <h2 className="text-lg font-semibold">Attendees</h2>
 
       <div className="flex flex-wrap w-full sm:w-auto gap-2">
-        {/* Show Log Attendance button only if event is ongoing */}
-        {event.status === "ongoing" && (
+        {/* Show Log Attendance button for ongoing events and Log Special Attendance for completed events */}
+        {(event.status === "ongoing" || event.status === "completed") && (
           <Button asChild className="w-full sm:w-auto">
             <Link href={`/org-events/${event.id}/log-attendance`}>
               <UserPlus className="h-4 w-4 mr-2" />
-              Log Attendance
+              {event.status === "completed" ? "Log Special Attendance" : "Log Attendance"}
             </Link>
           </Button>
         )}
