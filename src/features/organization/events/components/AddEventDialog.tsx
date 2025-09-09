@@ -33,6 +33,7 @@ import { addEvent } from "@/firebase";
 import { useForm } from "react-hook-form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LoadingOverlay } from "../../../../components/ui/loading-overlay";
+import { toast } from "sonner";
 
 interface AddEventDialogProps {
   open: boolean;
@@ -66,11 +67,15 @@ export function AddEventDialog({
     try {
       setLoading(true);
       await addEvent(data);
+      toast.success("Event created successfully!");
       onEventAdded();
       onOpenChange(false);
       form.reset();
     } catch (error) {
       console.error("Error adding event:", error);
+      // Extract error message from the error object
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
