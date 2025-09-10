@@ -1,11 +1,12 @@
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { SearchIcon } from "lucide-react";
+import { SearchIcon, XIcon } from "lucide-react";
+import { StudentIdInput } from "@/components/ui/student-id-input";
 
 interface SearchByIdFormProps {
   studentId: string;
   setStudentId: (id: string) => void;
   handleSearch: () => void;
+  handleAutoSearch?: () => void; // Auto-search for completion
   isSubmitting: boolean;
   searchStatus:
     | "idle"
@@ -14,7 +15,6 @@ interface SearchByIdFormProps {
     | "error"
     | "not-found"
     | "invalid-format";
-  handleKeyDown: (e: React.KeyboardEvent) => void;
   successMessage: string | null;
   showLabel?: boolean;
 }
@@ -23,9 +23,9 @@ export function SearchByIdForm({
   studentId,
   setStudentId,
   handleSearch,
+  handleAutoSearch,
   isSubmitting,
   searchStatus,
-  handleKeyDown,
   successMessage,
   showLabel = false,
 }: SearchByIdFormProps) {
@@ -35,49 +35,67 @@ export function SearchByIdForm({
     isLoading ||
     (searchStatus === "success" && !successMessage);
 
+  const handleClear = () => {
+    setStudentId("");
+  };
+
   return (
     <div>
       {showLabel && (
         <label
           htmlFor="student-id"
-          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 block mb-2"
+          className="font-nunito-sans text-sm font-semibold text-gray-900 dark:text-gray-100 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 block mb-3"
         >
           Enter Student ID
         </label>
       )}
-      <div className="flex space-x-2">
-        <Input
-          id="student-id"
-          placeholder="Enter student ID number"
-          value={studentId}
-          onChange={(e) => setStudentId(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={isDisabled}
-          className="flex-1"
-        />
-        <Button
-          type="button"
-          onClick={handleSearch}
-          disabled={isDisabled || !studentId.trim()}
-        >
-          {isLoading ? (
-            <span className="flex items-center">
-              <span className="h-4 w-4 border-2 border-current border-t-transparent animate-spin rounded-full mr-2"></span>
-              Checking
-            </span>
-          ) : (
-            <span className="flex items-center">
-              <SearchIcon className="h-4 w-4 mr-2" />
-              Find
-            </span>
-          )}
-        </Button>
+      <div className="flex flex-col min-[1178px]:flex-row min-[1178px]:items-start min-[1178px]:space-x-2 space-y-2 min-[1178px]:space-y-0">
+        <div className="flex-1">
+          <StudentIdInput
+            value={studentId}
+            onChange={setStudentId}
+            onComplete={handleAutoSearch || handleSearch}
+            disabled={isDisabled}
+            className="w-full"
+            autoFocus
+          />
+        </div>
+        <div className="min-[1178px]:pt-1 flex gap-2 w-full min-[1178px]:w-auto">
+          <Button
+            type="button"
+            onClick={handleClear}
+            disabled={isDisabled || !studentId.trim()}
+            variant="outline"
+            className="h-10 md:h-12 px-4 md:px-6 font-nunito-sans font-semibold border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 w-auto min-[1178px]:min-w-[80px] flex-shrink-0"
+          >
+            <XIcon className="h-4 w-4" />
+            <span className="ml-2 hidden sm:inline">Clear</span>
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSearch}
+            disabled={isDisabled || !studentId.trim()}
+            className="h-10 md:h-12 px-6 md:px-8 font-nunito-sans font-semibold bg-primary hover:bg-primary/90 shadow-sm flex-1 min-[1178px]:flex-none min-[1178px]:min-w-[120px] flex-shrink-0"
+          >
+            {isLoading ? (
+              <span className="flex items-center justify-center">
+                <span className="h-4 w-4 border-2 border-current border-t-transparent animate-spin rounded-full mr-2"></span>
+                Checking
+              </span>
+            ) : (
+              <span className="flex items-center justify-center">
+                <SearchIcon className="h-4 w-4 mr-2" />
+                Find
+              </span>
+            )}
+          </Button>
+        </div>
       </div>
-      {searchStatus === "invalid-format" && (
-        <p className="text-sm text-destructive mt-2">
+      {/* {searchStatus === "invalid-format" && (
+        <p className="font-nunito-sans text-sm text-red-600 dark:text-red-400 mt-2">
           Please enter a valid student ID format.
         </p>
-      )}
+      )} */}
     </div>
   );
 }

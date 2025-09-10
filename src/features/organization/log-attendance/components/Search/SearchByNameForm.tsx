@@ -1,6 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { SearchIcon, ArrowRightIcon } from "lucide-react";
+import { SearchIcon, ArrowRightIcon, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials } from "../../utils";
 import { Member } from "@/features/organization/members/types";
@@ -11,6 +11,7 @@ interface SearchByNameFormProps {
   handleSearch: () => void;
   handleKeyDown: (e: React.KeyboardEvent) => void;
   isSubmitting: boolean;
+  isSearching?: boolean;
   nameSearchResults: Member[];
   showNames: boolean;
   onStudentSelect: (student: Member) => void;
@@ -24,6 +25,7 @@ export function SearchByNameForm({
   handleSearch,
   handleKeyDown,
   isSubmitting,
+  isSearching = false,
   nameSearchResults,
   showNames,
   onStudentSelect,
@@ -41,10 +43,10 @@ export function SearchByNameForm({
             Search by Name
           </label>
         )}
-        <div className="flex space-x-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Input
             id="student-name"
-            placeholder="Enter student name"
+            placeholder="Start typing student name..."
             value={searchName}
             onChange={(e) => setSearchName(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -54,15 +56,29 @@ export function SearchByNameForm({
           <Button
             type="button"
             onClick={handleSearch}
-            disabled={isSubmitting || !searchName.trim()}
+            disabled={isSubmitting || isSearching || !searchName.trim()}
+            className="w-full sm:w-auto"
           >
-            <SearchIcon className="h-4 w-4 mr-2" />
-            Search
+            {isSearching ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <SearchIcon className="h-4 w-4 mr-2" />
+            )}
+            {isSearching ? "Searching..." : "Search"}
           </Button>
         </div>
       </div>
 
-      {nameSearchResults.length > 0 &&
+      {isSearching && searchName.trim() && (
+        <div className="border rounded-lg p-4 bg-muted/20">
+          <div className="flex items-center justify-center gap-2 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-sm">Searching for students...</span>
+          </div>
+        </div>
+      )}
+
+      {nameSearchResults.length > 0 && !isSearching &&
         (enhancedResults ? (
           <div className="border rounded-lg overflow-hidden">
             <div className="bg-muted/50 px-4 py-2 text-sm font-medium">
