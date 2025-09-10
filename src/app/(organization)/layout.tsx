@@ -10,17 +10,29 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
+import { useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
 
-// Organization user is authenticated
-const isAuthenticated = true;
+// Define icon map for the sidebar
+const iconMap = {
+  "layout-dashboard": LayoutDashboard,
+  calendar: Calendar,
+  users: Users,
+  "bar-chart": BarChart,
+  settings: Settings,
+};
+
+// Define mobile icon map
+const mobileIconMap = {
+  dashboard: LayoutDashboard,
+  calendar: Calendar,
+  users: Users,
+  logout: LogOut,
+};
 
 // Organization navigation data
 const organizationData = {
-  user: {
-    name: "Organization Admin",
-    email: "admin@example.org",
-    avatar: "",
-  },
   navMain: [
     {
       title: "Dashboard",
@@ -67,41 +79,55 @@ const organizationData = {
   ],
 };
 
-// Define icon map for the sidebar
-const iconMap = {
-  "layout-dashboard": LayoutDashboard,
-  calendar: Calendar,
-  users: Users,
-  "bar-chart": BarChart,
-  settings: Settings,
-};
-
-// Define mobile icon map
-const mobileIconMap = {
-  dashboard: LayoutDashboard,
-  calendar: Calendar,
-  users: Users,
-  logout: LogOut,
-};
-
 export default function OrganizationLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { user, loading, isAuthenticated } = useAuth();
+  const router = useRouter();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [loading, isAuthenticated, router]);
+
+  // Show loading state while authenticating
+  if (loading) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center">
+        <div className="text-center">
+          <div className="h-16 w-16 animate-spin rounded-full border-4 border-muted border-t-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Only render layout when authenticated
+  if (!isAuthenticated || !user) {
+    return null; // Will redirect in useEffect
+  }
+
+  // Format user data for components
+  const userData = {
+    name: user.name,
+    email: user.email,
+    avatar: user.avatar,
+  };
+
   return (
     <div className="flex min-h-screen w-full">
       <AppSidebar
-        user={organizationData.user}
+        user={userData}
         navMain={organizationData.navMain}
         iconMap={iconMap}
         className="z-50"
       />
       <div className="flex-1 flex flex-col min-w-0">
-        <SiteHeader
-          user={organizationData.user}
-          isAuthenticated={isAuthenticated}
-        />
+        <SiteHeader user={userData} isAuthenticated={isAuthenticated} />
         <main className="flex-1 p-4 pb-16 md:pb-4">{children}</main>
         <MobileBottomNav
           links={organizationData.mobileNavLinks}
