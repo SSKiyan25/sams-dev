@@ -29,6 +29,13 @@ const eventsCollection = collection(db, "events");
 // Helper to manage errors
 const handleFirestoreError = (error: any, context: string) => {
   console.error(`Error ${context}:`, error);
+  
+  // If it's already an Error object with a message, preserve it
+  if (error instanceof Error) {
+    throw error;
+  }
+  
+  // Otherwise, create a generic error
   throw new Error(`Failed to ${context}`);
 };
 
@@ -144,6 +151,39 @@ export const getPaginatedEvents = async (
 
 export const addEvent = async (eventData: EventFormData) => {
   try {
+    // Validate that the event date is not in the past
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0); // Set to start of day for comparison
+    
+    const eventDate = new Date(eventData.date);
+    eventDate.setHours(0, 0, 0, 0); // Set to start of day for comparison
+    
+    if (eventDate < currentDate) {
+      throw new Error("Cannot create an event with a date in the past");
+    }
+
+    // Validate time ranges
+    // 1. Time In Start should be before Time In End
+    if (eventData.timeInStart && eventData.timeInEnd) {
+      if (eventData.timeInStart >= eventData.timeInEnd) {
+        throw new Error("Time In Start must be earlier than Time In End");
+      }
+    }
+
+    // 2. Time Out Start should be before Time Out End
+    if (eventData.timeOutStart && eventData.timeOutEnd) {
+      if (eventData.timeOutStart >= eventData.timeOutEnd) {
+        throw new Error("Time Out Start must be earlier than Time Out End");
+      }
+    }
+
+    // 3. Time In End should be before Time Out Start (Time In period should complete before Time Out begins)
+    if (eventData.timeInEnd && eventData.timeOutStart) {
+      if (eventData.timeInEnd > eventData.timeOutStart) {
+        throw new Error("Time In period must complete before Time Out period begins");
+      }
+    }
+
     const status = determineEventStatus(eventData.date);
     const docRef = await addDoc(eventsCollection, {
       ...eventData,
@@ -169,6 +209,28 @@ export const updateEvent = async (
   eventData: EventFormData
 ) => {
   try {
+    // Validate time ranges (same validations as addEvent)
+    // 1. Time In Start should be before Time In End
+    if (eventData.timeInStart && eventData.timeInEnd) {
+      if (eventData.timeInStart >= eventData.timeInEnd) {
+        throw new Error("Time In Start must be earlier than Time In End");
+      }
+    }
+
+    // 2. Time Out Start should be before Time Out End
+    if (eventData.timeOutStart && eventData.timeOutEnd) {
+      if (eventData.timeOutStart >= eventData.timeOutEnd) {
+        throw new Error("Time Out Start must be earlier than Time Out End");
+      }
+    }
+
+    // 3. Time In End should be before Time Out Start (Time In period should complete before Time Out begins)
+    if (eventData.timeInEnd && eventData.timeOutStart) {
+      if (eventData.timeInEnd > eventData.timeOutStart) {
+        throw new Error("Time In period must complete before Time Out period begins");
+      }
+    }
+
     const eventDoc = doc(db, "events", eventId);
 
     // Get current event to check if it's archived
