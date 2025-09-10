@@ -229,11 +229,14 @@ const validateMemberData = async (data: RawMemberData): Promise<string[]> => {
   }
 
   // Validate year level if provided (optional field)
-  if (data.yearLevel !== undefined && data.yearLevel !== null) {
+  if (data.yearLevel !== undefined && 
+      data.yearLevel !== null && 
+      data.yearLevel !== "" && 
+      (typeof data.yearLevel === "string" ? data.yearLevel.trim() !== "" : true)) {
     // Handle both string and number inputs from CSV
     const yearLevel =
       typeof data.yearLevel === "string"
-        ? parseInt(data.yearLevel)
+        ? parseInt(data.yearLevel.trim())
         : Number(data.yearLevel);
     if (isNaN(yearLevel) || yearLevel < 1) {
       errors.push("Year level must be a positive integer");
@@ -503,11 +506,14 @@ export const bulkImportUsers = async (
           referenceData.faculties.get((data.facultyId as string).trim())?.id ||
           "",
         role: "user", // Default role for bulk imported members
-        yearLevel: data.yearLevel
+        yearLevel: (data.yearLevel !== undefined && 
+                   data.yearLevel !== null && 
+                   data.yearLevel !== "" && 
+                   (typeof data.yearLevel === "string" ? data.yearLevel.trim() !== "" : true))
           ? typeof data.yearLevel === "string"
-            ? parseInt(data.yearLevel)
+            ? parseInt(data.yearLevel.trim())
             : Number(data.yearLevel)
-          : undefined,
+          : 0, // Default to 0 when not provided, matching addUser function behavior
       };
 
       validatedMembers.push(validatedMember);
