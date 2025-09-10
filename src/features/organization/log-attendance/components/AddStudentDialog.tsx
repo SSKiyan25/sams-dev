@@ -128,6 +128,34 @@ export function AddStudentDialog({
           </div>
 
           <div className="space-y-1.5">
+            <Label htmlFor="yearLevel">Year Level (Optional)</Label>
+            <Select
+              onValueChange={(value) => {
+                handleChange({
+                  target: {
+                    name: "yearLevel",
+                    value: value === "0" ? "0" : value,
+                  },
+                } as React.ChangeEvent<HTMLInputElement>);
+              }}
+              value={formData.yearLevel ? formData.yearLevel.toString() : "0"}
+              disabled={isSubmitting}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select year level" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">None</SelectItem>
+                <SelectItem value="1">1st Year</SelectItem>
+                <SelectItem value="2">2nd Year</SelectItem>
+                <SelectItem value="3">3rd Year</SelectItem>
+                <SelectItem value="4">4th Year</SelectItem>
+                <SelectItem value="5">5th Year</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
             <Label>Program</Label>
             <Select
               onValueChange={handleSelectChange}
