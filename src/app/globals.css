@@ -217,8 +217,16 @@ body {
   animation-delay: 0.2s;
 }
 
+.animation-delay-300 {
+  animation-delay: 0.3s;
+}
+
 .animation-delay-400 {
   animation-delay: 0.4s;
+}
+
+.animation-delay-500 {
+  animation-delay: 0.5s;
 }
 
 .animation-delay-600 {
@@ -227,6 +235,10 @@ body {
 
 .animation-delay-800 {
   animation-delay: 0.8s;
+}
+
+.animation-delay-900 {
+  animation-delay: 0.9s;
 }
 
 .animation-delay-1000 {
