@@ -56,6 +56,7 @@ export function AttendanceForm({
   const [isLoading, setIsLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [hasPerformedNameSearch, setHasPerformedNameSearch] = useState(false);
   const [searchResult, setSearchResult] = useState<{
     status:
       | "idle"
@@ -178,10 +179,12 @@ export function AttendanceForm({
     const nameToSearch = searchTerm || searchName;
     if (!nameToSearch || typeof nameToSearch !== 'string' || !nameToSearch.trim()) {
       setNameSearchResults([]);
+      setHasPerformedNameSearch(false);
       return;
     }
 
     setIsSearching(true);
+    setHasPerformedNameSearch(true); // Mark that a search has been performed
 
     try {
       // Show loading state for at least 200ms for better UX
@@ -222,6 +225,7 @@ export function AttendanceForm({
     // Clear the search results after selection to indicate selection was made
     setNameSearchResults([]);
     setSearchName("");
+    setHasPerformedNameSearch(false); // Reset search performed state
 
     // Automatically submit attendance after selection
     setIsSubmitting(true);
@@ -271,6 +275,10 @@ export function AttendanceForm({
     setSearchName(value);
     if (!value.trim()) {
       setNameSearchResults([]);
+      setHasPerformedNameSearch(false);
+    } else {
+      // Reset search performed state when user types new characters
+      setHasPerformedNameSearch(false);
     }
   };
 
@@ -279,6 +287,7 @@ export function AttendanceForm({
     setSearchName("");
     setSearchResult({ status: "idle", student: null });
     setNameSearchResults([]);
+    setHasPerformedNameSearch(false); // Reset search performed state
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -508,9 +517,10 @@ export function AttendanceForm({
                 />
               </div>
 
-              {/* Use NoStudentFound component when no results */}
+              {/* Use NoStudentFound component when no results and search has been performed */}
               {nameSearchResults.length === 0 &&
-                searchName.trim() !== "" && (
+                searchName.trim() !== "" &&
+                hasPerformedNameSearch && (
                 <div className="mt-4">
                   <NoStudentFound
                     searchTerm={searchName}
