@@ -10,6 +10,7 @@ import { Loader2, Mail, Lock } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import {
+  getIdToken,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
 } from "firebase/auth";
@@ -47,10 +48,21 @@ export function LoginCard() {
     setSuccessMessage(null);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
 
-      // Add a small delay to show the loading overlay before redirecting
-      // await new Promise((resolve) => setTimeout(resolve, 1500));
+      const idToken = await getIdToken(userCredential.user);
+
+      await fetch("/api/auth/session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ idToken }),
+      });
 
       // Navigate to dashboard on successful login
       router.push("/org-dashboard");

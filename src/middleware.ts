@@ -1,10 +1,23 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
-  const token = request.cookies.get("token");
+const protectedRoutes = ["/org-dashboard", "/org-events", "/org-members"];
+const publicRoutes = ["/login", "/"];
 
-  if (!token && request.nextUrl.pathname.startsWith("/org-")) {
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  const token = request.cookies.get("session")?.value || null;
+  const isAuthenticated = !!token;
+
+  if (isAuthenticated && publicRoutes.includes(pathname)) {
+    return NextResponse.redirect(new URL("/org-dashboard", request.url));
+  }
+
+  if (
+    !isAuthenticated &&
+    protectedRoutes.some((route) => pathname.startsWith(route))
+  ) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
@@ -12,5 +25,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: "/org-:path*",
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };
