@@ -1,16 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useEffect, useState } from "react";
 import { Event } from "@/features/organization/events/types";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   ClipboardCheckIcon,
@@ -18,12 +9,14 @@ import {
   EyeOffIcon,
   AlertCircleIcon,
   XCircleIcon,
+  ClockIcon,
+  TimerIcon,
 } from "lucide-react";
 import { searchUserByName, searchUserByStudentId } from "@/firebase";
 import { isValidStudentId } from "../utils";
 import { AddStudentDialog } from "./AddStudentDialog";
 
-// Seach related components and elements
+// Search related components and elements
 import { AlternativeCheckInMethods } from "./Search/AlternativeCheckInMethods";
 import { LoadingOverlay } from "./Search/LoadingOverlay";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -42,13 +35,26 @@ interface AttendanceFormProps {
   event: Event;
   type: "time-in" | "time-out";
   onSubmit: (studentId: string) => Promise<void>;
+  hasTimeIn?: boolean;
+  hasTimeOut?: boolean;
+  activeTab?: "time-in" | "time-out";
+  onTabChange?: (tab: "time-in" | "time-out") => void;
 }
 
-export function AttendanceForm({ event, type, onSubmit }: AttendanceFormProps) {
-  const [studentId, setStudentId] = useState("");
-  const [searchName, setSearchName] = useState("");
+export function AttendanceForm({ 
+  event, 
+  type, 
+  onSubmit, 
+  hasTimeIn = true, 
+  hasTimeOut = false, 
+  activeTab, 
+  onTabChange 
+}: AttendanceFormProps) {
+  const [studentId, setStudentId] = useState<string>("");
+  const [searchName, setSearchName] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [searchResult, setSearchResult] = useState<{
     status:
@@ -67,7 +73,7 @@ export function AttendanceForm({ event, type, onSubmit }: AttendanceFormProps) {
   const [showNames, setShowNames] = useState(false);
   const [searchMethod, setSearchMethod] = useState<"id" | "name">("id");
   const [nameSearchResults, setNameSearchResults] = useState<Member[]>([]);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
 
   useEffect(() => {
     // Get the auth instance
@@ -96,20 +102,49 @@ export function AttendanceForm({ event, type, onSubmit }: AttendanceFormProps) {
       return;
     }
 
-    if (!studentId.trim()) return;
-
-    // First validate the format
-    if (!isValidStudentId(studentId)) {
-      setSearchResult({ status: "invalid-format", student: null });
-      toast.error("Invalid student ID format");
+    if (!studentId.trim()) {
+      toast.error("Please enter a student ID");
       return;
     }
 
+    // Validate format and show toast errors for manual search
+    if (!isValidStudentId(studentId)) {
+      setSearchResult({ status: "invalid-format", student: null });
+      
+      // Provide helpful error messages only for manual search
+      const trimmed = studentId.trim();
+      if (trimmed.length < 8) {
+        toast.error(`Student ID incomplete. Expected format: XX-X-XXXXX`);
+      } else if (trimmed.length > 10) {
+        toast.error(`Student ID too long. Expected format: XX-X-XXXXX`);
+      } else if (!/^\d{2}-\d{1}-\d{5}$/.test(trimmed)) {
+        toast.error(`Invalid student ID format. Expected: XX-X-XXXXX`);
+      } 
+      return;
+    }
+    await performIdSearch(true); 
+  };
+
+  // Handle auto-complete search
+  const handleAutoSearch = async () => {
+    if (!currentUser || !studentId.trim()) {
+      return;
+    }
+
+    if (!isValidStudentId(studentId)) {
+      return;
+    }
+    await performIdSearch(false); 
+  };
+
+  // Handle ID search triggered by auto-completion (no toast errors) - DISABLED
+  // Auto-search has been disabled to prevent unwanted loading states
+  
+  const performIdSearch = async (showToasts: boolean = true) => {
     setSearchResult({ status: "loading", student: null });
     setIsLoading(true);
 
     try {
-      // Simulate network request
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       const student = (await searchUserByStudentId(
@@ -119,54 +154,124 @@ export function AttendanceForm({ event, type, onSubmit }: AttendanceFormProps) {
 
       if (student) {
         setSearchResult({ status: "success", student });
-        toast.success("Student found");
+        if (showToasts) {
+          toast.success("Student found");
+        }
       } else {
         setSearchResult({ status: "not-found", student: null });
-        toast.error("Student not found");
+        if (showToasts) {
+          toast.error("Student not found");
+        }
       }
-    } catch (error) {
+    } catch {
       setSearchResult({ status: "error", student: null });
-      toast.error("Error searching for student");
+      if (showToasts) {
+        toast.error("Error searching for student");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   // Handle name search
-  const handleNameSearch = async () => {
-    if (!searchName.trim()) return;
+  const handleNameSearch = async (searchTerm?: string) => {
+    const nameToSearch = searchTerm || searchName;
+    if (!nameToSearch || typeof nameToSearch !== 'string' || !nameToSearch.trim()) {
+      setNameSearchResults([]);
+      return;
+    }
 
-    setIsLoading(true);
+    setIsSearching(true);
 
     try {
-      // Simulate network request
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Show loading state for at least 200ms for better UX
+      const [results] = await Promise.all([
+        searchUserByName(nameToSearch, currentUser) as unknown as Member[],
+        new Promise(resolve => setTimeout(resolve, 200))
+      ]);
 
-      const results = (await searchUserByName(
-        searchName,
-        currentUser
-      )) as unknown as Member[];
       console.log(results.length);
       setNameSearchResults(results as Member[]);
 
-      if (results.length === 0) {
-        toast.error(`No students found matching "${searchName}"`);
-      } else {
-        toast.success(
-          `Found ${results.length} student${results.length !== 1 ? "s" : ""}`
-        );
+      // Only show toast notifications for manual search (not auto-search)
+      if (!searchTerm) {
+        if (results.length === 0) {
+          toast.error(`No students found matching "${nameToSearch}"`);
+        } else {
+          toast.success(
+            `Found ${results.length} student${results.length !== 1 ? "s" : ""}`
+          );
+        }
       }
     } catch (error) {
       console.error("Error searching by name:", error);
       toast.error("Error searching for students");
     } finally {
-      setIsLoading(false);
+      setIsSearching(false);
     }
   };
 
-  const handleNameSelect = (student: Member) => {
+  // Wrapper function for manual name search (called by button)
+  const handleManualNameSearch = () => {
+    handleNameSearch();
+  };
+
+  const handleNameSelect = async (student: Member) => {
     setStudentId(student.studentId);
     setSearchResult({ status: "success", student });
+    // Clear the search results after selection to indicate selection was made
+    setNameSearchResults([]);
+    setSearchName("");
+
+    // Automatically submit attendance after selection
+    setIsSubmitting(true);
+    setIsLoading(true);
+    setIsProcessing(true);
+
+    try {
+      // Simulate network delay
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await onSubmit(student.studentId);
+
+      // Show success toast
+      const studentName = showNames
+        ? student.firstName + " " + student.lastName
+        : "Student";
+      
+      const getMessage = () => {
+        if (event.status === "completed") {
+          return `${studentName} - Special attendance logged for ${event.name}.`;
+        }
+        return `${studentName} has successfully ${
+          type === "time-in" ? "checked in" : "checked out"
+        } for ${event.name}.`;
+      };
+      
+      toast.success(getMessage());
+
+      // Reset form after successful submission
+      setTimeout(() => {
+        setStudentId("");
+        setSearchName("");
+        setSearchResult({ status: "idle", student: null });
+        setIsProcessing(false);
+      }, 2000);
+    } catch (error) {
+      console.error("Error logging attendance:", error);
+      toast.error("Failed to record attendance");
+    } finally {
+      setIsSubmitting(false);
+      setIsLoading(false);
+      setIsProcessing(false);
+    }
+  };
+
+  // Handle clearing name search results when search term changes
+  const handleNameSearchChange = (value: string) => {
+    setSearchName(value);
+    if (!value.trim()) {
+      setNameSearchResults([]);
+    }
   };
 
   const handleCancelSearch = () => {
@@ -193,17 +298,20 @@ export function AttendanceForm({ event, type, onSubmit }: AttendanceFormProps) {
       await onSubmit(studentId);
 
       // Show success toast
-      toast.success(
-        `${
-          showNames
-            ? searchResult.student.firstName +
-              " " +
-              searchResult.student.lastName
-            : "Student"
-        } has successfully ${
+      const studentName = showNames
+        ? searchResult.student.firstName + " " + searchResult.student.lastName
+        : "Student";
+      
+      const getMessage = () => {
+        if (event.status === "completed") {
+          return `${studentName} - Special attendance logged for ${event.name}.`;
+        }
+        return `${studentName} has successfully ${
           type === "time-in" ? "checked in" : "checked out"
-        } for ${event.name}.`
-      );
+        } for ${event.name}.`;
+      };
+      
+      toast.success(getMessage());
 
       // Reset form after successful submission
       setTimeout(() => {
@@ -227,7 +335,7 @@ export function AttendanceForm({ event, type, onSubmit }: AttendanceFormProps) {
       if (searchMethod === "id" && searchResult.status !== "success") {
         handleIdSearch();
       } else if (searchMethod === "name") {
-        handleNameSearch();
+        handleManualNameSearch();
       } else if (searchResult.status === "success") {
         handleSubmit(e as unknown as React.FormEvent);
       }
@@ -236,7 +344,7 @@ export function AttendanceForm({ event, type, onSubmit }: AttendanceFormProps) {
 
   return (
     <>
-      {/* Search loading overlay */}
+      {/* Search loading overlay - only for form submission, not for searching */}
       {isLoading && <LoadingOverlay />}
 
       {/* Processing check-in/out overlay */}
@@ -252,163 +360,187 @@ export function AttendanceForm({ event, type, onSubmit }: AttendanceFormProps) {
         />
       )}
 
-      <Card className="overflow-hidden pb-8">
-        <CardHeader className="bg-primary/5 p-4">
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <ClipboardCheckIcon className="h-5 w-5" />
-            {type === "time-in" ? "Check-In" : "Check-Out"} Station
-          </CardTitle>
-          <CardDescription>
-            {type === "time-in"
-              ? "Record student attendance for this event"
-              : "Record student departure from this event"}
-          </CardDescription>
-        </CardHeader>
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex-1">
+            <h3 className="flex items-center gap-3 text-xl font-nunito font-bold text-gray-900 dark:text-gray-100">
+              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                <ClipboardCheckIcon className="h-5 w-5 text-primary" />
+              </div>
+              {type === "time-in" ? "Check-In" : "Check-Out"} Station
+            </h3>
+            <p className="font-nunito-sans text-base text-gray-600 dark:text-gray-400 mt-2">
+              {type === "time-in"
+                ? "Record student attendance for this event"
+                : "Record student departure from this event"}
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setShowNames(!showNames)}
+            className="h-9 px-4 font-nunito-sans font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 w-full sm:w-auto"
+          >
+            {showNames ? (
+              <>
+                <EyeOffIcon className="h-4 w-4 mr-2" />
+                Hide Names
+              </>
+            ) : (
+              <>
+                <EyeIcon className="h-4 w-4 mr-2" />
+                Show Names
+              </>
+            )}
+          </Button>
+        </div>
 
-        <CardContent className="">
-          <div className="flex justify-end mb-2">
+        {/* Type Selection - Only show if both are available */}
+        {hasTimeIn && hasTimeOut && onTabChange && (
+          <div className="mt-6 flex flex-wrap gap-2">
             <Button
-              type="button"
-              variant="outline"
+              variant={activeTab === "time-in" ? "default" : "outline"}
               size="sm"
-              onClick={() => setShowNames(!showNames)}
-              className="h-8"
+              onClick={() => onTabChange("time-in")}
+              className="font-nunito-sans font-semibold"
             >
-              {showNames ? (
-                <>
-                  <EyeOffIcon className="h-4 w-4 mr-2" />
-                  Hide Names
-                </>
-              ) : (
-                <>
-                  <EyeIcon className="h-4 w-4 mr-2" />
-                  Show Names
-                </>
-              )}
+              <ClockIcon className="h-4 w-4 mr-2" />
+              Check-In
+            </Button>
+            <Button
+              variant={activeTab === "time-out" ? "default" : "outline"}
+              size="sm"
+              onClick={() => onTabChange("time-out")}
+              className="font-nunito-sans font-semibold"
+            >
+              <TimerIcon className="h-4 w-4 mr-2" />
+              Check-Out
             </Button>
           </div>
+        )}
 
-          {/* Main check-in form with tabs */}
-          <div className="rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
-            <div className="p-4 sm:p-6">
-              <Tabs
-                defaultValue="id"
-                onValueChange={(value) =>
-                  setSearchMethod(value as "id" | "name")
-                }
+        {/* Search form */}
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 p-6">
+          <Tabs
+            defaultValue="id"
+            onValueChange={(value) =>
+              setSearchMethod(value as "id" | "name")
+            }
+          >
+            <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100 dark:bg-gray-700">
+              <TabsTrigger value="id" className="flex items-center gap-1.5 font-nunito-sans font-semibold">
+                By Student ID
+              </TabsTrigger>
+              <TabsTrigger
+                value="name"
+                className="flex items-center gap-1.5 font-nunito-sans font-semibold"
               >
-                <TabsList className="grid w-full grid-cols-2 mb-6 gap-2">
-                  <TabsTrigger value="id" className="flex items-center gap-1.5">
-                    By Student ID
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="name"
-                    className="flex items-center gap-1.5"
-                  >
-                    By Name
-                  </TabsTrigger>
-                </TabsList>
+                By Name
+              </TabsTrigger>
+            </TabsList>
 
-                <TabsContent value="id">
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-4">
-                      <SearchByIdForm
-                        studentId={studentId}
-                        setStudentId={setStudentId}
-                        handleSearch={handleIdSearch}
-                        isSubmitting={isSubmitting}
-                        searchStatus={searchResult.status}
-                        handleKeyDown={handleKeyDown}
-                        successMessage={null}
-                        showLabel={true}
-                      />
-                    </div>
-
-                    {searchResult.status === "success" &&
-                      searchResult.student && (
-                        <div className="border rounded-lg p-4">
-                          <StudentDetails
-                            student={searchResult.student}
-                            showNames={showNames}
-                            isSubmitting={isSubmitting}
-                            type={type}
-                            buttonVariant="success"
-                            onCancel={handleCancelSearch}
-                          />
-                        </div>
-                      )}
-
-                    {/* Use NoStudentFound component */}
-                    {searchResult.status === "not-found" && (
-                      <NoStudentFound
-                        searchTerm={studentId}
-                        searchType="id"
-                        onAddStudent={() => setIsAddStudentOpen(true)}
-                      />
-                    )}
-
-                    {/* Show error state */}
-                    {searchResult.status === "error" && (
-                      <Alert variant="destructive">
-                        <AlertCircleIcon className="h-4 w-4" />
-                        <AlertDescription>
-                          An error occurred while searching for the student.
-                          Please try again.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </form>
-                </TabsContent>
-
-                <TabsContent value="name">
-                  <SearchByNameForm
-                    searchName={searchName}
-                    setSearchName={setSearchName}
-                    handleSearch={handleNameSearch}
-                    handleKeyDown={handleKeyDown}
+            <TabsContent value="id">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-4">
+                  <SearchByIdForm
+                    studentId={studentId}
+                    setStudentId={setStudentId}
+                    handleSearch={handleIdSearch}
+                    handleAutoSearch={handleAutoSearch}
                     isSubmitting={isSubmitting}
-                    nameSearchResults={nameSearchResults}
-                    showNames={showNames}
-                    onStudentSelect={handleNameSelect}
+                    searchStatus={searchResult.status}
+                    successMessage={null}
                     showLabel={true}
-                    enhancedResults={true}
                   />
+                </div>
 
-                  {/* Use NoStudentFound component when no results */}
-                  {nameSearchResults.length === 0 &&
-                    searchName.trim() !== "" && (
-                      <div className="mt-4">
-                        <NoStudentFound
-                          searchTerm={searchName}
-                          searchType="name"
-                          onAddStudent={() => setIsAddStudentOpen(true)}
-                        />
-                      </div>
-                    )}
+                {searchResult.status === "success" &&
+                  searchResult.student && (
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-green-50/50 dark:bg-green-900/10">
+                    <StudentDetails
+                      student={searchResult.student}
+                      showNames={showNames}
+                      isSubmitting={isSubmitting}
+                      type={type}
+                      buttonVariant="success"
+                      onCancel={handleCancelSearch}
+                    />
+                  </div>
+                )}
 
-                  {/* Show cancel button when results are shown */}
-                  {nameSearchResults.length > 0 && (
-                    <div className="mt-4 flex justify-end">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCancelSearch}
-                        className="h-9"
-                      >
-                        <XCircleIcon className="h-4 w-4 mr-2" />
-                        Clear Results
-                      </Button>
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
-            </div>
+                {/* Use NoStudentFound component */}
+                {searchResult.status === "not-found" && (
+                  <NoStudentFound
+                    searchTerm={studentId}
+                    searchType="id"
+                    onAddStudent={() => setIsAddStudentOpen(true)}
+                  />
+                )}
 
-            {/* Alternative check-in methods in a separate component */}
-            <AlternativeCheckInMethods />
-          </div>
-        </CardContent>
+                {/* Show error state */}
+                {searchResult.status === "error" && (
+                  <Alert variant="destructive">
+                    <AlertCircleIcon className="h-4 w-4" />
+                    <AlertDescription>
+                      An error occurred while searching for the student.
+                      Please try again.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </form>
+            </TabsContent>
+
+            <TabsContent value="name">
+              <div className="space-y-4">                
+                <SearchByNameForm
+                  searchName={searchName}
+                  setSearchName={handleNameSearchChange}
+                  handleSearch={handleManualNameSearch}
+                  handleKeyDown={handleKeyDown}
+                  isSubmitting={isSubmitting}
+                  isSearching={isSearching}
+                  nameSearchResults={nameSearchResults}
+                  showNames={showNames}
+                  onStudentSelect={handleNameSelect}
+                  showLabel={true}
+                  enhancedResults={true}
+                />
+              </div>
+
+              {/* Use NoStudentFound component when no results */}
+              {nameSearchResults.length === 0 &&
+                searchName.trim() !== "" && (
+                <div className="mt-4">
+                  <NoStudentFound
+                    searchTerm={searchName}
+                    searchType="name"
+                    onAddStudent={() => setIsAddStudentOpen(true)}
+                  />
+                </div>
+              )}
+
+              {/* Show cancel button when results are shown */}
+              {nameSearchResults.length > 0 && (
+                <div className="mt-4 flex justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancelSearch}
+                    className="h-9"
+                  >
+                    <XCircleIcon className="h-4 w-4 mr-2" />
+                    Clear Results
+                  </Button>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* Alternative check-in methods */}
+        <AlternativeCheckInMethods />
 
         <AddStudentDialog
           open={isAddStudentOpen}
@@ -420,7 +552,7 @@ export function AttendanceForm({ event, type, onSubmit }: AttendanceFormProps) {
             toast.success("Student added successfully");
           }}
         />
-      </Card>
+      </div>
     </>
   );
 }

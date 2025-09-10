@@ -273,7 +273,7 @@ export function EventCard({
                 </Link>
               </Button>
 
-              {event.status === "ongoing" && (
+              {(event.status === "ongoing" || event.status === "completed") && (
                 <Button
                   asChild
                   size="sm"
@@ -281,7 +281,7 @@ export function EventCard({
                 >
                   <Link href={`/org-events/${event.id}/log-attendance`}>
                     <UserPlusIcon className="mr-2 h-4 w-4" />
-                    Log Attendance
+                    {event.status === "completed" ? "Log Special Attendance" : "Log Attendance"}
                   </Link>
                 </Button>
               )}
