@@ -237,6 +237,68 @@ const validateMemberData = async (data: RawMemberData): Promise<string[]> => {
 };
 
 /**
+ * Checks for duplicate student IDs within the CSV data itself
+ * This prevents processing CSV files that contain internal duplicates
+ * @param memberData - Array of parsed member data from CSV
+ * @returns Object containing duplicate information and cleaned data
+ */
+const checkInternalDuplicates = (memberData: RawMemberData[]): {
+  duplicates: Array<{ studentId: string; rows: number[] }>;
+  uniqueMembers: RawMemberData[];
+} => {
+  const studentIdMap = new Map<string, number[]>();
+  const duplicates: Array<{ studentId: string; rows: number[] }> = [];
+  const uniqueMembers: RawMemberData[] = [];
+
+  // Track all student IDs and their row numbers
+  memberData.forEach((member) => {
+    const studentId = (member.studentId as string)?.trim();
+    if (studentId) {
+      if (!studentIdMap.has(studentId)) {
+        studentIdMap.set(studentId, []);
+      }
+      studentIdMap.get(studentId)!.push(member.rowNumber);
+    }
+  });
+
+  // Identify duplicates and keep only the first occurrence
+  const processedIds = new Set<string>();
+  
+  memberData.forEach((member) => {
+    const studentId = (member.studentId as string)?.trim();
+    if (studentId) {
+      const rowNumbers = studentIdMap.get(studentId) || [];
+      
+      // If this student ID appears multiple times, it's a duplicate
+      if (rowNumbers.length > 1) {
+        // Only add to duplicates array once per student ID
+        if (!processedIds.has(studentId)) {
+          duplicates.push({
+            studentId,
+            rows: rowNumbers,
+          });
+          processedIds.add(studentId);
+        }
+        
+        // Keep only the first occurrence (earliest row number)
+        if (member.rowNumber === Math.min(...rowNumbers)) {
+          uniqueMembers.push(member);
+        }
+        // Skip subsequent occurrences
+      } else {
+        // Unique student ID, include it
+        uniqueMembers.push(member);
+      }
+    } else {
+      // Include members without student IDs (they'll be caught by validation)
+      uniqueMembers.push(member);
+    }
+  });
+
+  return { duplicates, uniqueMembers };
+};
+
+/**
  * Checks for existing student IDs in the database to prevent duplicates
  * Uses batched queries due to Firestore's 'in' operator limit of 10 items per query
  * @param studentIds - Array of student IDs to check
@@ -383,10 +445,29 @@ export const bulkImportUsers = async (
     // Step 1: Load reference data once for all validations
     const referenceData = await loadReferenceData();
 
+    // Step 1.5: Check for internal duplicates within the CSV file itself
+    const { duplicates: internalDuplicates, uniqueMembers } = checkInternalDuplicates(memberData);
+    
+    // Add internal duplicate errors to the result
+    internalDuplicates.forEach((duplicate) => {
+      // Skip the first occurrence (it will be processed), add errors for subsequent ones
+      const [firstRow, ...duplicateRows] = duplicate.rows;
+      duplicateRows.forEach((row) => {
+        result.errors.push({
+          row: row,
+          studentId: duplicate.studentId,
+          error: `Duplicate Student ID in CSV file. First occurrence at row ${firstRow}`,
+        });
+      });
+    });
+
+    // Use the unique members list for processing (duplicates removed)
+    const memberDataToProcess = uniqueMembers;
+
     // Step 2: Validate all member data before attempting any database operations
     const validatedMembers: ValidatedMemberData[] = [];
 
-    for (const data of memberData) {
+    for (const data of memberDataToProcess) {
       // Run validation on current row (now async due to reference data loading)
       const validationErrors = await validateMemberData(data);
 
@@ -433,7 +514,7 @@ export const bulkImportUsers = async (
       return result;
     }
 
-    // Step 3: Check for existing student IDs to prevent duplicates
+    // Step 3: Check for existing student IDs to prevent duplicates with database
     const studentIds = validatedMembers.map((member) => member.studentId);
     const existingStudentIds = await checkExistingStudentIds(studentIds);
 
