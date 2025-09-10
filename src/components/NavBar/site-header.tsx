@@ -61,29 +61,31 @@ export function SiteHeader({ user, isAuthenticated }: SiteHeaderProps) {
   };
 
   return (
-    <header className="w-full h-[74px] bg-white dark:bg-background border-b border-gray-400 dark:border-border shadow-lg relative z-10">
+    <header className="w-full h-[69px] bg-white dark:bg-background border-b border-gray-400 dark:border-border shadow-lg relative z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
-        <div className="flex items-center justify-between h-full">
+        <div className="flex items-center justify-between w-full h-full">
           {/* Left side - Logo and Title */}
-          <div className="flex items-center">
-            {!isLoginPage && (
-              <Image
-                src="/enhanced-logo-final.svg"
-                alt="Coral Logo"
-                width={45}
-                height={45}
-                className="text-primary"
-              />
-            )}
-            <Link href={isAuthenticated ? "/org-dashboard" : "/"}>
-              <h1 className="text-xl lg:text-2xl font-bold text-foreground dark:text-foreground ml-3">
-                CORAL
-              </h1>
-            </Link>
+          <div>
+            <div className="flex items-center sm:hidden block">
+              {!isLoginPage && (
+                <Image
+                  src="/enhanced-logo-final.svg"
+                  alt="Coral Logo"
+                  width={45}
+                  height={45}
+                  className="text-primary"
+                />
+              )}
+              <Link href={isAuthenticated ? "/org-dashboard" : "/"}>
+                <h1 className="text-xl lg:text-2xl font-bold text-foreground dark:text-foreground ml-3">
+                  CORAL
+                </h1>
+              </Link>
+            </div>
           </div>
 
           {/* Right Navigation */}
-          <div className="flex items-center space-x-4 sm:space-x-6">
+          <div className="flex items-center justify-end space-x-4 sm:space-x-6">
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}
