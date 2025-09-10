@@ -34,6 +34,7 @@ import { useForm } from "react-hook-form";
 import { Event } from "../types";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
+import { toast } from "sonner";
 
 interface EditEventDialogProps {
   open: boolean;
@@ -87,11 +88,15 @@ export function EditEventDialog({
     try {
       setLoading(true);
       await updateEvent(selectedEvent.id.toString(), data);
+      toast.success("Event updated successfully!");
       onEventEdited();
       onOpenChange(false);
       form.reset();
     } catch (error) {
       console.error("Error updating event:", error);
+      // Extract error message from the error object
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
