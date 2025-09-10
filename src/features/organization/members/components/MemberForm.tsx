@@ -215,7 +215,7 @@ export function MemberForm({
                           field.onChange(parseInt(value));
                         }
                       }}
-                      value={field.value?.toString() || "none"}
+                      value={field.value?.toString() || "0"}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -223,7 +223,7 @@ export function MemberForm({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="0">None</SelectItem>
                         <SelectItem value="1">1st Year</SelectItem>
                         <SelectItem value="2">2nd Year</SelectItem>
                         <SelectItem value="3">3rd Year</SelectItem>

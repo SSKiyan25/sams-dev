@@ -119,6 +119,12 @@ export const checkStudentIdExist = async (studentId: string) => {
 
 export const addUser = async (userData: MemberFormData) => {
   try {
+    if (userData == null) {
+      throw new Error("No user data provided for addition.");
+    }
+    if (userData.yearLevel === undefined) {
+      userData.yearLevel = 0;
+    }
     const docRef = await addDoc(usersCollection, {
       ...userData,
       createdAt: Timestamp.now(),
@@ -132,6 +138,12 @@ export const addUser = async (userData: MemberFormData) => {
 
 export const updateUser = async (userId: string, userData: MemberFormData) => {
   try {
+    if (userData == null) {
+      throw new Error("No user data provided for update.");
+    }
+    if (userData.yearLevel === undefined) {
+      userData.yearLevel = 0;
+    }
     const userDoc = doc(db, "users", userId);
     await updateDoc(userDoc, {
       ...userData,
