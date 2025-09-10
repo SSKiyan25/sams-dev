@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { SidebarTrigger } from "../ui/sidebar";
 import { signOut } from "firebase/auth";
 import { auth } from "@/firebase/firebase.config";
 
@@ -30,9 +31,14 @@ interface User {
 interface SiteHeaderProps {
   user?: User | null;
   isAuthenticated: boolean;
+  showSidebarTrigger?: boolean; // Prop to control sidebar trigger visibility
 }
 
-export function SiteHeader({ user, isAuthenticated }: SiteHeaderProps) {
+export function SiteHeader({
+  user,
+  isAuthenticated,
+  showSidebarTrigger = false,
+}: SiteHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
@@ -41,6 +47,8 @@ export function SiteHeader({ user, isAuthenticated }: SiteHeaderProps) {
   // Use avatar from user.avatar or user.image (fallback) if user exists
   const avatarSrc = user?.avatar || user?.image;
   const isLoginPage = pathname === "/login";
+  const isOrgPage =
+    pathname.startsWith("/org-") || pathname.startsWith("/organization/");
 
   // Ensure component is mounted before showing theme-dependent content
   useEffect(() => {
@@ -64,9 +72,15 @@ export function SiteHeader({ user, isAuthenticated }: SiteHeaderProps) {
     <header className="w-full h-[69px] bg-white dark:bg-background border-b border-gray-400 dark:border-border shadow-lg relative z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
         <div className="flex items-center justify-between w-full h-full">
-          {/* Left side - Logo and Title */}
-          <div>
-            <div className="flex items-center sm:hidden block">
+          {/* Left side - Logo, Title, and Sidebar Trigger */}
+          <div className="flex items-center">
+            {/* Sidebar Trigger - Show on all screen sizes for org pages */}
+            {showSidebarTrigger && isOrgPage && (
+              <SidebarTrigger className="mr-4 sm:hidden block" />
+            )}
+
+            {/* Mobile Logo & Title - Always show on mobile except login page */}
+            <div className="flex items-center sm:hidden">
               {!isLoginPage && (
                 <Image
                   src="/enhanced-logo-final.svg"
@@ -81,6 +95,27 @@ export function SiteHeader({ user, isAuthenticated }: SiteHeaderProps) {
                   CORAL
                 </h1>
               </Link>
+            </div>
+
+            {/* Desktop - Either show nothing (org pages) or logo+title (public pages) */}
+            <div className="hidden sm:flex items-center">
+              {!isOrgPage && !isLoginPage && (
+                <Link
+                  href={isAuthenticated ? "/org-dashboard" : "/"}
+                  className="flex items-center"
+                >
+                  <Image
+                    src="/enhanced-logo-final.svg"
+                    alt="Coral Logo"
+                    width={40}
+                    height={40}
+                    className="text-primary mr-2"
+                  />
+                  <h1 className="text-xl font-bold text-foreground dark:text-foreground">
+                    CORAL
+                  </h1>
+                </Link>
+              )}
             </div>
           </div>
 

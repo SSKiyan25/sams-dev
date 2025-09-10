@@ -127,7 +127,11 @@ export default function OrganizationLayout({
         className="z-50"
       />
       <div className="flex-1 flex flex-col min-w-0">
-        <SiteHeader user={userData} isAuthenticated={isAuthenticated} />
+        <SiteHeader
+          user={userData}
+          isAuthenticated={isAuthenticated}
+          showSidebarTrigger={true}
+        />
         <main className="flex-1 p-4 pb-16 md:pb-4">{children}</main>
         <MobileBottomNav
           links={organizationData.mobileNavLinks}
