@@ -7,11 +7,12 @@
  * Expected CSV Format:
  * Student ID,First Name,Last Name,Email,Program Name,Faculty Name,Year Level
  *
+ * Student ID format: XX-1-XXXXX (where X is a number from 0-9, e.g., "21-1-12345")
  * Faculty Name values should match the full names in the 'faculties' collection (e.g., "Faculty of Computing", "Faculty of Engineering")
  * Program Name values should match the full names in the 'programs' collection (e.g., "BS in Computer Science", "BS in Environmental Science")
  *
  * Example CSV row:
- * 2021001,John,Doe,john.doe@example.com,"BS in Computer Science","Faculty of Computing",3
+ * 21-1-12345,John,Doe,john.doe@example.com,"BS in Computer Science","Faculty of Computing",3
  *
  * The system automatically:
  * - Validates all required fields
@@ -166,6 +167,12 @@ const validateMemberData = async (data: RawMemberData): Promise<string[]> => {
   // Check required string fields and ensure they're not empty after trimming
   if (!data.studentId || data.studentId.trim() === "") {
     errors.push("Student ID is required");
+  } else {
+    // Validate Student ID format: XX-1-XXXXX (where X can be any number from 0-9)
+    const studentIdRegex = /^[0-9]{2}-1-[0-9]{5}$/;
+    if (!studentIdRegex.test(data.studentId.trim())) {
+      errors.push("Student ID must be in format XX-1-XXXXX (where X is a number from 0-9)");
+    }
   }
 
   if (!data.firstName || data.firstName.trim() === "") {
