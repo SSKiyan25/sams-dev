@@ -60,7 +60,10 @@ export function MemberCard({
           <div className="flex items-start gap-4">
             <Avatar className="h-12 w-12 border border-gray-200 dark:border-gray-700">
               <AvatarFallback className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-sm">
-                {getInitials(memberData.member.firstName, memberData.member.lastName)}
+                {getInitials(
+                  memberData.member.firstName,
+                  memberData.member.lastName
+                )}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0 space-y-2">
@@ -69,18 +72,26 @@ export function MemberCard({
                   {memberData.member.firstName} {memberData.member.lastName}
                 </h3>
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  <Badge 
-                    variant="secondary" 
+                  <Badge
+                    variant="secondary"
                     className="bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 font-medium text-xs px-2 py-1 tracking-wide"
                   >
                     {getProgramName(memberData.member.programId)}
                   </Badge>
-                  {memberData.member.yearLevel && (
-                    <Badge 
+                  {memberData.member.yearLevel !== undefined &&
+                  memberData.member.yearLevel !== 0 ? (
+                    <Badge
                       variant="outline"
                       className="text-xs font-medium border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 tracking-wide"
                     >
                       {getYearLevelText(memberData.member.yearLevel)}
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="text-xs font-medium border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 tracking-wide"
+                    >
+                      N/A
                     </Badge>
                   )}
                 </div>
@@ -98,7 +109,9 @@ export function MemberCard({
                 <Mail className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Email</p>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
+                  Email
+                </p>
                 <p className="text-sm text-gray-700 dark:text-gray-300 break-all leading-relaxed">
                   {memberData.member.email || "No email provided"}
                 </p>
@@ -110,9 +123,11 @@ export function MemberCard({
                 <Building2 className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Faculty</p>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
+                  Faculty
+                </p>
                 <p className="text-sm text-gray-700 dark:text-gray-300 break-words leading-relaxed">
-                  {getFacultyName(memberData.member.facultyId)}
+                  {getFacultyName(memberData.member.facultyId as string)}
                 </p>
               </div>
             </div>
@@ -122,7 +137,9 @@ export function MemberCard({
                 <Hash className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Student ID</p>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
+                  Student ID
+                </p>
                 <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 font-mono tracking-wide leading-relaxed break-all">
                   {memberData.member.studentId}
                 </p>

@@ -4,6 +4,7 @@ import {
   addUser,
   checkStudentIdExist,
   getCurrentUserFacultyId,
+  getProgramByFacultyId,
   getPrograms,
 } from "@/firebase";
 import { isValidStudentId } from "../utils";
@@ -53,7 +54,7 @@ export function useAddStudentForm({
   useEffect(() => {
     const fetchProgramData = async () => {
       try {
-        const data = (await getPrograms()) as Program[];
+        const data = (await getProgramByFacultyId()) as Program[];
         setProgramData(data);
       } catch (error) {
         console.error("Failed to fetch program data:", error);
@@ -120,6 +121,7 @@ export function useAddStudentForm({
     try {
       if (await checkStudentIdExist(formData.studentId)) {
         setFormErrors({ studentId: "Student ID already exists" });
+        return;
       }
       const auth = getAuth();
       const facultyId = await getCurrentUserFacultyId(

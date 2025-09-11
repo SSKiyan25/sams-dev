@@ -4,7 +4,7 @@ export type Member = {
   firstName: string;
   lastName: string;
   programId: string;
-  facultyId: string;
+  facultyId?: string;
   studentId: string;
   email: string;
   role: "admin" | "user";
