@@ -91,37 +91,43 @@ export function ShortcutLinks({
   const EventSkeletons = () => (
     <>
       {[1, 2, 3].map((i) => (
-        <Card key={i} className="overflow-hidden">
-          <div className="p-4">
-            <div className="flex justify-between items-start mb-4">
+        <Card key={i} className="overflow-hidden border-border/50">
+          <div className="p-5">
+            <div className="flex justify-between items-start mb-4 gap-3">
               <div className="flex-1">
-                <Skeleton className="h-5 w-3/4 mb-2" />
-                <div className="flex items-center space-x-2">
-                  <Skeleton className="h-4 w-16" />
+                <div className="flex items-center gap-3 mb-2">
+                  <Skeleton className="h-8 w-8 rounded-lg" />
+                  <Skeleton className="h-6 w-48" />
+                  <Skeleton className="h-5 w-20" />
                 </div>
+                <Skeleton className="h-4 w-32 ml-11" />
               </div>
-              <Skeleton className="h-5 w-20" />
+              <Skeleton className="h-6 w-16" />
             </div>
-            <div className="space-y-3">
-              <div className="flex items-center">
-                <Skeleton className="h-4 w-4 mr-2" />
-                <Skeleton className="h-4 w-28" />
-              </div>
-              <div className="flex items-center">
-                <Skeleton className="h-4 w-4 mr-2" />
-                <Skeleton className="h-4 w-40" />
-              </div>
-              <div className="ml-6 space-y-2">
-                <div className="flex items-center mb-0.5">
-                  <Skeleton className="h-4 w-4 -ml-6 mr-2" />
-                  <Skeleton className="h-4 w-24" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+              <div className="flex items-start gap-3">
+                <Skeleton className="h-6 w-6 rounded-md" />
+                <div className="space-y-1">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-3 w-24" />
                 </div>
-                <Skeleton className="h-4 w-32 ml-0" />
-                <Skeleton className="h-4 w-36 ml-0" />
               </div>
-              <div className="flex items-center">
-                <Skeleton className="h-4 w-4 mr-2" />
-                <Skeleton className="h-4 w-20" />
+              <div className="flex items-start gap-3">
+                <Skeleton className="h-6 w-6 rounded-md" />
+                <div className="space-y-1">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </div>
+              <div className="col-span-1 sm:col-span-2 pt-3 border-t border-border/50">
+                <div className="flex items-start gap-3">
+                  <Skeleton className="h-6 w-6 rounded-md" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-32" />
+                    <Skeleton className="h-3 w-28" />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -131,99 +137,137 @@ export function ShortcutLinks({
   );
 
   return (
-    <Card className="py-8">
-      <CardHeader>
-        <CardTitle className="flex justify-between items-center">
-          <span>Quick Access</span>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/org-events">View All Events</Link>
+    <Card className="group relative overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 border-0 bg-gradient-to-br from-background via-background/95 to-muted/30 backdrop-blur-xl">
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-50"></div>
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/10 to-transparent rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-1000"></div>
+
+      <CardHeader className="pb-1 relative z-10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 text-primary shadow-lg">
+              <CalendarRange className="h-6 w-6" />
+            </div>
+            <div>
+              <CardTitle className="text-xl font-bold text-foreground leading-tight tracking-tight">
+                Quick Access
+              </CardTitle>
+              <p className="text-sm text-muted-foreground font-medium mt-0.5">
+                Recent and ongoing events
+              </p>
+            </div>
+          </div>
+          <Button asChild variant="outline" size="sm" className="border-2 border-border/50 hover:border-primary/60 transition-all duration-300 bg-background/80 backdrop-blur-sm shadow-lg hover:shadow-xl hover:scale-105 font-semibold">
+            <Link href="/org-events" className="flex items-center gap-2">
+              View All
+              <CalendarRange className="h-4 w-4" />
+            </Link>
           </Button>
-        </CardTitle>
+        </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+      <CardContent className="pt-0 relative z-10">
+        <div className="space-y-3">
           {isLoading ? (
             <EventSkeletons />
           ) : allEvents.length === 0 ? (
-            <div className="text-center py-6 text-muted-foreground">
-              No events found
+            <div className="text-center py-16 text-muted-foreground">
+              <div className="p-4 rounded-2xl bg-muted/30 w-fit mx-auto mb-4">
+                <CalendarRange className="h-8 w-8 opacity-50" />
+              </div>
+              <p className="text-lg font-semibold mb-2">No events found</p>
+              <p className="text-sm">Create your first event to get started</p>
             </div>
           ) : (
             allEvents.map((event) => (
               <Link
                 href={`/org-events/${event.id}/attendees`}
                 key={event.id}
-                className="block"
+                className="block group"
               >
-                <Card className="overflow-hidden transition-colors hover:bg-accent hover:text-accent-foreground">
+                <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 border-2 border-border/30 hover:border-primary/40 bg-gradient-to-r from-background/80 to-muted/20 backdrop-blur-sm hover:from-background hover:to-primary/5">
                   <div className="p-4">
-                    {/* Card Header with Title and Status Badge */}
-                    <div className="flex flex-wrap justify-between items-start mb-3 gap-2">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <CalendarRange className="h-5 w-5 text-primary" />
-                          <h3 className="font-semibold text-lg">
+                    {/* Compact Header */}
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300 group-hover:scale-110">
+                          <CalendarRange className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors truncate leading-tight">
                             {event.name}
                           </h3>
-                          {event.majorEvent && (
-                            <Badge
-                              variant="outline"
-                              className="bg-amber-50 text-amber-600 border-amber-200 flex items-center"
-                            >
-                              <StarIcon className="h-3 w-3 mr-1 fill-amber-500" />
-                              Major Event
-                            </Badge>
-                          )}
-                        </div>
-                        {/* Date displayed in user-friendly format */}
-                        <div className="text-sm text-muted-foreground font-medium">
-                          {formatDate(event.date)}
+                          <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                            {formatDate(event.date)}
+                          </p>
                         </div>
                       </div>
-                      <Badge
-                        variant={
-                          event.status === "ongoing" ? "default" : "secondary"
-                        }
-                        className="ml-auto"
-                      >
-                        {event.status === "ongoing" ? "Ongoing" : "Upcoming"}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        {event.majorEvent && (
+                          <Badge
+                            variant="outline"
+                            className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800 text-xs px-2 py-0.5"
+                          >
+                            <StarIcon className="h-3 w-3 fill-amber-500 mr-1" />
+                            Major
+                          </Badge>
+                        )}
+                        <Badge
+                          variant={event.status === "ongoing" ? "default" : "secondary"}
+                          className={`text-xs px-2 py-0.5 transition-colors ${
+                            event.status === "ongoing"
+                              ? "bg-green-500 hover:bg-green-600 text-white"
+                              : "bg-muted hover:bg-muted/80"
+                          }`}
+                        >
+                          {event.status === "ongoing" ? "Ongoing" : "Upcoming"}
+                        </Badge>
+                      </div>
                     </div>
 
-                    {/* Card Content in a 2-column grid for larger screens */}
-                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm text-muted-foreground">
+                    {/* Compact Info Grid */}
+                    <div className="grid grid-cols-2 gap-4 text-sm">
                       {/* Location */}
-                      <div className="flex items-start">
-                        <MapPinIcon className="mr-2 h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <span>{event.location}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-md bg-muted/50 text-muted-foreground">
+                          <MapPinIcon className="h-3.5 w-3.5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-muted-foreground font-medium">Location</p>
+                          <p className="text-foreground font-medium truncate">{event.location}</p>
+                        </div>
                       </div>
 
                       {/* Attendees */}
-                      <div className="flex items-start">
-                        <UsersIcon className="mr-2 h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <span>
-                          {event.status === "ongoing"
-                            ? `${event.attendees || 0} attendees`
-                            : "Not started"}
-                        </span>
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-md bg-muted/50 text-muted-foreground">
+                          <UsersIcon className="h-3.5 w-3.5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-muted-foreground font-medium">Attendees</p>
+                          <p className="text-foreground font-medium">
+                            {event.status === "ongoing"
+                              ? `${event.attendees || 0} checked in`
+                              : "Not started"}
+                          </p>
+                        </div>
                       </div>
+                    </div>
 
-                      {/* Time Schedule spans both columns */}
-                      <div className="col-span-1 sm:col-span-2 mt-1 border-t pt-2">
-                        <div className="flex items-start">
-                          <ClockIcon className="mr-2 h-4 w-4 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <span className="font-medium block mb-1">
-                              Time schedule
-                            </span>
-                            <div className="pl-1 space-y-1">
-                              {getTimeDisplay(
-                                event.timeInStart ?? null,
-                                event.timeInEnd ?? null,
-                                event.timeOutStart ?? null,
-                                event.timeOutEnd ?? null
-                              )}
-                            </div>
+                    {/* Time Schedule - Compact */}
+                    <div className="mt-3 pt-3 border-t border-border/30">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-md bg-muted/50 text-muted-foreground">
+                          <ClockIcon className="h-3.5 w-3.5" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs text-muted-foreground font-medium mb-1">Schedule</p>
+                          <div className="text-xs text-foreground font-medium">
+                            {getTimeDisplay(
+                              event.timeInStart ?? null,
+                              event.timeInEnd ?? null,
+                              event.timeOutStart ?? null,
+                              event.timeOutEnd ?? null
+                            )}
                           </div>
                         </div>
                       </div>
