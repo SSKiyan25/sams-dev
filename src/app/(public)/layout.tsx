@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/firebase/firebase.config";
 import { usePathname, useRouter } from "next/navigation";
-import { LoadingScreen } from "@/components/ui/loading-screen";
 
 // Define mobile icon map
 const mobileIconMap = {
@@ -23,34 +22,20 @@ export default function PublicLayout({
 }>) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [isRedirecting, setIsRedirecting] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-
-  // Check for logout URL parameter on mount
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("logout") === "true") {
-        // Remove the parameter without causing a refresh
-        window.history.replaceState({}, "", window.location.pathname);
-      }
-    }
-  }, []);
 
   // Listen for auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       const authenticated = !!user;
       setIsAuthenticated(authenticated);
+      setLoading(false);
 
       // If user is authenticated and trying to access the home page or login page,
       // redirect them to dashboard
       if (authenticated && (pathname === "/" || pathname === "/login")) {
-        setIsRedirecting(true);
         router.push("/org-dashboard");
-      } else {
-        setLoading(false);
       }
     });
 
@@ -70,6 +55,7 @@ export default function PublicLayout({
       icon: "info",
       href: "/about",
     },
+    // Change login to dashboard when user is authenticated
     {
       label: isAuthenticated ? "Dashboard" : "Login",
       icon: isAuthenticated ? "dashboard" : "login",
@@ -77,21 +63,11 @@ export default function PublicLayout({
     },
   ];
 
-  // Always show loading screen while loading
-  if (loading) {
-    return <LoadingScreen message="Getting things ready..." />;
-  }
-
-  if (isRedirecting) {
-    return <LoadingScreen message="Redirecting to dashboard..." />;
-  }
-
-  // Only render children when not loading
   return (
     <div className="flex min-h-screen w-full">
       <div className="flex-1 flex flex-col min-w-0">
         <SiteHeader user={null} isAuthenticated={isAuthenticated} />
-        <main className="flex-1 p-4 pb-16 md:pb-4">{children}</main>
+        <main className="flex-1 p-4 pb-16 md:pb-4">{!loading && children}</main>
         <MobileBottomNav links={navLinks} iconMap={mobileIconMap} />
       </div>
     </div>

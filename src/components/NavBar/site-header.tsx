@@ -18,7 +18,6 @@ import {
 import { SidebarTrigger } from "../ui/sidebar";
 import { signOut } from "firebase/auth";
 import { auth } from "@/firebase/firebase.config";
-import { LoadingScreen } from "@/components/ui/loading-screen";
 
 // Define the User interface
 interface User {
@@ -44,7 +43,6 @@ export function SiteHeader({
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Use avatar from user.avatar or user.image (fallback) if user exists
   const avatarSrc = user?.avatar || user?.image;
@@ -63,34 +61,15 @@ export function SiteHeader({
 
   const handleLogout = async () => {
     try {
-      setIsLoggingOut(true);
-
-      // First, sign out from Firebase
       await signOut(auth);
-
-      // Then clear the session cookie
-      const response = await fetch("/api/auth/signout", {
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to sign out");
-      }
-
-      // Use a reload approach instead of redirect
-      // This ensures a fresh start without relying on state persistence
-      window.location.href = "/?logout=true";
+      router.push("/");
     } catch (error) {
       console.error("Error signing out:", error);
-      setIsLoggingOut(false);
     }
   };
 
   return (
     <header className="w-full h-[69px] bg-white dark:bg-background border-b border-gray-400 dark:border-border shadow-lg relative z-10">
-      {isLoggingOut && (
-        <LoadingScreen message="Signing out..." className="rounded-none" />
-      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
         <div className="flex items-center justify-between w-full h-full">
           {/* Left side - Logo, Title, and Sidebar Trigger */}
@@ -147,11 +126,9 @@ export function SiteHeader({
               onClick={toggleTheme}
               className="font-nunito text-lg sm:text-xl text-[#202020] dark:text-foreground hover:text-[#008ACF] dark:hover:text-primary transition-colors flex items-center gap-1"
               aria-label={
-                mounted
-                  ? theme === "dark"
-                    ? "Switch to light mode"
-                    : "Switch to dark mode"
-                  : "Toggle theme"
+                theme === "dark"
+                  ? "Switch to light mode"
+                  : "Switch to dark mode"
               }
             >
               {mounted ? (
