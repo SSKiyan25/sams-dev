@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   CalendarIcon,
   ClockIcon,
@@ -127,10 +128,27 @@ export function EventCard({
       <CardHeader className=" px-6 pt-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            {/* Title that spans full width - no truncation */}
-            <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100 break-words leading-tight mb-4 hyphens-auto">
-              {event.name}
-            </CardTitle>
+            {/* Title with tooltip for long names */}
+            <div className="mb-4">
+              {event.name.length > 30 ? (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100 break-words leading-tight cursor-help line-clamp-2">
+                        {event.name}
+                      </CardTitle>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-xs">{event.name}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : (
+                <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100 break-words leading-tight">
+                  {event.name}
+                </CardTitle>
+              )}
+            </div>
             
             {/* Badges row - flexible wrapping layout */}
             <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -211,7 +229,22 @@ export function EventCard({
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Location</p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 break-words leading-relaxed">{event.location}</p>
+              {event.location.length > 40 ? (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 break-words leading-relaxed cursor-help line-clamp-2">
+                        {event.location}
+                      </p>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-xs">{event.location}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : (
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 break-words leading-relaxed">{event.location}</p>
+              )}
             </div>
           </div>
 
@@ -250,7 +283,22 @@ export function EventCard({
                     <div className="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
                     Additional Notes
                   </div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 break-words leading-relaxed">{event.note}</p>
+                  {event.note.length > 100 ? (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 break-words leading-relaxed cursor-help line-clamp-3">
+                            {event.note}
+                          </p>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-sm">{event.note}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ) : (
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 break-words leading-relaxed">{event.note}</p>
+                  )}
                 </div>
               </div>
             </>
