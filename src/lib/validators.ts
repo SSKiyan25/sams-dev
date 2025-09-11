@@ -15,7 +15,9 @@ export const eventSchema = z.object({
 export type EventFormData = z.infer<typeof eventSchema>;
 
 export const memberSchema = z.object({
-  studentId: z.string().min(1, "Student ID is required"),
+  studentId: z.string()
+    .min(1, "Student ID is required")
+    .regex(/^\d{2}-\d-\d{5}$/, "Student ID must follow format XX-X-XXXXX (e.g., 21-1-12345)"),
   email: z.string().min(5, "Email is required").email("Invalid email"),
   firstName: z.string().min(2, "First name is required"),
   lastName: z.string().min(2, "Last name is required"),
