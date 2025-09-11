@@ -187,10 +187,10 @@ export function LoginCard() {
           <div className="w-full max-w-lg mx-auto lg:mx-0 lg:max-w-none flex flex-col justify-center order-2 lg:order-1">
             {/* Title and Subtitle */}
             <div className="mb-4 lg:mb-6 text-center lg:text-left animate-fade-in-up animation-delay-300">
-              <h1 className="font-nunito text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-black dark:text-foreground leading-[1.1] lg:leading-tight mb-2 lg:mb-3 tracking-tight">
+              <h1 className="font-nunito text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-black dark:text-foreground leading-[1.1] lg:leading-tight mb-2 lg:mb-3 tracking-tight">
                 Sign in to CORAL
               </h1>
-              <p className="font-nunito-sans text-base sm:text-lg lg:text-xl xl:text-2xl text-[#5B5B5B] dark:text-muted-foreground leading-relaxed font-medium tracking-wide">
+              <p className="font-nunito-sans text-sm sm:text-base lg:text-lg xl:text-xl text-[#5B5B5B] dark:text-muted-foreground leading-relaxed font-medium tracking-wide">
                 Enter your credentials to access your account
               </p>
             </div>
@@ -218,28 +218,28 @@ export function LoginCard() {
             {/* Login Form Container */}
             <form
               onSubmit={handleSubmit}
-              className="bg-white dark:bg-card border border-[#767676] dark:border-border rounded-[30px] lg:rounded-[40px] p-6 sm:p-7 lg:p-8 w-full max-w-[520px] mx-auto lg:mx-0 shadow-lg dark:shadow-2xl animate-fade-in-up animation-delay-500"
+              className="bg-white dark:bg-card border border-[#767676] dark:border-border rounded-[20px] sm:rounded-[30px] lg:rounded-[40px] p-4 sm:p-6 lg:p-8 w-full max-w-[480px] sm:max-w-[500px] lg:max-w-[520px] mx-auto lg:mx-0 shadow-lg dark:shadow-2xl animate-fade-in-up animation-delay-500"
             >
               {/* Email Field */}
               <div className="space-y-2 animate-fade-in-up animation-delay-600">
                 <label
                   htmlFor="email"
-                  className="block font-instrument text-xl text-[#272727] dark:text-foreground"
+                  className="block font-instrument text-lg sm:text-xl text-[#272727] dark:text-foreground"
                 >
                   Email
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#696969] dark:text-muted-foreground" />
+                  <Mail className="absolute left-3 top-1/2 h-4 w-4 sm:h-5 sm:w-5 -translate-y-1/2 text-[#696969] dark:text-muted-foreground" />
                   <input
                     id="email"
                     type="email"
                     value={email}
                     onChange={handleEmailChange}
-                    className={`w-full h-[50px] pl-11 pr-4 border ${
+                    className={`w-full h-[44px] sm:h-[48px] lg:h-[50px] pl-10 sm:pl-11 pr-4 border ${
                       emailError
                         ? "border-red-500 focus:ring-red-500"
                         : "border-[#696969] dark:border-border focus:ring-[#008ACF] dark:focus:ring-primary"
-                    } rounded-[14px] bg-white dark:bg-input font-instrument text-lg text-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
+                    } rounded-[14px] bg-white dark:bg-input font-instrument text-base sm:text-lg text-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
                     disabled={isLoading}
                     placeholder="Enter your email"
                   />
@@ -253,22 +253,22 @@ export function LoginCard() {
               <div className="space-y-2 mt-4 animate-fade-in-up animation-delay-700">
                 <label
                   htmlFor="password"
-                  className="block font-instrument text-xl text-[#272727] dark:text-foreground"
+                  className="block font-instrument text-lg sm:text-xl text-[#272727] dark:text-foreground"
                 >
                   Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#696969] dark:text-muted-foreground" />
+                  <Lock className="absolute left-3 top-1/2 h-4 w-4 sm:h-5 sm:w-5 -translate-y-1/2 text-[#696969] dark:text-muted-foreground" />
                   <input
                     id="password"
                     type="password"
                     value={password}
                     onChange={handlePasswordChange}
-                    className={`w-full h-[50px] pl-11 pr-4 border ${
+                    className={`w-full h-[44px] sm:h-[48px] lg:h-[50px] pl-10 sm:pl-11 pr-4 border ${
                       passwordError
                         ? "border-red-500 focus:ring-red-500"
                         : "border-[#696969] dark:border-border focus:ring-[#008ACF] dark:focus:ring-primary"
-                    } rounded-[14px] bg-white dark:bg-input font-instrument text-lg text-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
+                    } rounded-[14px] bg-white dark:bg-input font-instrument text-base sm:text-lg text-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
                     disabled={isLoading}
                     placeholder="Enter your password"
                   />
@@ -337,7 +337,7 @@ export function LoginCard() {
               <div className="pt-6 animate-fade-in-up animation-delay-900">
                 <button
                   type="submit"
-                  className="w-full max-w-[200px] h-16 bg-[#008ACF] dark:bg-primary text-white dark:text-primary-foreground font-poppins text-[18px] rounded-xl hover:bg-[#0f73a5] dark:hover:bg-primary/90 transition-all duration-200 mx-auto disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105"
+                  className="w-full max-w-[180px] sm:max-w-[200px] h-12 sm:h-14 lg:h-16 bg-[#008ACF] dark:bg-primary text-white dark:text-primary-foreground font-poppins text-sm sm:text-base lg:text-[18px] rounded-xl hover:bg-[#0f73a5] dark:hover:bg-primary/90 transition-all duration-200 mx-auto disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105"
                   disabled={
                     isLoading ||
                     (formSubmitted &&
