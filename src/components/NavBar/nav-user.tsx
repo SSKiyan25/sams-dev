@@ -1,7 +1,7 @@
 "use client";
 
 import { MoreVertical, LogOut } from "lucide-react";
-
+import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -19,7 +19,8 @@ import {
 } from "@/components/ui/sidebar";
 import { signOut } from "firebase/auth";
 import { auth } from "@/firebase/firebase.config";
-import { useRouter } from "next/navigation";
+import { LoadingScreen } from "@/components/ui/loading-screen";
+// import { useRouter } from "next/navigation";
 
 interface User {
   name?: string;
@@ -34,14 +35,31 @@ interface NavUserProps {
 
 export function NavUser({ user }: NavUserProps) {
   const { isMobile } = useSidebar();
-  const router = useRouter();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  // const router = useRouter();
 
   const handleSignOut = async () => {
-    await signOut(auth);
-    await fetch("/api/auth/signout", {
-      method: "POST",
-    });
-    router.push("/login");
+    try {
+      setIsSigningOut(true);
+
+      // First, sign out from Firebase
+      await signOut(auth);
+
+      // Then clear the session cookie
+      const response = await fetch("/api/auth/signout", {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to sign out");
+      }
+
+      // Use a reload approach instead of redirect
+      window.location.href = "/?logout=true";
+    } catch (error) {
+      console.error("Error signing out:", error);
+      setIsSigningOut(false);
+    }
   };
 
   // Use avatar from user.avatar or user.image (fallback)
@@ -49,6 +67,7 @@ export function NavUser({ user }: NavUserProps) {
 
   return (
     <SidebarMenu>
+      {isSigningOut && <LoadingScreen message="Signing out..." />}
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
