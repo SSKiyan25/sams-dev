@@ -119,6 +119,26 @@ export function MembersStats({
   studentStats,
   eventAttendance,
 }: MembersStatsProps) {
+
+  const getChartColors = () => {
+    if (typeof window !== 'undefined') {
+      const computedStyle = getComputedStyle(document.documentElement);
+      return {
+        textColor: computedStyle.getPropertyValue('--muted-foreground').trim() || '#6b7280',
+        borderColor: computedStyle.getPropertyValue('--border').trim() || '#e5e7eb',
+        backgroundColor: computedStyle.getPropertyValue('--background').trim() || '#ffffff',
+        foregroundColor: computedStyle.getPropertyValue('--foreground').trim() || '#000000',
+      };
+    }
+    return {
+      textColor: '#6b7280', 
+      backgroundColor: '#ffffff',
+      foregroundColor: '#000000',
+    };
+  };
+
+  const chartColors = getChartColors();
+
   // Filter options
   const [filterType, setFilterType] = useState<string>("recent");
   const [chartType, setChartType] = useState<string>("bar");
@@ -298,7 +318,7 @@ export function MembersStats({
           <BarChart {...commonProps}>
             <CartesianGrid
               strokeDasharray="3 6"
-              stroke="hsl(var(--border))"
+              stroke={chartColors.borderColor}
               opacity={0.6}
               vertical={false}
               strokeWidth={1.5}
@@ -307,24 +327,24 @@ export function MembersStats({
               dataKey="displayName"
               tick={{
                 fontSize: 13,
-                fill: 'hsl(var(--muted-foreground))',
+                fill: chartColors.textColor,
                 fontWeight: 500,
                 fontFamily: 'Inter, system-ui, sans-serif'
               }}
-              axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1.5 }}
-              tickLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1.5 }}
+              axisLine={{ stroke: chartColors.borderColor, strokeWidth: 1.5 }}
+              tickLine={{ stroke: chartColors.borderColor, strokeWidth: 1.5 }}
               dy={10}
               interval={0}
             />
             <YAxis
               tick={{
                 fontSize: 13,
-                fill: 'hsl(var(--muted-foreground))',
+                fill: chartColors.textColor,
                 fontWeight: 500,
                 fontFamily: 'Inter, system-ui, sans-serif'
               }}
-              axisLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1.5 }}
-              tickLine={{ stroke: 'hsl(var(--border))', strokeWidth: 1.5 }}
+              axisLine={{ stroke: chartColors.borderColor, strokeWidth: 1.5 }}
+              tickLine={{ stroke: chartColors.borderColor, strokeWidth: 1.5 }}
               dx={-8}
             />
             <Tooltip content={<CustomTooltip />} />
@@ -334,7 +354,7 @@ export function MembersStats({
                 fontSize: '14px',
                 fontWeight: 500,
                 fontFamily: 'Inter, system-ui, sans-serif',
-                color: 'hsl(var(--foreground))'
+                color: chartColors.foregroundColor
               }}
               iconSize={12}
               iconType="circle"
@@ -357,7 +377,7 @@ export function MembersStats({
               animationBegin={0}
               animationDuration={1500}
               animationEasing="ease-out"
-              stroke="hsl(var(--background))"
+              stroke={chartColors.backgroundColor}
               strokeWidth={2}
             />
             <Bar
@@ -368,7 +388,7 @@ export function MembersStats({
               animationBegin={400}
               animationDuration={1500}
               animationEasing="ease-out"
-              stroke="hsl(var(--background))"
+              stroke={chartColors.backgroundColor}
               strokeWidth={2}
             />
           </BarChart>
