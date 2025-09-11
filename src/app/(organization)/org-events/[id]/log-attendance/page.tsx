@@ -55,21 +55,24 @@ export default function LogAttendancePage() {
         studentId,
         type
       );
-      console.log(exist);
       if (exist) {
         toast.error("Attendance record already exists.");
         return;
+      } else {
+        await logAttendance({
+          eventId: eventId as string,
+          studentId,
+          type,
+        });
+
+        // Show success message with appropriate wording for completed events
+        const actionText = type === "time-in" ? "checked in" : "checked out";
+        const eventText =
+          event.status === "completed"
+            ? "special attendance logged"
+            : `${actionText} successfully`;
+        toast.success(`Student ${eventText} for ${event.name}`);
       }
-      await logAttendance({
-        eventId: eventId as string,
-        studentId,
-        type,
-      });
-      
-      // Show success message with appropriate wording for completed events
-      const actionText = type === "time-in" ? "checked in" : "checked out";
-      const eventText = event.status === "completed" ? "special attendance logged" : `${actionText} successfully`;
-      toast.success(`Student ${eventText} for ${event.name}`);
       
     } catch (error) {
       console.error("Failed to log attendance:", error);

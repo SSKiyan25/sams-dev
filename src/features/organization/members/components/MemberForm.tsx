@@ -35,6 +35,8 @@ import {
 import { useMemberForm } from "../hooks/userMemberForm";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { getCurrentUserFacultyId } from "@/firebase/users";
+import { getAuth } from "firebase/auth";
 
 interface MemberFormProps {
   open: boolean;
@@ -58,6 +60,8 @@ export function MemberForm({
 
   useEffect(() => {
     if (open && member) {
+      member.member.yearLevel =
+        parseInt(member.member.yearLevel as unknown as string) ?? 0;
       form.reset({
         ...member.member,
         role: "user", // Set default role to user
@@ -68,7 +72,6 @@ export function MemberForm({
         firstName: "",
         lastName: "",
         programId: "",
-        facultyId: "",
         studentId: "",
         email: "",
         yearLevel: undefined,
@@ -78,9 +81,12 @@ export function MemberForm({
     }
   }, [open, member, form]);
 
-  const handleFormSubmit = (data: MemberFormData) => {
+  const handleFormSubmit = async (data: MemberFormData) => {
     if (!agreed) return;
-
+    data.facultyId = (await getCurrentUserFacultyId(
+      getAuth().currentUser?.uid || ""
+    )) as string;
+    console.log("Form Data Submitted:", data);
     const memberToSubmit: Member = {
       ...data,
       role: "user", // Always set role to "user"
@@ -179,38 +185,14 @@ export function MemberForm({
               />
               <FormField
                 control={form.control}
-                name="facultyId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Faculty</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a faculty" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {facultyData.map((faculty: Faculty) => (
-                          <SelectItem key={faculty.id} value={faculty.id}>
-                            {faculty.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
                 name="yearLevel"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Year Level (Optional)</FormLabel>
                     <Select
                       onValueChange={(value) => {
-                        if (value === "none") {
-                          field.onChange(undefined);
+                        if (value === "0") {
+                          field.onChange(0);
                         } else {
                           field.onChange(parseInt(value));
                         }

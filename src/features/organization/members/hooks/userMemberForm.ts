@@ -11,7 +11,6 @@ export const useMemberForm = () => {
       firstName: "",
       lastName: "",
       programId: "",
-      facultyId: "",
       role: "user",
       yearLevel: undefined,
     },

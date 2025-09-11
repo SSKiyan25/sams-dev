@@ -12,7 +12,11 @@ import {
   ClockIcon,
   TimerIcon,
 } from "lucide-react";
-import { searchUserByName, searchUserByStudentId } from "@/firebase";
+import {
+  checkLogAttendanceExist,
+  searchUserByName,
+  searchUserByStudentId,
+} from "@/firebase";
 import { isValidStudentId } from "../utils";
 import { AddStudentDialog } from "./AddStudentDialog";
 
@@ -41,14 +45,14 @@ interface AttendanceFormProps {
   onTabChange?: (tab: "time-in" | "time-out") => void;
 }
 
-export function AttendanceForm({ 
-  event, 
-  type, 
-  onSubmit, 
-  hasTimeIn = true, 
-  hasTimeOut = false, 
-  activeTab, 
-  onTabChange 
+export function AttendanceForm({
+  event,
+  type,
+  onSubmit,
+  hasTimeIn = true,
+  hasTimeOut = false,
+  activeTab,
+  onTabChange,
 }: AttendanceFormProps) {
   const [studentId, setStudentId] = useState<string>("");
   const [searchName, setSearchName] = useState<string>("");
@@ -111,7 +115,7 @@ export function AttendanceForm({
     // Validate format and show toast errors for manual search
     if (!isValidStudentId(studentId)) {
       setSearchResult({ status: "invalid-format", student: null });
-      
+
       // Provide helpful error messages only for manual search
       const trimmed = studentId.trim();
       if (trimmed.length < 8) {
@@ -120,10 +124,10 @@ export function AttendanceForm({
         toast.error(`Student ID too long. Expected format: XX-X-XXXXX`);
       } else if (!/^\d{2}-\d{1}-\d{5}$/.test(trimmed)) {
         toast.error(`Invalid student ID format. Expected: XX-X-XXXXX`);
-      } 
+      }
       return;
     }
-    await performIdSearch(true); 
+    await performIdSearch(true);
   };
 
   // Handle auto-complete search
@@ -135,12 +139,12 @@ export function AttendanceForm({
     if (!isValidStudentId(studentId)) {
       return;
     }
-    await performIdSearch(false); 
+    await performIdSearch(false);
   };
 
   // Handle ID search triggered by auto-completion (no toast errors) - DISABLED
   // Auto-search has been disabled to prevent unwanted loading states
-  
+
   const performIdSearch = async (showToasts: boolean = true) => {
     setSearchResult({ status: "loading", student: null });
     setIsLoading(true);
@@ -177,7 +181,11 @@ export function AttendanceForm({
   // Handle name search
   const handleNameSearch = async (searchTerm?: string) => {
     const nameToSearch = searchTerm || searchName;
-    if (!nameToSearch || typeof nameToSearch !== 'string' || !nameToSearch.trim()) {
+    if (
+      !nameToSearch ||
+      typeof nameToSearch !== "string" ||
+      !nameToSearch.trim()
+    ) {
       setNameSearchResults([]);
       setHasPerformedNameSearch(false);
       return;
@@ -190,7 +198,7 @@ export function AttendanceForm({
       // Show loading state for at least 200ms for better UX
       const [results] = await Promise.all([
         searchUserByName(nameToSearch, currentUser) as unknown as Member[],
-        new Promise(resolve => setTimeout(resolve, 200))
+        new Promise((resolve) => setTimeout(resolve, 200)),
       ]);
 
       console.log(results.length);
@@ -233,6 +241,10 @@ export function AttendanceForm({
     setIsProcessing(true);
 
     try {
+      if (await checkLogAttendanceExist(event.id.toString(), student.studentId, type)) {
+        toast.error("Attendance record already exists.");
+        return;
+      }
       // Simulate network delay
       await new Promise((resolve) => setTimeout(resolve, 2000));
       await onSubmit(student.studentId);
@@ -241,7 +253,7 @@ export function AttendanceForm({
       const studentName = showNames
         ? student.firstName + " " + student.lastName
         : "Student";
-      
+
       const getMessage = () => {
         if (event.status === "completed") {
           return `${studentName} - Special attendance logged for ${event.name}.`;
@@ -250,7 +262,7 @@ export function AttendanceForm({
           type === "time-in" ? "checked in" : "checked out"
         } for ${event.name}.`;
       };
-      
+
       toast.success(getMessage());
 
       // Reset form after successful submission
@@ -302,6 +314,10 @@ export function AttendanceForm({
     setIsProcessing(true);
 
     try {
+      if (await checkLogAttendanceExist(event.id.toString(), studentId, type)) {
+        toast.error("Attendance record already exists.");
+        return;
+      }
       // Simulate network delay
       await new Promise((resolve) => setTimeout(resolve, 2000));
       await onSubmit(studentId);
@@ -310,7 +326,7 @@ export function AttendanceForm({
       const studentName = showNames
         ? searchResult.student.firstName + " " + searchResult.student.lastName
         : "Student";
-      
+
       const getMessage = () => {
         if (event.status === "completed") {
           return `${studentName} - Special attendance logged for ${event.name}.`;
@@ -319,7 +335,7 @@ export function AttendanceForm({
           type === "time-in" ? "checked in" : "checked out"
         } for ${event.name}.`;
       };
-      
+
       toast.success(getMessage());
 
       // Reset form after successful submission
@@ -433,12 +449,13 @@ export function AttendanceForm({
         <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 p-6">
           <Tabs
             defaultValue="id"
-            onValueChange={(value) =>
-              setSearchMethod(value as "id" | "name")
-            }
+            onValueChange={(value) => setSearchMethod(value as "id" | "name")}
           >
             <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100 dark:bg-gray-700">
-              <TabsTrigger value="id" className="flex items-center gap-1.5 font-nunito-sans font-semibold">
+              <TabsTrigger
+                value="id"
+                className="flex items-center gap-1.5 font-nunito-sans font-semibold"
+              >
                 By Student ID
               </TabsTrigger>
               <TabsTrigger
@@ -464,8 +481,7 @@ export function AttendanceForm({
                   />
                 </div>
 
-                {searchResult.status === "success" &&
-                  searchResult.student && (
+                {searchResult.status === "success" && searchResult.student && (
                   <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-green-50/50 dark:bg-green-900/10">
                     <StudentDetails
                       student={searchResult.student}
@@ -492,8 +508,8 @@ export function AttendanceForm({
                   <Alert variant="destructive">
                     <AlertCircleIcon className="h-4 w-4" />
                     <AlertDescription>
-                      An error occurred while searching for the student.
-                      Please try again.
+                      An error occurred while searching for the student. Please
+                      try again.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -501,7 +517,7 @@ export function AttendanceForm({
             </TabsContent>
 
             <TabsContent value="name">
-              <div className="space-y-4">                
+              <div className="space-y-4">
                 <SearchByNameForm
                   searchName={searchName}
                   setSearchName={handleNameSearchChange}
@@ -521,14 +537,14 @@ export function AttendanceForm({
               {nameSearchResults.length === 0 &&
                 searchName.trim() !== "" &&
                 hasPerformedNameSearch && (
-                <div className="mt-4">
-                  <NoStudentFound
-                    searchTerm={searchName}
-                    searchType="name"
-                    onAddStudent={() => setIsAddStudentOpen(true)}
-                  />
-                </div>
-              )}
+                  <div className="mt-4">
+                    <NoStudentFound
+                      searchTerm={searchName}
+                      searchType="name"
+                      onAddStudent={() => setIsAddStudentOpen(true)}
+                    />
+                  </div>
+                )}
 
               {/* Show cancel button when results are shown */}
               {nameSearchResults.length > 0 && (

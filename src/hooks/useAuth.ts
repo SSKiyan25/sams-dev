@@ -27,17 +27,12 @@ export function useAuth() {
           // Get additional user data from Firestore
           const userDocRef = doc(db, "users", authUser.uid);
           const userSnapshot = await getDoc(userDocRef);
-
           if (userSnapshot.exists()) {
             const firestoreData = userSnapshot.data();
-
             // Combine auth and Firestore data
             setUser({
               uid: authUser.uid,
-              name:
-                firestoreData.firstName && firestoreData.lastName
-                  ? `${firestoreData.firstName} ${firestoreData.lastName}`
-                  : authUser.displayName || "User",
+              name: firestoreData.name,
               email: authUser.email || firestoreData.email || "",
               avatar: authUser.photoURL || "",
               firstName: firestoreData.firstName,

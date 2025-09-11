@@ -9,7 +9,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RotateCcwIcon, SearchIcon, XIcon } from "lucide-react";
-import { getPrograms } from "@/firebase";
+import { getProgramByFacultyId, getPrograms } from "@/firebase";
 import { Program } from "../../members/types";
 import { SearchParams } from "../types";
 
@@ -30,7 +30,7 @@ export function AttendeesFilters({
 
   useEffect(() => {
     const fetchPrograms = async () => {
-      const programsData = await getPrograms();
+      const programsData = await getProgramByFacultyId();
       setPrograms(programsData as unknown as Program[]);
     };
     fetchPrograms();

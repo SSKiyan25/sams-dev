@@ -24,6 +24,7 @@ import {
   checkStudentIdExist,
   deleteUser,
   getFaculties,
+  getProgramByFacultyId,
   getPrograms,
   getUsers,
   processFileForBulkImport,
@@ -38,7 +39,8 @@ export default function MembersPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [isBulkImportOpenResult, setIsBulkImportOpenResult] = useState(false);
-  const [bulkImportResult, setBulkImportResult] = useState<BulkImportResult | null>(null);
+  const [bulkImportResult, setBulkImportResult] =
+    useState<BulkImportResult | null>(null);
   const [selectedMember, setSelectedMember] = useState<MemberData | null>(null);
   const [faculties, setFaculties] = useState<Faculty[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
@@ -55,7 +57,10 @@ export default function MembersPage() {
   // Load saved view mode from localStorage
   useEffect(() => {
     const savedViewMode = localStorage.getItem("membersViewMode") as ViewMode;
-    if (savedViewMode && (savedViewMode === "card" || savedViewMode === "table")) {
+    if (
+      savedViewMode &&
+      (savedViewMode === "card" || savedViewMode === "table")
+    ) {
       setViewMode(savedViewMode);
     }
   }, []);
@@ -70,7 +75,11 @@ export default function MembersPage() {
     setIsLoading(true);
     try {
       const [fetchedMembers, fetchedFaculties, fetchedPrograms] =
-        await Promise.all([getUsers(), getFaculties(), getPrograms()]);
+        await Promise.all([
+          getUsers(),
+          getFaculties(),
+          getProgramByFacultyId(),
+        ]);
       setMembers(fetchedMembers as unknown as MemberData[]);
       setFaculties(fetchedFaculties as unknown as Faculty[]);
       setPrograms(fetchedPrograms as unknown as Program[]);
@@ -164,8 +173,48 @@ export default function MembersPage() {
   };
 
   const handleSortBy = (sortBy: string) => {
-    // Implement sorting logic here
-    console.log("Sort by:", sortBy);
+    // Implement sorting logic here based on sortBy value
+    // For example, sort by name, date added, etc.
+    // This is a placeholder implementation
+    const sortedMembers = [...members];
+    if (sortBy === "name-asc") {
+      sortedMembers.sort((a, b) =>
+        a.member.firstName.localeCompare(b.member.firstName)
+      );
+    } else if (sortBy === "name-desc") {
+      sortedMembers.sort((a, b) =>
+        b.member.firstName.localeCompare(a.member.firstName)
+      );
+    } else if (sortBy === "id-asc") {
+      sortedMembers.sort((a, b) =>
+        a.member.studentId.localeCompare(b.member.studentId)
+      );
+    } else if (sortBy === "id-desc") {
+      sortedMembers.sort((a, b) =>
+        b.member.studentId.localeCompare(a.member.studentId)
+      );
+    } else if (sortBy === "date-desc") {
+      sortedMembers.sort((a, b) => {
+        const dateA = a.member.createdAt
+          ? new Date(a.member.createdAt.toDate())
+          : new Date(0);
+        const dateB = b.member.createdAt
+          ? new Date(b.member.createdAt.toDate())
+          : new Date(0);
+        return dateA.getTime() - dateB.getTime();
+      });
+    } else if (sortBy === "date-asc") {
+      sortedMembers.sort((a, b) => {
+        const dateA = a.member.createdAt
+          ? new Date(a.member.createdAt.toDate())
+          : new Date(0);
+        const dateB = b.member.createdAt
+          ? new Date(b.member.createdAt.toDate())
+          : new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
+    }
+    setMembers(sortedMembers);
     setCurrentPage(1); // Reset to first page when sort changes
   };
 
@@ -175,19 +224,26 @@ export default function MembersPage() {
 
   // Filter and search members
   const filteredMembers = members.filter((member) => {
-    const matchesSearch = searchQuery === "" || 
-      member.member.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.member.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch =
+      searchQuery === "" ||
+      member.member.firstName
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      member.member.lastName
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
       member.member.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       member.member.studentId.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesProgram = programFilter === "all" || member.member.programId === programFilter;
+    const matchesProgram =
+      programFilter === "all" || member.member.programId === programFilter;
 
     return matchesSearch && matchesProgram;
   });
 
   // Pagination
-  const itemsPerPage = viewMode === "card" ? ITEMS_PER_PAGE_CARD : ITEMS_PER_PAGE_TABLE;
+  const itemsPerPage =
+    viewMode === "card" ? ITEMS_PER_PAGE_CARD : ITEMS_PER_PAGE_TABLE;
   const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
   const paginatedMembers = filteredMembers.slice(
     (currentPage - 1) * itemsPerPage,

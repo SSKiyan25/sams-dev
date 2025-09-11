@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Pencil, Trash2, Mail, Hash, Building2 } from "lucide-react";
+import { getCurrentUserFacultyId } from "@/firebase";
+import { getAuth } from "firebase/auth";
 
 interface CompactMemberListProps {
   members: MemberData[];
@@ -12,7 +14,7 @@ interface CompactMemberListProps {
   onDelete: (member: MemberData) => void;
 }
 
-export function CompactMemberList({
+export async function CompactMemberList({
   members,
   programs,
   faculties,
@@ -23,6 +25,10 @@ export function CompactMemberList({
     const program = programs.find((p) => p.id === programId);
     return program ? program.name : "N/A";
   };
+
+  const currentUserFacultyId = await getCurrentUserFacultyId(
+    getAuth().currentUser?.uid || ""
+  );
 
   const getFacultyName = (facultyId: string) => {
     const faculty = faculties.find((f) => f.id === facultyId);
@@ -57,10 +63,13 @@ export function CompactMemberList({
             <div className="flex items-center gap-4 flex-1 min-w-0">
               <Avatar className="h-12 w-12 border-2 border-blue-200 dark:border-blue-700 shadow-sm">
                 <AvatarFallback className="bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900 dark:to-indigo-900 text-blue-700 dark:text-blue-300 font-bold">
-                  {getInitials(memberData.member.firstName, memberData.member.lastName)}
+                  {getInitials(
+                    memberData.member.firstName,
+                    memberData.member.lastName
+                  )}
                 </AvatarFallback>
               </Avatar>
-              
+
               <div className="flex-1 min-w-0 space-y-2">
                 {/* Name and badges */}
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2">
@@ -68,14 +77,14 @@ export function CompactMemberList({
                     {memberData.member.firstName} {memberData.member.lastName}
                   </h4>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge 
-                      variant="secondary" 
+                    <Badge
+                      variant="secondary"
                       className="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border-blue-300 dark:from-blue-900/30 dark:to-indigo-900/30 dark:text-blue-400 dark:border-blue-600 font-semibold text-xs"
                     >
                       {getProgramName(memberData.member.programId)}
                     </Badge>
                     {memberData.member.yearLevel && (
-                      <Badge 
+                      <Badge
                         variant="outline"
                         className="text-xs font-semibold"
                       >
@@ -96,7 +105,7 @@ export function CompactMemberList({
                   <div className="flex items-center gap-2">
                     <Building2 className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
                     <span className="font-medium text-gray-700 dark:text-gray-300 truncate">
-                      {getFacultyName(memberData.member.facultyId)}
+                      {getFacultyName(currentUserFacultyId as string) || "N/A"}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
