@@ -1,11 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-/* Guys diri ra nako gibutang ang auth logic instead of making a separate hook
- kay basin nya makaguba ko HAHAHAHA chz anyways, kamo ra bahala*/
-
-import { useState } from "react";
-// import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { Loader2, Mail, Lock, AlertCircle } from "lucide-react";
 import Image from "next/image";
 import {
@@ -23,26 +19,72 @@ export function LoginCard() {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  // const router = useRouter();
+  const [formSubmitted, setFormSubmitted] = useState(false);
 
+  // Validate form on input changes after first submission attempt
+  useEffect(() => {
+    if (formSubmitted) {
+      validateForm();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [email, password, formSubmitted]);
+
+  // Clear field-specific errors when fields change
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
+    setEmailError(null);
     setError(null);
     setSuccessMessage(null);
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPassword(e.target.value);
+    setPasswordError(null);
     setError(null);
     setSuccessMessage(null);
   };
 
+  // Form validation function
+  const validateForm = (): boolean => {
+    let isValid = true;
+
+    // Reset field errors
+    setEmailError(null);
+    setPasswordError(null);
+
+    // Email validation
+    if (!email.trim()) {
+      setEmailError("Email is required");
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      setEmailError("Please enter a valid email address");
+      isValid = false;
+    }
+
+    // Password validation
+    if (!password) {
+      setPasswordError("Password is required");
+      isValid = false;
+    }
+
+    return isValid;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setFormSubmitted(true);
     setError(null);
     setSuccessMessage(null);
+
+    // Validate form before proceeding
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
       const userCredential = await signInWithEmailAndPassword(
@@ -74,14 +116,17 @@ export function LoginCard() {
     } catch (error: any) {
       console.error("Login failed", error);
 
-      // Show a more user-friendly error message
-      if (
-        error.code === "auth/wrong-password" ||
-        error.code === "auth/user-not-found"
-      ) {
-        setError("Invalid email or password. Please try again.");
+      // Handle specific Firebase auth errors
+      if (error.code === "auth/wrong-password") {
+        setPasswordError("Invalid password. Please try again.");
+      } else if (error.code === "auth/user-not-found") {
+        setEmailError("No account found with this email.");
+      } else if (error.code === "auth/invalid-email") {
+        setEmailError("Please enter a valid email address.");
       } else if (error.code === "auth/too-many-requests") {
         setError("Too many failed login attempts. Please try again later.");
+      } else if (error.code === "auth/invalid-credential") {
+        setError("Invalid email or password. Please try again.");
       } else {
         setError("An error occurred during sign in. Please try again.");
       }
@@ -91,8 +136,8 @@ export function LoginCard() {
 
   const handlePasswordReset = async () => {
     if (!email) {
-      setError("Please enter your email to reset your password.");
-      setSuccessMessage(null);
+      setEmailError("Please enter your email to reset your password.");
+      setFormSubmitted(true);
       return;
     }
 
@@ -105,9 +150,9 @@ export function LoginCard() {
       setSuccessMessage("Password reset email sent. Please check your inbox.");
     } catch (error: any) {
       if (error.code === "auth/user-not-found") {
-        setError("No account found with this email.");
+        setEmailError("No account found with this email.");
       } else if (error.code === "auth/invalid-email") {
-        setError("Please enter a valid email address.");
+        setEmailError("Please enter a valid email address.");
       } else {
         setError("Failed to send password reset email. Please try again.");
       }
@@ -190,12 +235,18 @@ export function LoginCard() {
                     type="email"
                     value={email}
                     onChange={handleEmailChange}
-                    className="w-full h-[50px] pl-11 pr-4 border border-[#696969] dark:border-border rounded-[14px] bg-white dark:bg-input font-instrument text-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#008ACF] dark:focus:ring-primary focus:border-transparent transition-all"
-                    required
+                    className={`w-full h-[50px] pl-11 pr-4 border ${
+                      emailError
+                        ? "border-red-500 focus:ring-red-500"
+                        : "border-[#696969] dark:border-border focus:ring-[#008ACF] dark:focus:ring-primary"
+                    } rounded-[14px] bg-white dark:bg-input font-instrument text-lg text-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
                     disabled={isLoading}
                     placeholder="Enter your email"
                   />
                 </div>
+                {emailError && (
+                  <p className="text-red-500 text-sm mt-1">{emailError}</p>
+                )}
               </div>
 
               {/* Password Field */}
@@ -213,12 +264,18 @@ export function LoginCard() {
                     type="password"
                     value={password}
                     onChange={handlePasswordChange}
-                    className="w-full h-[50px] pl-11 pr-4 border border-[#696969] dark:border-border rounded-[14px] bg-white dark:bg-input font-instrument text-lg text-foreground focus:outline-none focus:ring-2 focus:ring-[#008ACF] dark:focus:ring-primary focus:border-transparent transition-all"
-                    required
+                    className={`w-full h-[50px] pl-11 pr-4 border ${
+                      passwordError
+                        ? "border-red-500 focus:ring-red-500"
+                        : "border-[#696969] dark:border-border focus:ring-[#008ACF] dark:focus:ring-primary"
+                    } rounded-[14px] bg-white dark:bg-input font-instrument text-lg text-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
                     disabled={isLoading}
                     placeholder="Enter your password"
                   />
                 </div>
+                {passwordError && (
+                  <p className="text-red-500 text-sm mt-1">{passwordError}</p>
+                )}
               </div>
 
               {/* Remember Me and Forgot Password */}
@@ -281,7 +338,11 @@ export function LoginCard() {
                 <button
                   type="submit"
                   className="w-full max-w-[200px] h-16 bg-[#008ACF] dark:bg-primary text-white dark:text-primary-foreground font-poppins text-[18px] rounded-xl hover:bg-[#0f73a5] dark:hover:bg-primary/90 transition-all duration-200 mx-auto disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105"
-                  disabled={isLoading}
+                  disabled={
+                    isLoading ||
+                    (formSubmitted &&
+                      (!email || !password || !!emailError || !!passwordError))
+                  }
                 >
                   {isLoading ? (
                     <>
