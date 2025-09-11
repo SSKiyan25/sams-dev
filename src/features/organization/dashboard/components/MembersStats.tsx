@@ -585,7 +585,7 @@ export function MembersStats({
               <div className="p-3 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 text-primary shadow-lg">
                 <Activity className="h-8 w-8" />
               </div>
-              Attendance By Events
+              Attendance by Event
             </CardTitle>
             <span className="text-base text-muted-foreground font-semibold pl-16 tracking-wide">
               Comprehensive event attendance overview and insights
