@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   User,
@@ -37,6 +37,7 @@ import {
   UserX,
 } from "lucide-react";
 import { Event } from "../types";
+import { attendeesPresentCountForEvent } from "@/firebase";
 const CustomTooltip = ({
   active,
   payload,
@@ -53,7 +54,10 @@ const CustomTooltip = ({
         </p>
         <div className="space-y-3">
           {payload.map((entry, index) => (
-            <div key={`item-${index}`} className="flex items-center gap-4 p-2 rounded-lg bg-muted/50">
+            <div
+              key={`item-${index}`}
+              className="flex items-center gap-4 p-2 rounded-lg bg-muted/50"
+            >
               <div
                 className="w-4 h-4 rounded-full shadow-sm border border-border/50"
                 style={{ backgroundColor: entry.color }}
@@ -73,7 +77,9 @@ const CustomTooltip = ({
               <div className="flex items-center gap-4 p-2 rounded-lg bg-primary/5 border border-primary/20">
                 <div className="w-4 h-4 rounded-full bg-green-500 shadow-sm"></div>
                 <div className="flex-1 flex justify-between items-center">
-                  <span className="text-sm font-semibold text-foreground">Attendance Rate:</span>
+                  <span className="text-sm font-semibold text-foreground">
+                    Attendance Rate:
+                  </span>
                   <span className="text-base font-bold text-green-600">
                     {event.attendanceRate}%
                   </span>
@@ -84,11 +90,11 @@ const CustomTooltip = ({
           {event && event.date && (
             <p className="text-xs text-muted-foreground flex items-center gap-2 pt-2 font-medium">
               <CalendarDays className="h-4 w-4" />
-              {new Date(event.date).toLocaleDateString('en-US', {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric'
+              {new Date(event.date).toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+                year: "numeric",
               })}
             </p>
           )}
@@ -142,6 +148,23 @@ export function MembersStats({
   // Filter options
   const [filterType, setFilterType] = useState<string>("recent");
   const [chartType, setChartType] = useState<string>("bar");
+  const [eventPresentCounts, setEventPresentCounts] = useState<{
+    [key: string]: number;
+  }>({});
+
+  useEffect(() => {
+    const fetchEventPresentCounts = async () => {
+      const counts: { [key: string]: number } = {};
+      for (const event of eventAttendance) {
+        const count = await attendeesPresentCountForEvent(event.id);
+        counts[event.id] = count;
+      }
+      setEventPresentCounts(counts);
+    };
+    setFilterType("recent"); // Reset filter to recent on data change
+
+    fetchEventPresentCounts();
+  }, [eventAttendance]);
 
   // Get years from event data for filter options
   const years = useMemo(() => {
@@ -174,15 +197,17 @@ export function MembersStats({
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()) // Sort by date ascending
       .map((event, index) => {
         const totalMembers = studentStats.totalStudents;
-        const absent = totalMembers - (event.attendees || 0);
-
+        const presentCount = eventPresentCounts[event.id] || 0;
+        const absent = totalMembers - presentCount;
         return {
           name: event.name,
           displayName: `Event ${index + 1}`,
-          Present: event.attendees || 0,
+          Present: presentCount,
           Absent: absent > 0 ? absent : 0,
           date: event.date,
-          attendanceRate: event.attendees ? ((event.attendees / totalMembers) * 100).toFixed(1) : 0,
+          attendanceRate: presentCount
+            ? ((presentCount / totalMembers) * 100).toFixed(1)
+            : 0,
         };
       });
   }, [eventAttendance, filterType, years, studentStats.totalStudents]);
@@ -203,20 +228,27 @@ export function MembersStats({
       case "pie":
         // Enhanced color palette for pie charts
         const COLORS = {
-          present: 'hsl(142 76% 36%)', // Emerald green
-          absent: 'hsl(0 84% 60%)',    // Red
+          present: "hsl(142 76% 36%)", // Emerald green
+          absent: "hsl(0 84% 60%)", // Red
         };
 
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
             {chartData.map((event, index) => {
               const pieData = [
-                { name: 'Present', value: event.Present, color: COLORS.present },
-                { name: 'Absent', value: event.Absent, color: COLORS.absent },
+                {
+                  name: "Present",
+                  value: event.Present,
+                  color: COLORS.present,
+                },
+                { name: "Absent", value: event.Absent, color: COLORS.absent },
               ];
 
               return (
-                <div key={index} className="group flex flex-col items-center p-6 rounded-2xl border-2 border-border/30 hover:border-primary/40 hover:shadow-2xl transition-all duration-500 bg-gradient-to-br from-background via-muted/5 to-muted/10 backdrop-blur-sm">
+                <div
+                  key={index}
+                  className="group flex flex-col items-center p-6 rounded-2xl border-2 border-border/30 hover:border-primary/40 hover:shadow-2xl transition-all duration-500 bg-gradient-to-br from-background via-muted/5 to-muted/10 backdrop-blur-sm"
+                >
                   <div className="text-base font-semibold text-foreground mb-2 text-center leading-tight">
                     {event.displayName}
                   </div>
@@ -253,7 +285,9 @@ export function MembersStats({
                                   <div className="flex items-center gap-3">
                                     <div
                                       className="w-4 h-4 rounded-full shadow-md border-2 border-white/50"
-                                      style={{ backgroundColor: data.payload.color }}
+                                      style={{
+                                        backgroundColor: data.payload.color,
+                                      }}
                                     ></div>
                                     <div>
                                       <span className="text-sm font-semibold text-foreground">
@@ -288,7 +322,9 @@ export function MembersStats({
                         style={{ backgroundColor: COLORS.present }}
                       ></div>
                       <div className="text-center">
-                        <span className="text-muted-foreground font-medium block text-[10px] uppercase tracking-wide">Present</span>
+                        <span className="text-muted-foreground font-medium block text-[10px] uppercase tracking-wide">
+                          Present
+                        </span>
                         <span className="text-foreground font-bold text-sm">
                           {event.Present}
                         </span>
@@ -300,7 +336,9 @@ export function MembersStats({
                         style={{ backgroundColor: COLORS.absent }}
                       ></div>
                       <div className="text-center">
-                        <span className="text-muted-foreground font-medium block text-[10px] uppercase tracking-wide">Absent</span>
+                        <span className="text-muted-foreground font-medium block text-[10px] uppercase tracking-wide">
+                          Absent
+                        </span>
                         <span className="text-foreground font-bold text-sm">
                           {event.Absent}
                         </span>
@@ -329,7 +367,7 @@ export function MembersStats({
                 fontSize: 13,
                 fill: chartColors.textColor,
                 fontWeight: 500,
-                fontFamily: 'Inter, system-ui, sans-serif'
+                fontFamily: "Inter, system-ui, sans-serif",
               }}
               axisLine={{ stroke: chartColors.borderColor, strokeWidth: 1.5 }}
               tickLine={{ stroke: chartColors.borderColor, strokeWidth: 1.5 }}
@@ -341,7 +379,7 @@ export function MembersStats({
                 fontSize: 13,
                 fill: chartColors.textColor,
                 fontWeight: 500,
-                fontFamily: 'Inter, system-ui, sans-serif'
+                fontFamily: "Inter, system-ui, sans-serif",
               }}
               axisLine={{ stroke: chartColors.borderColor, strokeWidth: 1.5 }}
               tickLine={{ stroke: chartColors.borderColor, strokeWidth: 1.5 }}
@@ -350,8 +388,8 @@ export function MembersStats({
             <Tooltip content={<CustomTooltip />} />
             <Legend
               wrapperStyle={{
-                paddingTop: '24px',
-                fontSize: '14px',
+                paddingTop: "24px",
+                fontSize: "14px",
                 fontWeight: 500,
                 fontFamily: 'Inter, system-ui, sans-serif',
                 color: chartColors.foregroundColor
@@ -359,12 +397,14 @@ export function MembersStats({
               iconSize={12}
               iconType="circle"
               formatter={(value, entry) => (
-                <span style={{
-                  color: entry.color,
-                  fontWeight: 600,
-                  fontSize: '13px',
-                  letterSpacing: '0.025em'
-                }}>
+                <span
+                  style={{
+                    color: entry.color,
+                    fontWeight: 600,
+                    fontSize: "13px",
+                    letterSpacing: "0.025em",
+                  }}
+                >
                   {value}
                 </span>
               )}
@@ -561,13 +601,19 @@ export function MembersStats({
                 <SelectValue placeholder="Chart type" />
               </SelectTrigger>
               <SelectContent className="border-2 border-border/50 bg-background/95 backdrop-blur-xl shadow-2xl">
-                <SelectItem value="bar" className="cursor-pointer hover:bg-primary/10 transition-colors duration-200">
+                <SelectItem
+                  value="bar"
+                  className="cursor-pointer hover:bg-primary/10 transition-colors duration-200"
+                >
                   <div className="flex items-center gap-3 py-1">
                     <BarChart3 className="h-5 w-5 text-primary" />
                     <span className="font-semibold">Bar Chart</span>
                   </div>
                 </SelectItem>
-                <SelectItem value="pie" className="cursor-pointer hover:bg-primary/10 transition-colors duration-200">
+                <SelectItem
+                  value="pie"
+                  className="cursor-pointer hover:bg-primary/10 transition-colors duration-200"
+                >
                   <div className="flex items-center gap-3 py-1">
                     <Activity className="h-5 w-5 text-primary" />
                     <span className="font-semibold">Pie Charts</span>
@@ -585,14 +631,24 @@ export function MembersStats({
                 <SelectValue placeholder="Filter events" />
               </SelectTrigger>
               <SelectContent className="border-2 border-border/50 bg-background/95 backdrop-blur-xl shadow-2xl">
-                <SelectItem value="recent" className="cursor-pointer hover:bg-primary/10 transition-colors duration-200">
+                <SelectItem
+                  value="recent"
+                  className="cursor-pointer hover:bg-primary/10 transition-colors duration-200"
+                >
                   <span className="font-semibold">Recent Events</span>
                 </SelectItem>
-                <SelectItem value="all" className="cursor-pointer hover:bg-primary/10 transition-colors duration-200">
+                <SelectItem
+                  value="all"
+                  className="cursor-pointer hover:bg-primary/10 transition-colors duration-200"
+                >
                   <span className="font-semibold">All Events</span>
                 </SelectItem>
                 {years.map((year) => (
-                  <SelectItem key={year} value={year} className="cursor-pointer hover:bg-primary/10 transition-colors duration-200">
+                  <SelectItem
+                    key={year}
+                    value={year}
+                    className="cursor-pointer hover:bg-primary/10 transition-colors duration-200"
+                  >
                     <span className="font-semibold">{year}</span>
                   </SelectItem>
                 ))}
@@ -601,7 +657,11 @@ export function MembersStats({
           </div>
         </CardHeader>
         <CardContent className="pt-4">
-          <div className={`px-8 ${chartType === 'pie' ? 'h-auto min-h-[320px]' : 'h-[480px]'} pb-4`}>
+          <div
+            className={`px-8 ${
+              chartType === "pie" ? "h-auto min-h-[320px]" : "h-[480px]"
+            } pb-4`}
+          >
             {isLoading ? (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted/20 to-muted/10 rounded-xl border border-border/30">
                 <div className="space-y-6 w-full px-8 py-8">
@@ -618,7 +678,7 @@ export function MembersStats({
                   <Skeleton className="h-4 w-full rounded-lg" />
                 </div>
               </div>
-            ) : chartType === 'pie' ? (
+            ) : chartType === "pie" ? (
               renderChart()
             ) : (
               <ResponsiveContainer width="100%" height="100%">
@@ -637,7 +697,9 @@ export function MembersStats({
                     <div className="p-1.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:bg-amber-500/20 transition-colors duration-200">
                       <UserStar className="h-4 w-4" />
                     </div>
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Peak</span>
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Peak
+                    </span>
                   </div>
                   {isLoading ? (
                     <Skeleton className="h-7 w-12 mx-auto" />
@@ -657,7 +719,9 @@ export function MembersStats({
                     <div className="p-1.5 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 group-hover:bg-green-500/20 transition-colors duration-200">
                       <Percent className="h-4 w-4" />
                     </div>
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Rate</span>
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Rate
+                    </span>
                   </div>
                   {isLoading ? (
                     <Skeleton className="h-7 w-10 mx-auto" />
@@ -677,7 +741,9 @@ export function MembersStats({
                     <div className="p-1.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-500/20 transition-colors duration-200">
                       <EqualApproximately className="h-4 w-4" />
                     </div>
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Average</span>
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Average
+                    </span>
                   </div>
                   {isLoading ? (
                     <Skeleton className="h-7 w-10 mx-auto" />
@@ -697,7 +763,9 @@ export function MembersStats({
               <div className="bg-gradient-to-r from-background via-muted/20 to-background border border-border/40 rounded-2xl p-5 shadow-sm backdrop-blur-sm">
                 <div className="flex items-center gap-2 mb-4">
                   <CalendarDays className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-semibold text-foreground uppercase tracking-wider">Event Legend</span>
+                  <span className="text-sm font-semibold text-foreground uppercase tracking-wider">
+                    Event Legend
+                  </span>
                 </div>
 
                 {/* Horizontal Legend Layout with Flex Fill */}
@@ -705,14 +773,14 @@ export function MembersStats({
                   {chartData.map((event, index) => {
                     // Generate unique colors for each event
                     const colors = [
-                      'hsl(142 76% 36%)', // Emerald
-                      'hsl(221 83% 53%)', // Blue
-                      'hsl(262 83% 58%)', // Purple
-                      'hsl(17 87% 59%)',  // Orange
-                      'hsl(142 69% 58%)', // Green
-                      'hsl(199 89% 48%)', // Cyan
-                      'hsl(280 87% 65%)', // Violet
-                      'hsl(25 95% 53%)',  // Amber
+                      "hsl(142 76% 36%)", // Emerald
+                      "hsl(221 83% 53%)", // Blue
+                      "hsl(262 83% 58%)", // Purple
+                      "hsl(17 87% 59%)", // Orange
+                      "hsl(142 69% 58%)", // Green
+                      "hsl(199 89% 48%)", // Cyan
+                      "hsl(280 87% 65%)", // Violet
+                      "hsl(25 95% 53%)", // Amber
                     ];
                     const eventColor = colors[index % colors.length];
                     const isLongName = event.name.length > 20;
@@ -761,10 +829,16 @@ export function MembersStats({
                 <div className="mt-4 pt-4 border-t border-border/30">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span className="font-medium">
-                      {chartData.length} event{chartData.length !== 1 ? 's' : ''}
+                      {chartData.length} event
+                      {chartData.length !== 1 ? "s" : ""}
                     </span>
                     <span className="font-medium">
-                      Total: {chartData.reduce((sum, event) => sum + (event.Present || 0), 0)} attendees
+                      Total:{" "}
+                      {chartData.reduce(
+                        (sum, event) => sum + (event.Present || 0),
+                        0
+                      )}{" "}
+                      attendees
                     </span>
                   </div>
                 </div>
@@ -777,7 +851,10 @@ export function MembersStats({
               <Skeleton className="h-4 w-32 mb-5" />
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div key={i} className="flex gap-3 items-center p-3 rounded-xl bg-background/60 border border-border/20">
+                  <div
+                    key={i}
+                    className="flex gap-3 items-center p-3 rounded-xl bg-background/60 border border-border/20"
+                  >
                     <Skeleton className="w-2 h-2 rounded-full" />
                     <div className="flex-1 space-y-1">
                       <Skeleton className="h-3 w-16" />

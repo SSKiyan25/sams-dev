@@ -419,3 +419,63 @@ export const getAttendanceRecord = async (
     return { records: [], total: 0, nextCursor: null };
   }
 };
+
+export const attendeesPresentCountForEvent = async (eventId: string) => {
+  try {
+    const facultyId = await getCurrentUserFacultyId(
+      getAuth().currentUser?.uid || ""
+    );
+    const attendanceCollection = collection(db, "eventAttendees");
+    const q = query(
+      attendanceCollection,
+      where("eventId", "==", eventId),
+      where("student.facultyId", "==", facultyId || ""),
+      where("status", "!=", "absent")
+    );
+    const snapshot = await getCountFromServer(q);
+    return snapshot.data().count;
+  } catch (error) {
+    handleFirestoreError(error, `counting attendees for event ${eventId}`);
+    return 0;
+  }
+};
+
+export const totalAttendeesForEvent = async (eventId: string) => {
+  try {
+    const facultyId = await getCurrentUserFacultyId(
+      getAuth().currentUser?.uid || ""
+    );
+    const attendanceCollection = collection(db, "eventAttendees");
+    const q = query(
+      attendanceCollection,
+      where("eventId", "==", eventId),
+      where("student.facultyId", "==", facultyId || "")
+    );
+    const snapshot = await getCountFromServer(q);
+    return snapshot.data().count;
+  } catch (error) {
+    handleFirestoreError(
+      error,
+      `counting total attendees for event ${eventId}`
+    );
+    return 0;
+  }
+};
+
+export const totalAttendeesForAllEvent = async () => {
+  try {
+    const facultyId = await getCurrentUserFacultyId(
+      getAuth().currentUser?.uid || ""
+    );
+    const attendanceCollection = collection(db, "eventAttendees");
+    const q = query(
+      attendanceCollection,
+      where("student.facultyId", "==", facultyId || "")
+    );
+    const snapshot = await getCountFromServer(q);
+    return snapshot.data().count;
+  } catch (error) {
+    handleFirestoreError(error, `counting total attendees for all events`);
+    return 0;
+  }
+};
