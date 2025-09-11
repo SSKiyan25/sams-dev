@@ -13,6 +13,7 @@ import {
 import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 
 // Define icon map for the sidebar
 const iconMap = {
@@ -97,12 +98,10 @@ export default function OrganizationLayout({
   // Show loading state while authenticating
   if (loading) {
     return (
-      <div className="flex min-h-screen w-full items-center justify-center">
-        <div className="text-center">
-          <div className="h-16 w-16 animate-spin rounded-full border-4 border-muted border-t-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading...</p>
-        </div>
-      </div>
+      <LoadingScreen
+        message="Loading your organization dashboard..."
+        className="bg-primary/5"
+      />
     );
   }
 

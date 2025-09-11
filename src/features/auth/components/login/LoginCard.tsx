@@ -5,9 +5,8 @@
  kay basin nya makaguba ko HAHAHAHA chz anyways, kamo ra bahala*/
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Loader2, Mail, Lock } from "lucide-react";
-import Link from "next/link";
+// import { useRouter } from "next/navigation";
+import { Loader2, Mail, Lock, AlertCircle } from "lucide-react";
 import Image from "next/image";
 import {
   getIdToken,
@@ -17,8 +16,6 @@ import {
 import { auth } from "@/firebase/firebase.config";
 import { LoginLoadingOverlay } from "@/features/auth/components/login/LoginLoadingOverlay";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
-import { set } from "zod";
 
 export function LoginCard() {
   const [isLoading, setIsLoading] = useState(false);
@@ -27,7 +24,7 @@ export function LoginCard() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const router = useRouter();
+  // const router = useRouter();
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
@@ -56,7 +53,8 @@ export function LoginCard() {
 
       const idToken = await getIdToken(userCredential.user);
 
-      await fetch("/api/auth/session", {
+      // Make the API call to create the session
+      const response = await fetch("/api/auth/session", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -64,8 +62,15 @@ export function LoginCard() {
         body: JSON.stringify({ idToken }),
       });
 
-      // Navigate to dashboard on successful login
-      router.push("/org-dashboard");
+      if (!response.ok) {
+        throw new Error("Failed to create session");
+      }
+
+      // Set success message
+      setSuccessMessage("Login successful! Redirecting...");
+
+      // Navigate directly without setTimeout and without resetting isLoading
+      window.location.href = "/org-dashboard";
     } catch (error: any) {
       console.error("Login failed", error);
 
@@ -80,7 +85,6 @@ export function LoginCard() {
       } else {
         setError("An error occurred during sign in. Please try again.");
       }
-    } finally {
       setIsLoading(false);
     }
   };
@@ -167,15 +171,22 @@ export function LoginCard() {
             )}
 
             {/* Login Form Container */}
-            <div className="bg-white dark:bg-card border border-[#767676] dark:border-border rounded-[30px] lg:rounded-[40px] p-6 sm:p-7 lg:p-8 w-full max-w-[520px] mx-auto lg:mx-0 shadow-lg dark:shadow-2xl animate-fade-in-up animation-delay-500">
+            <form
+              onSubmit={handleSubmit}
+              className="bg-white dark:bg-card border border-[#767676] dark:border-border rounded-[30px] lg:rounded-[40px] p-6 sm:p-7 lg:p-8 w-full max-w-[520px] mx-auto lg:mx-0 shadow-lg dark:shadow-2xl animate-fade-in-up animation-delay-500"
+            >
               {/* Email Field */}
               <div className="space-y-2 animate-fade-in-up animation-delay-600">
-                <label className="block font-instrument text-xl text-[#272727] dark:text-foreground">
+                <label
+                  htmlFor="email"
+                  className="block font-instrument text-xl text-[#272727] dark:text-foreground"
+                >
                   Email
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#696969] dark:text-muted-foreground" />
                   <input
+                    id="email"
                     type="email"
                     value={email}
                     onChange={handleEmailChange}
@@ -188,13 +199,17 @@ export function LoginCard() {
               </div>
 
               {/* Password Field */}
-              <div className="space-y-2 animate-fade-in-up animation-delay-700">
-                <label className="block font-instrument text-xl text-[#272727] dark:text-foreground">
+              <div className="space-y-2 mt-4 animate-fade-in-up animation-delay-700">
+                <label
+                  htmlFor="password"
+                  className="block font-instrument text-xl text-[#272727] dark:text-foreground"
+                >
                   Password
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#696969] dark:text-muted-foreground" />
                   <input
+                    id="password"
                     type="password"
                     value={password}
                     onChange={handlePasswordChange}
@@ -230,6 +245,7 @@ export function LoginCard() {
                             viewBox="0 0 24 24"
                             fill="none"
                             xmlns="http://www.w3.org/2000/svg"
+                            aria-hidden="true"
                           >
                             <path
                               d="M19 3H5C3.89 3 3 3.9 3 5V19C3 20.1 3.89 21 5 21H19C20.11 21 21 20.1 21 19V5C21 3.9 20.11 3 19 3ZM10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z"
@@ -249,6 +265,7 @@ export function LoginCard() {
                 </div>
                 <div className="text-left sm:text-right">
                   <button
+                    type="button"
                     onClick={handlePasswordReset}
                     className="font-instrument text-base text-[#008ACF] dark:text-primary underline hover:text-[#0f73a5] dark:hover:text-primary/80 transition-colors inline-block"
                     tabIndex={isLoading ? -1 : 0}
@@ -262,7 +279,6 @@ export function LoginCard() {
               {/* Sign In Button */}
               <div className="pt-6 animate-fade-in-up animation-delay-900">
                 <button
-                  onClick={handleSubmit}
                   type="submit"
                   className="w-full max-w-[200px] h-16 bg-[#008ACF] dark:bg-primary text-white dark:text-primary-foreground font-poppins text-[18px] rounded-xl hover:bg-[#0f73a5] dark:hover:bg-primary/90 transition-all duration-200 mx-auto disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105"
                   disabled={isLoading}
@@ -277,7 +293,7 @@ export function LoginCard() {
                   )}
                 </button>
               </div>
-            </div>
+            </form>
           </div>
 
           {/* Right Side - Illustration (Desktop only) */}
