@@ -9,6 +9,9 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
+import { useEffect, useState } from "react";
+import { getCurrentUserFacultyId } from "@/firebase";
+import { getAuth } from "firebase/auth";
 
 interface MembersTableProps {
   members: MemberData[];
@@ -25,6 +28,7 @@ export function MembersTable({
   onEdit,
   onDelete,
 }: MembersTableProps) {
+  const [facultyId, setFacultyId] = useState<string | null>(null);
   const getProgramName = (programId: string) => {
     const program = programs.find((p) => p.id === programId);
     return program ? program.name : "N/A";
@@ -35,20 +39,41 @@ export function MembersTable({
     return faculty ? faculty.name : "N/A";
   };
 
+  useEffect(() => {
+    const fetchProgramName = async () => {
+      const facultyId = await getCurrentUserFacultyId(
+        getAuth().currentUser?.uid || ""
+      );
+      setFacultyId(facultyId);
+    };
+    fetchProgramName();
+  }, [members]);
+
   if (members.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg border shadow-sm p-12 text-center">
         <div className="max-w-sm mx-auto">
           <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+            <svg
+              className="w-8 h-8 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+              />
             </svg>
           </div>
           <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
             No members found
           </h3>
           <p className="text-gray-500 dark:text-gray-400">
-            Try adjusting your search or filter criteria, or add a new member to get started.
+            Try adjusting your search or filter criteria, or add a new member to
+            get started.
           </p>
         </div>
       </div>
@@ -61,7 +86,7 @@ export function MembersTable({
       <div className="block sm:hidden">
         <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {members.map((memberData) => (
-            <div 
+            <div
               key={memberData.id}
               className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
@@ -70,7 +95,8 @@ export function MembersTable({
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
-                      {memberData.member?.firstName} {memberData.member?.lastName}
+                      {memberData.member?.firstName}{" "}
+                      {memberData.member?.lastName}
                     </h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mt-1">
                       ID: {memberData.member?.studentId}
@@ -95,20 +121,25 @@ export function MembersTable({
                     </Button>
                   </div>
                 </div>
-                
+
                 {/* Program and Faculty */}
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs">
-                    <span className="text-gray-500 dark:text-gray-400">Program:</span>
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Program:
+                    </span>
                     <span className="text-gray-700 dark:text-gray-300 text-right">
                       {getProgramName(memberData.member?.programId)}
-                      {memberData.member?.yearLevel && ` - ${memberData.member.yearLevel}`}
+                      {memberData.member?.yearLevel &&
+                        ` - ${memberData.member.yearLevel}`}
                     </span>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span className="text-gray-500 dark:text-gray-400">Faculty:</span>
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Faculty:
+                    </span>
                     <span className="text-gray-700 dark:text-gray-300 text-right">
-                      {getFacultyName(memberData.member?.facultyId)}
+                      {getFacultyName(facultyId as string) || "N/A"}
                     </span>
                   </div>
                 </div>
@@ -146,7 +177,7 @@ export function MembersTable({
             </TableHeader>
             <TableBody>
               {members.map((memberData, index) => (
-                <TableRow 
+                <TableRow
                   key={memberData.id}
                   className={`border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
                     index % 2 === 0 ? "bg-gray-25 dark:bg-gray-900/50" : ""
@@ -169,7 +200,7 @@ export function MembersTable({
                   </TableCell>
                   <TableCell className="text-gray-700 dark:text-gray-300 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-sm hidden lg:table-cell">
                     <span className="truncate max-w-[120px] xl:max-w-none block">
-                      {getFacultyName(memberData.member?.facultyId)}
+                      {getFacultyName(facultyId as string) || "N/A"}
                     </span>
                   </TableCell>
                   <TableCell className="text-gray-700 dark:text-gray-300 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-sm">

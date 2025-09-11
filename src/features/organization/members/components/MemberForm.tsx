@@ -60,6 +60,8 @@ export function MemberForm({
 
   useEffect(() => {
     if (open && member) {
+      member.member.yearLevel =
+        parseInt(member.member.yearLevel as unknown as string) ?? 0;
       form.reset({
         ...member.member,
         role: "user", // Set default role to user
@@ -189,8 +191,8 @@ export function MemberForm({
                     <FormLabel>Year Level (Optional)</FormLabel>
                     <Select
                       onValueChange={(value) => {
-                        if (value === "none") {
-                          field.onChange(undefined);
+                        if (value === "0") {
+                          field.onChange(0);
                         } else {
                           field.onChange(parseInt(value));
                         }
