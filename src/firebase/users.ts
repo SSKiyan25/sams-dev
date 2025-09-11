@@ -17,12 +17,20 @@ import {
 import { db } from "./firebase.config";
 import { MemberFormData } from "@/lib/validators";
 import { Member } from "@/features/organization/members/types";
+import { getAuth } from "firebase/auth";
+import { email } from "zod";
 
 // Define the collection reference once at the top level for reuse.
 const usersCollection: CollectionReference<DocumentData> = collection(
   db,
   "users"
 );
+
+interface UserData {
+  name: string;
+  email: string;
+  avatar?: string;
+}
 
 // Centralized error handler
 const handleFirestoreError = (error: any, context: string) => {
@@ -60,14 +68,36 @@ export const getCurrentUserFacultyId = async (
   return facultyId;
 };
 
+export const getCurrentUser = async (uid: string) => {
+  console.log("Current User UID:", uid);
+  if (!uid) {
+    console.error("No user is currently authenticated.");
+    return null;
+  }
+  const userDocRef = doc(db, "users", uid);
+  const userDocSnap = await getDoc(userDocRef);
+  if (!userDocSnap.exists()) {
+    console.error("Authenticated user's document not found.");
+    return null;
+  }
+  return {
+    name: userDocSnap.data().name,
+    email: userDocSnap.data().email,
+  } as unknown as UserData;
+};
+
 // --- EXPORTED FUNCTIONS ---
 
 export const getUsers = async () => {
   try {
+    const facultyId = await getCurrentUserFacultyId(
+      getAuth().currentUser?.uid || ""
+    );
     const usersQuery = query(
       usersCollection,
       where("isDeleted", "==", false),
-      where("role", "==", "user")
+      where("role", "==", "user"),
+      where("facultyId", "==", facultyId || "")
     );
     const querySnapshot = await getDocs(usersQuery);
     return querySnapshot.docs.map((doc) => ({
@@ -83,10 +113,18 @@ export const getUsers = async () => {
 
 export const getRecentUsers = async () => {
   try {
+    const facultyId = await getCurrentUserFacultyId(
+      getAuth().currentUser?.uid || ""
+    );
+    if (!facultyId) {
+      console.log("Could not determine faculty ID for the current user.");
+      return [];
+    }
     const recentUsersQuery = query(
       usersCollection,
       where("role", "==", "user"),
       where("isDeleted", "==", false),
+      where("facultyId", "==", facultyId),
       orderBy("createdAt", "desc"),
       limit(5)
     );
@@ -119,6 +157,9 @@ export const checkStudentIdExist = async (studentId: string) => {
 
 export const addUser = async (userData: MemberFormData) => {
   try {
+    if (await checkStudentIdExist(userData.studentId)) {
+      throw new Error("Student ID already exists.");
+    }
     if (userData == null) {
       throw new Error("No user data provided for addition.");
     }

@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { AttendanceForm } from "./AttendanceForm";
 import { RecentAttendance } from "./RecentAttendance";
 import { Event } from "../../events/types";
+import { check } from "zod";
+import { checkLogAttendanceExist } from "@/firebase";
+import { toast } from "sonner";
 
 interface AttendanceInterfaceProps {
   event: Event;
@@ -44,9 +47,9 @@ export function AttendanceInterface({
     <div className="space-y-6">
       {/* Attendance Form */}
       <div className="bg-white dark:bg-gray-800 rounded-lg border shadow-sm p-6">
-        <AttendanceForm 
-          event={event} 
-          type={activeTab} 
+        <AttendanceForm
+          event={event}
+          type={activeTab}
           onSubmit={handleSubmit}
           hasTimeIn={hasTimeIn}
           hasTimeOut={hasTimeOut}

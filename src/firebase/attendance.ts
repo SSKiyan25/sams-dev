@@ -20,7 +20,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { getAuth } from "firebase/auth";
-import { searchUserByStudentId } from "./users"; // Assuming this is optimized
+import { getCurrentUserFacultyId, searchUserByStudentId } from "./users"; // Assuming this is optimized
 import {
   AttendanceRecord,
   EventAttendance,
@@ -134,6 +134,9 @@ export const getRecentAttendance = async (
   type: "time-in" | "time-out"
 ): Promise<AttendanceRecord[]> => {
   try {
+    const facultyId = await getCurrentUserFacultyId(
+      getAuth().currentUser?.uid || ""
+    );
     const attendanceCollection = collection(db, "eventAttendees");
     const timestampField = type === "time-in" ? "timeIn" : "timeOut";
 
@@ -141,6 +144,7 @@ export const getRecentAttendance = async (
     const q: Query<DocumentData> = query(
       attendanceCollection,
       where("eventId", "==", eventId),
+      where("student.facultyId", "==", facultyId || ""),
       where(timestampField, "!=", null),
       orderBy(timestampField, "desc"),
       limit(10)
@@ -260,6 +264,7 @@ export const searchStudentIdsByName = async (
 export const buildAttendanceQueryConstraints = (
   eventId: string,
   filterProgram?: string,
+  facultyId?: string,
   studentIds?: string[]
 ): QueryConstraint[] => {
   // Start with the mandatory constraint to filter by the specific event.
@@ -269,6 +274,11 @@ export const buildAttendanceQueryConstraints = (
   // This targets a nested field within the 'student' map.
   if (filterProgram) {
     constraints.push(where("student.programId", "==", filterProgram));
+  }
+
+  // If a faculty ID is provided, add it to the constraints.
+  if (facultyId) {
+    constraints.push(where("student.facultyId", "==", facultyId));
   }
 
   // If a list of student IDs is provided (e.g., from a separate search),
@@ -308,6 +318,9 @@ export const getAttendanceRecord = async (
   nextCursor: DocumentSnapshot | null;
 }> => {
   try {
+    const facultyId = await getCurrentUserFacultyId(
+      getAuth().currentUser?.uid || ""
+    );
     // Get a reference to the Firestore collection for event attendees.
     const attendanceCollection = collection(db, "eventAttendees");
 
@@ -316,6 +329,7 @@ export const getAttendanceRecord = async (
     const baseConstraints = buildAttendanceQueryConstraints(
       eventId,
       filterProgram,
+      facultyId || "",
       undefined
     );
 

@@ -126,8 +126,8 @@ export function MembersFilters({
               <SelectItem value="name-desc">Name (Z-A)</SelectItem>
               <SelectItem value="id-asc">Student ID (Low to High)</SelectItem>
               <SelectItem value="id-desc">Student ID (High to Low)</SelectItem>
-              <SelectItem value="program-asc">Program (A-Z)</SelectItem>
-              <SelectItem value="program-desc">Program (Z-A)</SelectItem>
+              <SelectItem value="date-asc">Date (Newest First)</SelectItem>
+              <SelectItem value="date-desc">Date (Oldest First)</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -142,7 +142,7 @@ export function MembersFilters({
               Find members by name, ID, or filter by program
             </p>
           </div>
-          
+
           <div className="flex flex-wrap gap-3">
             {/* View Toggle - Only show on desktop */}
             {isDesktop && (
@@ -182,13 +182,15 @@ export function MembersFilters({
                 <SelectItem value="name-desc">Name (Z-A)</SelectItem>
                 <SelectItem value="id-asc">ID (Low-High)</SelectItem>
                 <SelectItem value="id-desc">ID (High-Low)</SelectItem>
-                <SelectItem value="program-asc">Program (A-Z)</SelectItem>
-                <SelectItem value="program-desc">Program (Z-A)</SelectItem>
+                <SelectItem value="date-asc">Date (Newest First)</SelectItem>
+                <SelectItem value="date-desc">Date (Oldest First)</SelectItem>
               </SelectContent>
             </Select>
 
             {/* Clear All Filters */}
-            {(searchTerm || programFilter !== "all" || sortBy !== "name-asc") && (
+            {(searchTerm ||
+              programFilter !== "all" ||
+              sortBy !== "name-asc") && (
               <Button
                 variant="ghost"
                 size="sm"
