@@ -36,14 +36,14 @@ export function RecentAttendance({
   const [showNames, setShowNames] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
-  const RECORDS_PER_PAGE = 6; 
+  const RECORDS_PER_PAGE = 6;
 
   const loadAttendance = useCallback(async () => {
     setIsLoading(true);
 
     try {
       // Simulate network delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      // await new Promise((resolve) => setTimeout(resolve, 800));
 
       const recentRecords = (await getRecentAttendance(
         eventId,
@@ -59,12 +59,18 @@ export function RecentAttendance({
   }, [eventId, type]);
 
   useEffect(() => {
+    // Make sure loadAttendance is defined above this useEffect!
     loadAttendance();
 
     // Set up a refresh interval (every 30 seconds)
-    const intervalId = setInterval(loadAttendance, 30000);
+    // Uncomment the next line to enable auto-refresh
+    // const intervalId = setInterval(loadAttendance, 30000);
 
-    return () => clearInterval(intervalId);
+    // Uncomment the next line for cleanup if interval is used
+    // return () => clearInterval(intervalId);
+
+    // If not using interval, just return nothing
+    return;
   }, [loadAttendance]);
 
   const formatTime = (timestamp: string) => {
@@ -90,11 +96,11 @@ export function RecentAttendance({
   };
 
   const handlePrevPage = () => {
-    setCurrentPage(prev => Math.max(1, prev - 1));
+    setCurrentPage((prev) => Math.max(1, prev - 1));
   };
 
   const handleNextPage = () => {
-    setCurrentPage(prev => Math.min(totalPages, prev + 1));
+    setCurrentPage((prev) => Math.min(totalPages, prev + 1));
   };
 
   // Determine the attendees page URL
@@ -179,7 +185,8 @@ export function RecentAttendance({
             No {type === "time-in" ? "time-ins" : "time-outs"} recorded yet
           </h4>
           <p className="font-nunito-sans text-gray-600 dark:text-gray-400">
-            Attendance records will appear here once students start checking {type === "time-in" ? "in" : "out"}
+            Attendance records will appear here once students start checking{" "}
+            {type === "time-in" ? "in" : "out"}
           </p>
         </div>
       ) : (
@@ -228,7 +235,9 @@ export function RecentAttendance({
 
                     <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mt-auto">
                       <ClockIcon className="h-3.5 w-3.5 mr-1.5" />
-                      <span className="font-nunito-sans font-medium">{formatTime(record.timestamp)}</span>
+                      <span className="font-nunito-sans font-medium">
+                        {formatTime(record.timestamp)}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -271,7 +280,9 @@ export function RecentAttendance({
                       <div className="flex items-center gap-4">
                         <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                           <ClockIcon className="h-3.5 w-3.5 mr-1.5" />
-                          <span className="font-nunito-sans font-medium">{formatTime(record.timestamp)}</span>
+                          <span className="font-nunito-sans font-medium">
+                            {formatTime(record.timestamp)}
+                          </span>
                         </div>
                         <Badge
                           variant="outline"
@@ -300,19 +311,21 @@ export function RecentAttendance({
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <Button
-                  key={page}
-                  variant={currentPage === page ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handlePageChange(page)}
-                  className="h-8 w-8 p-0 font-nunito-sans font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  {page}
-                </Button>
-              ))}
-              
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (page) => (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handlePageChange(page)}
+                    className="h-8 w-8 p-0 font-nunito-sans font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    {page}
+                  </Button>
+                )
+              )}
+
               <Button
                 variant="outline"
                 size="sm"
@@ -328,7 +341,11 @@ export function RecentAttendance({
           {/* View All Attendees Button */}
           {!isLoading && (
             <div className="flex justify-center pt-4">
-              <Button asChild variant="outline" className="font-nunito-sans font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
+              <Button
+                asChild
+                variant="outline"
+                className="font-nunito-sans font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
                 <Link href={attendeesUrl}>
                   <UsersIcon className="h-4 w-4 mr-2" />
                   View All Attendees ({totalRecords})
