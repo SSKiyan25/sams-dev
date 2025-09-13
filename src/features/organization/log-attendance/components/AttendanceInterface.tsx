@@ -59,9 +59,9 @@ export function AttendanceInterface({
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border shadow-sm p-6">
+      {/* <div className="bg-white dark:bg-gray-800 rounded-lg border shadow-sm p-6">
         <RecentAttendance eventId={event.id.toString()} type={activeTab} />
-      </div>
+      </div> */}
     </div>
   );
 }
