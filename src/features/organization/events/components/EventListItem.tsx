@@ -15,10 +15,12 @@ import {
   UserPlusIcon,
   UsersIcon,
   StarIcon,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { Event } from "../types";
 import { formatDate } from "@/utils/useGeneralUtils";
+import { useState } from "react";
 
 interface EventListItemProps {
   event: Event;
@@ -35,6 +37,9 @@ export function EventListItem({
   onUnarchive,
   onDelete,
 }: EventListItemProps) {
+  const [isOperationLoading, setIsOperationLoading] = useState(false);
+  const [isViewAttendeesLoading, setIsViewAttendeesLoading] = useState(false);
+  const [isLogAttendanceLoading, setIsLogAttendanceLoading] = useState(false);
   // Format time to 12-hour format
   const formatTime = (time: string | null) => {
     if (!time) return null;
@@ -121,6 +126,47 @@ export function EventListItem({
     onEdit(event);
   };
 
+  const handleArchiveEvent = async () => {
+    setIsOperationLoading(true);
+    try {
+      await onArchive(event);
+    } finally {
+      setIsOperationLoading(false);
+    }
+  };
+
+  const handleUnarchiveEvent = async () => {
+    setIsOperationLoading(true);
+    try {
+      await onUnarchive(event);
+    } finally {
+      setIsOperationLoading(false);
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    setIsOperationLoading(true);
+    try {
+      await onDelete(event);
+    } finally {
+      setIsOperationLoading(false);
+    }
+  };
+
+  const handleViewAttendees = () => {
+    setIsViewAttendeesLoading(true);
+    setTimeout(() => {
+      setIsViewAttendeesLoading(false);
+    }, 500);
+  };
+
+  const handleLogAttendance = () => {
+    setIsLogAttendanceLoading(true);
+    setTimeout(() => {
+      setIsLogAttendanceLoading(false);
+    }, 500);
+  };
+
   // Get status-based styling for the card - unified neutral background
   const getStatusCardStyles = () => {
     // Use consistent neutral styling for all events
@@ -171,28 +217,52 @@ export function EventListItem({
                   {event.status === "archived" ? (
                     <>
                       <DropdownMenuItem 
-                        onClick={() => onUnarchive(event)} 
+                        onClick={handleUnarchiveEvent} 
                         className="font-medium"
+                        disabled={isOperationLoading}
                       >
-                        Unarchive
+                        {isOperationLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Unarchiving...
+                          </>
+                        ) : (
+                          "Unarchive"
+                        )}
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => onDelete(event)}
+                        onClick={handleDeleteEvent}
                         className="text-red-600 dark:text-red-400 font-medium"
+                        disabled={isOperationLoading}
                       >
-                        Delete
+                        {isOperationLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Deleting...
+                          </>
+                        ) : (
+                          "Delete"
+                        )}
                       </DropdownMenuItem>
                     </>
                   ) : (
                     <>
-                      <DropdownMenuItem onClick={handleEditEvent} className="font-medium">
+                      <DropdownMenuItem onClick={handleEditEvent} className="font-medium" disabled={isOperationLoading}>
                         Edit Event
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => onArchive(event)}
+                        onClick={handleArchiveEvent}
                         className="text-red-600 dark:text-red-400 font-medium"
+                        disabled={isOperationLoading}
                       >
-                        Archive
+                        {isOperationLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Archiving...
+                          </>
+                        ) : (
+                          "Archive"
+                        )}
                       </DropdownMenuItem>
                     </>
                   )}
@@ -216,28 +286,52 @@ export function EventListItem({
                   {event.status === "archived" ? (
                     <>
                       <DropdownMenuItem 
-                        onClick={() => onArchive(event)} 
+                        onClick={handleUnarchiveEvent} 
                         className="font-medium"
+                        disabled={isOperationLoading}
                       >
-                        Unarchive
+                        {isOperationLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Unarchiving...
+                          </>
+                        ) : (
+                          "Unarchive"
+                        )}
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => onDelete(event)}
+                        onClick={handleDeleteEvent}
                         className="text-red-600 dark:text-red-400 font-medium"
+                        disabled={isOperationLoading}
                       >
-                        Delete
+                        {isOperationLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Deleting...
+                          </>
+                        ) : (
+                          "Delete"
+                        )}
                       </DropdownMenuItem>
                     </>
                   ) : (
                     <>
-                      <DropdownMenuItem onClick={handleEditEvent} className="font-medium">
+                      <DropdownMenuItem onClick={handleEditEvent} className="font-medium" disabled={isOperationLoading}>
                         Edit Event
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => onArchive(event)}
+                        onClick={handleArchiveEvent}
                         className="text-red-600 dark:text-red-400 font-medium"
+                        disabled={isOperationLoading}
                       >
-                        Archive
+                        {isOperationLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Archiving...
+                          </>
+                        ) : (
+                          "Archive"
+                        )}
                       </DropdownMenuItem>
                     </>
                   )}
@@ -349,10 +443,21 @@ export function EventListItem({
                     variant="outline"
                     size="sm"
                     className="h-12 px-6 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 justify-center border-2 flex-1 min-h-[48px]"
+                    disabled={isViewAttendeesLoading}
+                    onClick={handleViewAttendees}
                   >
                     <Link href={`/org-events/${event.id}/attendees`}>
-                      <UsersIcon className="mr-2 h-4 w-4" />
-                      View Attendees
+                      {isViewAttendeesLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          <UsersIcon className="mr-2 h-4 w-4" />
+                          View Attendees
+                        </>
+                      )}
                     </Link>
                   </Button>
 
@@ -361,10 +466,21 @@ export function EventListItem({
                       asChild
                       size="sm"
                       className="h-12 px-6 text-sm font-bold bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 justify-center shadow-md hover:shadow-lg transition-all duration-200 flex-1 min-h-[48px]"
+                      disabled={isLogAttendanceLoading}
+                      onClick={handleLogAttendance}
                     >
                       <Link href={`/org-events/${event.id}/log-attendance`}>
-                        <UserPlusIcon className="mr-2 h-4 w-4" />
-                        {event.status === "completed" ? "Log Special Attendance" : "Log Attendance"}
+                        {isLogAttendanceLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          <>
+                            <UserPlusIcon className="mr-2 h-4 w-4" />
+                            {event.status === "completed" ? "Log Special Attendance" : "Log Attendance"}
+                          </>
+                        )}
                       </Link>
                     </Button>
                   )}

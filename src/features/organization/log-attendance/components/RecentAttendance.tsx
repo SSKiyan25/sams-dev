@@ -36,10 +36,15 @@ export function RecentAttendance({
   const [showNames, setShowNames] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const RECORDS_PER_PAGE = 6;
 
-  const loadAttendance = useCallback(async () => {
-    setIsLoading(true);
+  const loadAttendance = useCallback(async (isRefresh = false) => {
+    if (isRefresh) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
 
     try {
       // Simulate network delay
@@ -50,11 +55,19 @@ export function RecentAttendance({
         type
       )) as unknown as AttendanceRecord[];
       setRecords(recentRecords);
-      setIsLoading(false);
+      if (isRefresh) {
+        setIsRefreshing(false);
+      } else {
+        setIsLoading(false);
+      }
     } catch (error) {
       console.error("Failed to load recent attendance:", error);
       setRecords([]);
-      setIsLoading(false);
+      if (isRefresh) {
+        setIsRefreshing(false);
+      } else {
+        setIsLoading(false);
+      }
     }
   }, [eventId, type]);
 
@@ -144,11 +157,21 @@ export function RecentAttendance({
             type="button"
             variant="outline"
             size="sm"
-            onClick={loadAttendance}
-            className="h-9 flex-1 sm:flex-none font-nunito-sans font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+            onClick={() => loadAttendance(true)}
+            disabled={isRefreshing}
+            className="h-9 flex-1 sm:flex-none font-nunito-sans font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
           >
-            <RefreshCcw className="h-3.5 w-3.5 mr-2" />
-            Refresh
+            {isRefreshing ? (
+              <>
+                <LoaderIcon className="h-3.5 w-3.5 mr-2 animate-spin" />
+                Refreshing...
+              </>
+            ) : (
+              <>
+                <RefreshCcw className="h-3.5 w-3.5 mr-2" />
+                Refresh
+              </>
+            )}
           </Button>
           <Button
             type="button"

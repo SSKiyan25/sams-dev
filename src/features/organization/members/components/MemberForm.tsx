@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useEffect, useState } from "react";
-import { MemberFormData, memberSchema } from "@/lib/validators";
+import { MemberFormData } from "@/lib/validators";
 import {
   Form,
   FormControl,
@@ -45,6 +45,7 @@ interface MemberFormProps {
   member: MemberData | null;
   facultyData: Faculty[];
   programData: Program[];
+  isSubmitting?: boolean;
 }
 
 export function MemberForm({
@@ -54,6 +55,7 @@ export function MemberForm({
   member,
   facultyData,
   programData,
+  isSubmitting = false,
 }: MemberFormProps) {
   const form = useMemberForm();
   const [agreed, setAgreed] = useState(false);
@@ -82,7 +84,7 @@ export function MemberForm({
   }, [open, member, form]);
 
   const handleFormSubmit = async (data: MemberFormData) => {
-    if (!agreed) return;
+    if (!agreed || isSubmitting) return;
     data.facultyId = (await getCurrentUserFacultyId(
       getAuth().currentUser?.uid || ""
     )) as string;
@@ -248,8 +250,15 @@ export function MemberForm({
             </div>
 
             <DialogFooter>
-              <Button type="submit" disabled={!agreed}>
-                {member ? "Save Changes" : "Add Member"}
+              <Button type="submit" disabled={!agreed || isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                    {member ? "Saving..." : "Adding..."}
+                  </>
+                ) : (
+                  member ? "Save Changes" : "Add Member"
+                )}
               </Button>
             </DialogFooter>
           </form>
