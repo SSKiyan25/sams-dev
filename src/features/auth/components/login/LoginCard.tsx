@@ -239,7 +239,7 @@ export function LoginCard() {
                       emailError
                         ? "border-red-500 focus:ring-red-500"
                         : "border-[#696969] dark:border-border focus:ring-[#008ACF] dark:focus:ring-primary"
-                    } rounded-[14px] bg-white dark:bg-input font-instrument text-base sm:text-lg text-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
+                    } rounded-[14px] bg-white dark:bg-input font-instrument text-base sm:text-lg text-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200`}
                     disabled={isLoading}
                     placeholder="Enter your email"
                   />
@@ -268,7 +268,7 @@ export function LoginCard() {
                       passwordError
                         ? "border-red-500 focus:ring-red-500"
                         : "border-[#696969] dark:border-border focus:ring-[#008ACF] dark:focus:ring-primary"
-                    } rounded-[14px] bg-white dark:bg-input font-instrument text-base sm:text-lg text-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
+                    } rounded-[14px] bg-white dark:bg-input font-instrument text-base sm:text-lg text-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200`}
                     disabled={isLoading}
                     placeholder="Enter your password"
                   />
@@ -324,7 +324,7 @@ export function LoginCard() {
                   <button
                     type="button"
                     onClick={handlePasswordReset}
-                    className="font-instrument text-base text-[#008ACF] dark:text-primary underline hover:text-[#0f73a5] dark:hover:text-primary/80 transition-colors inline-block"
+                    className="font-instrument text-base text-[#008ACF] dark:text-primary underline hover:text-[#0f73a5] dark:hover:text-primary/80 transition-colors duration-200 inline-block"
                     tabIndex={isLoading ? -1 : 0}
                     aria-disabled={isLoading}
                   >
@@ -337,7 +337,7 @@ export function LoginCard() {
               <div className="pt-6 animate-fade-in-up animation-delay-900">
                 <button
                   type="submit"
-                  className="w-full max-w-[180px] sm:max-w-[200px] h-12 sm:h-14 lg:h-16 bg-[#008ACF] dark:bg-primary text-white dark:text-primary-foreground font-poppins text-sm sm:text-base lg:text-[18px] rounded-xl hover:bg-[#0f73a5] dark:hover:bg-primary/90 transition-all duration-200 mx-auto disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-xl transform hover:scale-105"
+                  className="w-full max-w-[180px] sm:max-w-[200px] h-12 sm:h-14 lg:h-16 bg-[#008ACF] dark:bg-primary text-white dark:text-primary-foreground font-poppins text-sm sm:text-base lg:text-[18px] rounded-xl hover:bg-[#0f73a5] dark:hover:bg-primary/90 transition-all duration-200 mx-auto disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-xl"
                   disabled={
                     isLoading ||
                     (formSubmitted &&

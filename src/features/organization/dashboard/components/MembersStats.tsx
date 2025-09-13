@@ -437,11 +437,11 @@ export function MembersStats({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in-up animation-delay-200">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Total Students - Featured Card */}
-        <Card className="group relative overflow-hidden bg-gradient-to-br from-blue-50 via-blue-100/80 to-indigo-100 dark:from-blue-950/90 dark:via-blue-900/80 dark:to-indigo-950/90 border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.02] backdrop-blur-sm">
+        <Card className="group relative overflow-hidden bg-gradient-to-br from-blue-50 via-blue-100/80 to-indigo-100 dark:from-blue-950/90 dark:via-blue-900/80 dark:to-indigo-950/90 border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.02] backdrop-blur-sm animate-fade-in-up animation-delay-400">
           {/* Animated background elements */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-700"></div>
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-blue-300/15 to-indigo-400/15 rounded-full -ml-12 -mb-12 group-hover:scale-110 transition-transform duration-700 delay-100"></div>
@@ -474,7 +474,7 @@ export function MembersStats({
         </Card>
 
         {/* Total Events */}
-        <Card className="group relative overflow-hidden bg-gradient-to-br from-emerald-50 via-emerald-100/80 to-teal-100 dark:from-emerald-950/90 dark:via-emerald-900/80 dark:to-teal-950/90 border-0 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.02] backdrop-blur-sm">
+        <Card className="group relative overflow-hidden bg-gradient-to-br from-emerald-50 via-emerald-100/80 to-teal-100 dark:from-emerald-950/90 dark:via-emerald-900/80 dark:to-teal-950/90 border-0 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.02] backdrop-blur-sm animate-fade-in-up animation-delay-600">
           {/* Animated background elements */}
           <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-br from-emerald-400/20 to-teal-500/20 rounded-full -mr-14 -mt-14 group-hover:scale-110 transition-transform duration-700"></div>
           <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-tr from-emerald-300/15 to-teal-400/15 rounded-full -ml-10 -mb-10 group-hover:scale-110 transition-transform duration-700 delay-100"></div>
@@ -507,7 +507,7 @@ export function MembersStats({
         </Card>
 
         {/* Total Attendances */}
-        <Card className="group relative overflow-hidden bg-gradient-to-br from-purple-50 via-purple-100/80 to-violet-100 dark:from-purple-950/90 dark:via-purple-900/80 dark:to-violet-950/90 border-0 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.02] backdrop-blur-sm">
+        <Card className="group relative overflow-hidden bg-gradient-to-br from-purple-50 via-purple-100/80 to-violet-100 dark:from-purple-950/90 dark:via-purple-900/80 dark:to-violet-950/90 border-0 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.02] backdrop-blur-sm animate-fade-in-up animation-delay-800">
           {/* Animated background elements */}
           <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-br from-purple-400/20 to-violet-500/20 rounded-full -mr-14 -mt-14 group-hover:scale-110 transition-transform duration-700"></div>
           <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-tr from-purple-300/15 to-violet-400/15 rounded-full -ml-10 -mb-10 group-hover:scale-110 transition-transform duration-700 delay-100"></div>
@@ -540,7 +540,7 @@ export function MembersStats({
         </Card>
 
         {/* Total Absences */}
-        <Card className="group relative overflow-hidden bg-gradient-to-br from-red-50 via-orange-100/80 to-red-100 dark:from-red-950/90 dark:via-orange-900/80 dark:to-red-950/90 border-0 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.02] backdrop-blur-sm">
+        <Card className="group relative overflow-hidden bg-gradient-to-br from-red-50 via-orange-100/80 to-red-100 dark:from-red-950/90 dark:via-orange-900/80 dark:to-red-950/90 border-0 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-[1.02] backdrop-blur-sm animate-fade-in-up animation-delay-1000">
           {/* Animated background elements */}
           <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-br from-red-400/20 to-orange-500/20 rounded-full -mr-14 -mt-14 group-hover:scale-110 transition-transform duration-700"></div>
           <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-tr from-red-300/15 to-orange-400/15 rounded-full -ml-10 -mb-10 group-hover:scale-110 transition-transform duration-700 delay-100"></div>
@@ -573,7 +573,7 @@ export function MembersStats({
         </Card>
       </div>
 
-      <Card className="group relative overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-500 border-0 bg-gradient-to-br from-background via-background/95 to-muted/30 backdrop-blur-xl">
+      <Card className="group relative overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-500 border-0 bg-gradient-to-br from-background via-background/95 to-muted/30 backdrop-blur-xl animate-fade-in-up animation-delay-1200">
         {/* Subtle animated background pattern */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-50"></div>
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/10 to-transparent rounded-full -mr-32 -mt-32 group-hover:scale-110 transition-transform duration-1000"></div>
@@ -688,7 +688,7 @@ export function MembersStats({
           </div>
 
           {/* Key Statistics - Elegant Horizontal Layout */}
-          <div className="px-8 mt-6">
+          <div className="px-8 mt-6 animate-fade-in-up animation-delay-1400">
             <div className="bg-gradient-to-r from-background via-muted/30 to-background border border-border/50 rounded-2xl p-6 shadow-sm backdrop-blur-sm">
               <div className="flex items-center justify-between gap-8">
                 {/* Peak Attendance */}
@@ -759,7 +759,7 @@ export function MembersStats({
 
           {/* Enhanced Event Legend */}
           {!isLoading && chartData.length > 1 && (
-            <div className="px-8 mt-6">
+            <div className="px-8 mt-6 animate-fade-in-up animation-delay-1600">
               <div className="bg-gradient-to-r from-background via-muted/20 to-background border border-border/40 rounded-2xl p-5 shadow-sm backdrop-blur-sm">
                 <div className="flex items-center gap-2 mb-4">
                   <CalendarDays className="h-4 w-4 text-primary" />

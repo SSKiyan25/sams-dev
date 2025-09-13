@@ -68,7 +68,7 @@ export default function PublicLayout({
     {
       label: "About",
       icon: "info",
-      href: "/about",
+      href: "/coming-soon",
     },
     {
       label: isAuthenticated ? "Dashboard" : "Login",

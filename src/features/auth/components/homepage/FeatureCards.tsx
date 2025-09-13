@@ -69,7 +69,7 @@ export function FeatureCards() {
       title: "Event Attendance Tracking",
       description:
         "Record attendance at meetings, seminars, and special events.",
-      animationClass: "animate-fade-in-left animation-delay-900",
+      animationClass: "animate-fade-in-left animation-delay-600",
     },
     {
       icon: "/analytics.svg",
@@ -78,12 +78,12 @@ export function FeatureCards() {
       title: "Simple Attendance Analytics",
       description:
         "Instantly see how many members attended each event and track participation trends at a glance.",
-      animationClass: "animate-fade-in-right animation-delay-1200",
+      animationClass: "animate-fade-in-right animation-delay-800",
     },
   ];
 
   return (
-    <div className="bg-white dark:bg-background px-4 sm:px-6 lg:px-8 py-8 sm:py-12 animate-fade-in-up animation-delay-600">
+    <div className="bg-white dark:bg-background px-4 sm:px-6 lg:px-8 py-8 sm:py-12 animate-fade-in-up animation-delay-400">
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
           {features.map((feature, index) => (
