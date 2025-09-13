@@ -174,7 +174,7 @@ export function DashboardLayout() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-background via-primary/5 to-primary/10 p-8 md:p-12 border border-primary/20 shadow-xl backdrop-blur-sm">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-background via-primary/5 to-primary/10 p-8 md:p-12 border border-primary/20 shadow-xl backdrop-blur-sm animate-fade-in-up animation-delay-200">
             {/* Enhanced background elements */}
             <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-primary/10 to-transparent rounded-full -mr-20 -mt-20 animate-pulse"></div>
             <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-primary/5 to-transparent rounded-full -ml-16 -mb-16"></div>
@@ -227,7 +227,7 @@ export function DashboardLayout() {
             eventAttendance={eventAttendance}
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in-up animation-delay-400">
             <ShortcutLinks
               upcomingEvents={upcomingEvents}
               ongoingEvents={ongoingEvents}

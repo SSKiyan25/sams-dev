@@ -32,12 +32,14 @@ interface BulkImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImport: (file: File) => void;
+  isImporting?: boolean;
 }
 
 export function BulkImportDialog({
   open,
   onOpenChange,
   onImport,
+  isImporting = false,
 }: BulkImportDialogProps) {
   const [file, setFile] = useState<File | null>(null);
   const [agreed, setAgreed] = useState(false);
@@ -78,11 +80,9 @@ export function BulkImportDialog({
   };
 
   const handleImport = () => {
-    if (file && agreed) {
+    if (file && agreed && !isImporting) {
       onImport(file);
-      onOpenChange(false);
-      setFile(null);
-      setAgreed(false);
+      // Don't close dialog here - let parent handle it after import completes
     }
   };
 
@@ -259,15 +259,17 @@ export function BulkImportDialog({
           {/* File upload section */}
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-              dragActive
+              isImporting
+                ? "border-gray-300 bg-gray-50 dark:bg-gray-800 cursor-not-allowed"
+                : dragActive
                 ? "border-primary bg-primary/5"
                 : file
-                ? "border-green-500 bg-green-50"
+                ? "border-green-500 bg-green-50 dark:bg-green-900/30"
                 : "border-border"
             }`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleFileDrop}
+            onDragOver={isImporting ? undefined : handleDragOver}
+            onDragLeave={isImporting ? undefined : handleDragLeave}
+            onDrop={isImporting ? undefined : handleFileDrop}
           >
             <input
               type="file"
@@ -275,23 +277,31 @@ export function BulkImportDialog({
               className="hidden"
               accept=".csv,.xlsx"
               onChange={handleFileChange}
+              disabled={isImporting}
             />
 
             {file ? (
               <div className="flex flex-col items-center">
                 <FileSpreadsheet className="h-8 w-8 text-green-500 mb-2" />
-                <p className="font-medium">{file.name}</p>
+                <p className="font-medium text-blue-500">{file.name}</p>
                 <p className="text-sm text-muted-foreground">
                   {(file.size / 1024).toFixed(1)} KB
                 </p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="mt-2"
-                  onClick={() => setFile(null)}
-                >
-                  Change File
-                </Button>
+                {isImporting ? (
+                  <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+                    Processing file...
+                  </div>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2 bg-gray-200 hover:bg-gray-300 text-dark dark:text-blue-400 dark:hover:text-white-300"
+                    onClick={() => setFile(null)}
+                  >
+                    Change File
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="flex flex-col items-center">
@@ -305,6 +315,7 @@ export function BulkImportDialog({
                     variant="secondary"
                     size="sm"
                     onClick={handleBrowseFile}
+                    disabled={isImporting}
                   >
                     Browse Files
                   </Button>
@@ -314,18 +325,21 @@ export function BulkImportDialog({
           </div>
 
           {/* Terms agreement */}
-          <div className="bg-muted/50 p-4 rounded-md border">
+          <div className={`bg-muted/50 p-4 rounded-md border ${isImporting ? 'opacity-50' : ''}`}>
             <div className="flex items-start gap-3">
               <Checkbox
                 id="terms"
                 checked={agreed}
                 onCheckedChange={(checked) => {
-                  setAgreed(checked === true);
+                  if (!isImporting) {
+                    setAgreed(checked === true);
+                  }
                 }}
                 className="mt-0.5"
+                disabled={isImporting}
               />
               <div>
-                <Label htmlFor="terms" className="text-xs leading-relaxed">
+                <Label htmlFor="terms" className={`text-xs leading-relaxed ${isImporting ? 'cursor-not-allowed' : ''}`}>
                   I confirm that I have obtained consent from all individuals
                   whose personal information is included in this file and that I
                   am authorized to share this data. I understand that I am
@@ -338,12 +352,21 @@ export function BulkImportDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose}>
+          <Button variant="outline" onClick={handleClose} disabled={isImporting}>
             Cancel
           </Button>
-          <Button onClick={handleImport} disabled={!file || !agreed}>
-            <Upload className="h-4 w-4 mr-2" />
-            Import Members
+          <Button onClick={handleImport} disabled={!file || !agreed || isImporting}>
+            {isImporting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                Importing...
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4 mr-2" />
+                Import Members
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

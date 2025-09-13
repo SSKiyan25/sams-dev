@@ -63,7 +63,7 @@ export function RecentMembers({
   );
 
   return (
-    <Card className="shadow-lg transition-all duration-300 border-border/50 bg-gradient-to-br from-background via-background to-muted/10 backdrop-blur-sm">
+    <Card className="shadow-lg transition-all duration-300 border-border/50 bg-gradient-to-br from-background via-background to-muted/10 backdrop-blur-sm animate-fade-in-up animation-delay-800">
       <CardHeader className="pb-1 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-50" />
         <CardTitle className="flex justify-between items-center text-xl font-bold relative z-10">
@@ -91,7 +91,7 @@ export function RecentMembers({
           {isLoading ? (
             <MemberSkeletons />
           ) : recentMembers.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground">
+            <div className="text-center py-16 text-muted-foreground animate-fade-in-up animation-delay-1000">
               <div className="p-4 rounded-2xl bg-muted/30 w-fit mx-auto mb-4">
                 <UsersRound className="h-8 w-8 opacity-50" />
               </div>
@@ -99,10 +99,10 @@ export function RecentMembers({
               <p className="text-sm">Add your first member to get started</p>
             </div>
           ) : (
-            recentMembers.map((member) => (
+            recentMembers.map((member, index) => (
               <div
                 key={member.studentId}
-                className="flex items-center gap-4 p-4 rounded-xl border-2 border-border/30 hover:border-primary/40 hover:bg-gradient-to-r hover:from-background hover:to-primary/5 transition-all duration-300 group hover:shadow-md hover:shadow-primary/10 bg-gradient-to-r from-background/80 to-muted/20 backdrop-blur-sm"
+                className={`flex items-center gap-4 p-4 rounded-xl border-2 border-border/30 hover:border-primary/40 hover:bg-gradient-to-r hover:from-background hover:to-primary/5 transition-all duration-300 group hover:shadow-md hover:shadow-primary/10 bg-gradient-to-r from-background/80 to-muted/20 backdrop-blur-sm animate-fade-in-up animation-delay-${1000 + index * 100}`}
               >
                 <Avatar className="h-12 w-12 ring-2 ring-muted group-hover:ring-primary/30 transition-all duration-300 group-hover:scale-110">
                   <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-bold text-base">
