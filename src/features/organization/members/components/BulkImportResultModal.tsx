@@ -1,11 +1,3 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -31,7 +23,13 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import { useState } from "react";
+import {
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import React, { useEffect, useRef, useState } from "react";
 import { BulkImportResult } from "../types";
 import { SummaryCard } from "./SummaryCard";
 import { exportErrorsToCSV } from "../utils";
@@ -49,8 +47,18 @@ export function BulkImportResultModal({
 }: BulkImportResultModalProps) {
   const [showErrors, setShowErrors] = useState(true);
   const [showDuplicates, setShowDuplicates] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
-  if (!result) return null;
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onOpenChange(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onOpenChange]);
+
+  if (!open || !result) return null;
 
   const { errors, duplicates, successfulImports } = result;
   const errorCount = errors.length;
@@ -62,25 +70,42 @@ export function BulkImportResultModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
-        <DialogHeader className="p-6 pb-4">
-          <DialogTitle className="flex items-center gap-3 text-2xl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      aria-modal="true"
+      role="dialog"
+      onMouseDown={(e) => {
+        // close when clicking the overlay (but not when clicking modal content)
+        if (e.target === e.currentTarget) onOpenChange(false);
+      }}
+    >
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
+      {/* Modal container */}
+      <div
+        ref={containerRef}
+        className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 rounded-lg shadow-lg z-10 m-7 mb-15"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-6 pb-4 border-b border-border/50">
+          <div className="flex items-center gap-3 text-2xl">
             {result.success && errorCount === 0 ? (
               <CheckCircle2 className="h-7 w-7 text-green-500" />
             ) : (
               <XCircle className="h-7 w-7 text-red-500" />
             )}
-            Import Complete
-          </DialogTitle>
-          <DialogDescription className="pt-1 text-base">
+            <h3 className="font-semibold">Import Complete</h3>
+          </div>
+          <p className="pt-1 text-base text-muted-foreground">
             The import process has finished. See the summary below for details.
-          </DialogDescription>
-        </DialogHeader>
+          </p>
+        </div>
 
         <div className="space-y-5 px-6 pb-6">
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-4 mb-0">
             <SummaryCard
               icon={CheckCircle2}
               title="Successful"
@@ -157,7 +182,10 @@ export function BulkImportResultModal({
                       </TableHeader>
                       <TableBody>
                         {errors.map((error, index) => (
-                          <TableRow key={index} className="hover:bg-slate-50">
+                          <TableRow
+                            key={index}
+                            className="hover:bg-slate-50 hover:text-black dark:hover:bg-slate-800 dark:hover:text-white"
+                          >
                             <TableCell className="font-medium px-3 py-2.5">
                               {error.row}
                             </TableCell>
@@ -169,13 +197,36 @@ export function BulkImportResultModal({
                                 {error.studentId || "N/A"}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-red-600 px-3 py-2.5">
+                            {/* <TableCell className="text-red-600 px-3 py-2.5">
                               <div
                                 className="max-w-[300px] truncate"
                                 title={error.error}
                               >
                                 {error.error}
                               </div>
+                            </TableCell> */}
+                            <TableCell className="text-red-600 px-3 py-2.5">
+                              <TooltipProvider>
+                                <UITooltip>
+                                  <TooltipTrigger asChild>
+                                    <div
+                                      className="max-w-[380px] truncate cursor-help min-w-0"
+                                      aria-label={error.error}
+                                    >
+                                      {error.error}
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent
+                                    side="top"
+                                    align="center"
+                                    className="max-w-sm"
+                                  >
+                                    <div className="text-sm whitespace-pre-wrap break-words">
+                                      {error.error}
+                                    </div>
+                                  </TooltipContent>
+                                </UITooltip>
+                              </TooltipProvider>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -234,12 +285,12 @@ export function BulkImportResultModal({
           )}
         </div>
 
-        <DialogFooter className="bg-slate-50 p-4 px-6 border-t">
+        <div className="flex items-center justify-end gap-2 bg-slate-50 dark:bg-slate-800 p-4 px-6 border-t rounded-b-lg">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </div>
   );
 }

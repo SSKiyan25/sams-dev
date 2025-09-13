@@ -31,7 +31,7 @@ import {
   updateUser,
 } from "@/firebase";
 import { toast } from "sonner";
-import { BulkImportResultModal } from "@/features/organization/members/components/BulkImportResultDialog";
+import { BulkImportResultModal } from "@/features/organization/members/components/BulkImportResultModal";
 
 export default function MembersPage() {
   const [members, setMembers] = useState<MemberData[]>([]);
@@ -41,6 +41,7 @@ export default function MembersPage() {
   const [isBulkImportOpenResult, setIsBulkImportOpenResult] = useState(false);
   const [bulkImportResult, setBulkImportResult] =
     useState<BulkImportResult | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
   const [selectedMember, setSelectedMember] = useState<MemberData | null>(null);
   const [faculties, setFaculties] = useState<Faculty[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
@@ -49,6 +50,22 @@ export default function MembersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [programFilter, setProgramFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+
+  //MOCK DATA!!! COMMENT OUT WHEN ABOUT TO COMMIT
+  // useEffect(() => {
+  //   const mockResult: BulkImportResult = {
+  //     success: true,
+  //     successfulImports: 3,
+  //     errors: [
+  //       { row: 2, studentId: "22-1-00123", error: "Invalid Faculty name FACULTY OF PSEUDOSCIENCE. Available faculties:" },
+  //       { row: 5, studentId: "22-1-00456", error: "Invalid Program name BS IN ENVI SCIENCE. Available programs: BS in Forestry, BS in Environmental Science, BS in Agricultural and Biosystems Engineering, BS in Computer Science, BS in Mechanical Engineering, BS in Geodetic Engineering, BS in Civil Engineering" },
+  //     ],
+  //     duplicates: ["S789"],
+  //     totalProcessed: 0
+  //   };
+  //   setBulkImportResult(mockResult);
+  //   setIsBulkImportOpenResult(true);
+  // }, []);
 
   // Pagination constants
   const ITEMS_PER_PAGE_CARD = 12;
@@ -154,11 +171,19 @@ export default function MembersPage() {
   };
 
   const handleBulkImport = async (file: File) => {
-    const result = (await processFileForBulkImport(file)) as BulkImportResult;
-    setBulkImportResult(result);
-    setIsBulkImportOpen(false);
-    setIsBulkImportOpenResult(true);
-    fetchData(); // Refresh member list after imports
+    setIsImporting(true);
+    try {
+      const result = (await processFileForBulkImport(file)) as BulkImportResult;
+      setBulkImportResult(result);
+      setIsBulkImportOpen(false);
+      setIsBulkImportOpenResult(true);
+      fetchData(); // Refresh member list after imports
+    } catch (error) {
+      console.error("Bulk import failed:", error);
+      toast.error("Failed to process the file. Please try again.");
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   // Handle search activation/deactivation
@@ -347,6 +372,7 @@ export default function MembersPage() {
           open={isBulkImportOpen}
           onOpenChange={setIsBulkImportOpen}
           onImport={handleBulkImport}
+          isImporting={isImporting}
         />
 
         <BulkImportResultModal
