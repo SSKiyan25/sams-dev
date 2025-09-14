@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import { AttendanceForm } from "./AttendanceForm";
 import { RecentAttendance } from "./RecentAttendance";
+import { AttendanceTypeModal } from "./AttendanceTypeModal";
 import { Event } from "../../events/types";
-import { check } from "zod";
-import { checkLogAttendanceExist } from "@/firebase";
-import { toast } from "sonner";
 
 interface AttendanceInterfaceProps {
   event: Event;
@@ -28,6 +26,11 @@ export function AttendanceInterface({
     defaultTab
   );
 
+  // State for type selection modal
+  const [showTypeModal, setShowTypeModal] = useState(
+    hasTimeIn && hasTimeOut // Only show modal if both options are available
+  );
+
   // Update tab if current selection becomes invalid
   useEffect(() => {
     if (
@@ -45,6 +48,14 @@ export function AttendanceInterface({
 
   return (
     <div className="space-y-6">
+      {/* Type Selection Modal */}
+      <AttendanceTypeModal
+        open={showTypeModal}
+        onOpenChange={setShowTypeModal}
+        onSelect={setActiveTab}
+        event={event}
+      />
+
       {/* Attendance Form */}
       <div className="bg-white dark:bg-gray-800 rounded-lg border shadow-sm p-6">
         <AttendanceForm
@@ -59,9 +70,9 @@ export function AttendanceInterface({
       </div>
 
       {/* Recent Activity */}
-      {/* <div className="bg-white dark:bg-gray-800 rounded-lg border shadow-sm p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border shadow-sm p-6">
         <RecentAttendance eventId={event.id.toString()} type={activeTab} />
-      </div> */}
+      </div>
     </div>
   );
 }
