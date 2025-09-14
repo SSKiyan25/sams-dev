@@ -1,83 +1,102 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PlusIcon, SearchIcon, Upload } from "lucide-react";
+import { UserPlus, Upload, RefreshCw, Search } from "lucide-react";
+import { useState } from "react";
 
 interface MembersHeaderProps {
   onSearch: (query: string) => void;
   onAddMember: () => void;
   onBulkImport: () => void;
+  onRefresh: () => void;
   totalMembers: number;
+  isRefreshing?: boolean;
 }
 
-export function MembersHeader({ 
-  onSearch, 
-  onAddMember, 
+export function MembersHeader({
+  onSearch,
+  onAddMember,
   onBulkImport,
-  totalMembers 
+  onRefresh,
+  totalMembers,
+  isRefreshing = false,
 }: MembersHeaderProps) {
-  const [searchValue, setSearchValue] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setSearchValue(value);
-    onSearch(value);
+    setSearchTerm(value);
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch(searchValue);
+    if (searchTerm.trim()) {
+      onSearch(searchTerm.trim());
+    }
   };
 
+  // Format the member count
+  const formattedMemberCount = new Intl.NumberFormat().format(totalMembers);
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border shadow-sm p-6">
-      <div className="flex flex-col space-y-6 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
-        {/* Title Section */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-            Members
-          </h1>
-          <p className="mt-2 text-lg text-gray-600 dark:text-gray-400">
-            Manage your organization&apos;s member records and information
-          </p>
-          <div className="flex items-center gap-2 mt-3">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {totalMembers} Total Members
-            </span>
-          </div>
-        </div>
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+          Members
+        </h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {formattedMemberCount} {totalMembers === 1 ? "member" : "members"} in
+          your organization
+        </p>
+      </div>
 
-        {/* Actions Section */}
-        <div className="flex flex-col space-y-3 sm:flex-row sm:space-x-3 sm:space-y-0 lg:flex-shrink-0">
-          {/* Search Form */}
-          <form onSubmit={handleSearchSubmit} className="relative">
-            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              type="search"
-              placeholder="Search members..."
-              className="w-full pl-10 pr-4 py-2 sm:w-[280px] h-10 bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              value={searchValue}
-              onChange={handleSearchChange}
-            />
-          </form>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <form
+          onSubmit={handleSearchSubmit}
+          className="relative w-full sm:w-64 md:w-80 flex"
+        >
+          <Input
+            type="search"
+            placeholder="Search members..."
+            className="w-full pr-10"
+            value={searchTerm}
+            onChange={handleSearchChange}
+          />
+          <Button
+            type="submit"
+            variant="ghost"
+            size="sm"
+            className="absolute right-0 top-0 h-full px-3"
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+        </form>
 
-          {/* Bulk Import Button */}
+        <div className="flex gap-2">
           <Button
             variant="outline"
-            onClick={onBulkImport}
-            className="h-10 px-4 font-medium border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+            size="sm"
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            className="relative"
           >
-            <Upload className="mr-2 h-4 w-4" />
-            Bulk Import
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
+            />
+            {isRefreshing ? "Refreshing..." : "Refresh"}
           </Button>
 
-          {/* Add Member Button */}
           <Button
-            onClick={onAddMember}
-            className="h-10 px-6 bg-primary hover:bg-primary/90 text-white font-medium shadow-sm transition-colors"
+            variant="outline"
+            size="sm"
+            onClick={onBulkImport}
+            className="hidden md:flex"
           >
-            <PlusIcon className="mr-2 h-4 w-4" />
+            <Upload className="h-4 w-4 mr-2" />
+            Import
+          </Button>
+
+          <Button size="sm" onClick={onAddMember}>
+            <UserPlus className="h-4 w-4 mr-2" />
             Add Member
           </Button>
         </div>
