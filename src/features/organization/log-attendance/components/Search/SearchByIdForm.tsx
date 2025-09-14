@@ -17,6 +17,7 @@ interface SearchByIdFormProps {
     | "invalid-format";
   successMessage: string | null;
   showLabel?: boolean;
+  handleKeyDown?: (e: React.KeyboardEvent) => void;
 }
 
 export function SearchByIdForm({
@@ -28,6 +29,7 @@ export function SearchByIdForm({
   searchStatus,
   successMessage,
   showLabel = false,
+  handleKeyDown,
 }: SearchByIdFormProps) {
   const isLoading = searchStatus === "loading";
   const isDisabled =
@@ -37,6 +39,16 @@ export function SearchByIdForm({
 
   const handleClear = () => {
     setStudentId("");
+  };
+
+  // Create a default key down handler if none is provided
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (handleKeyDown) {
+      handleKeyDown(e);
+    } else if (e.key === "Enter" && !isDisabled && studentId.trim()) {
+      e.preventDefault();
+      handleSearch();
+    }
   };
 
   return (
@@ -58,6 +70,7 @@ export function SearchByIdForm({
             disabled={isDisabled}
             className="w-full"
             autoFocus
+            onKeyDown={onKeyDown}
           />
         </div>
         <div className="min-[1178px]:pt-1 flex gap-2 w-full min-[1178px]:w-auto">
@@ -91,11 +104,6 @@ export function SearchByIdForm({
           </Button>
         </div>
       </div>
-      {/* {searchStatus === "invalid-format" && (
-        <p className="font-nunito-sans text-sm text-red-600 dark:text-red-400 mt-2">
-          Please enter a valid student ID format.
-        </p>
-      )} */}
     </div>
   );
 }
