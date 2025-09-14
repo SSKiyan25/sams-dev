@@ -16,4 +16,5 @@ export type Event = {
   attendees: number;
   status: EventStatus;
   facultyId?: string; // Faculty ID to associate event with creating faculty
+  programId?: string; // Program ID to associate event with a specific program
 };

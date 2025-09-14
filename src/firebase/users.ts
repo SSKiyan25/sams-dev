@@ -19,6 +19,7 @@ import { MemberFormData } from "@/lib/validators";
 import { Member } from "@/features/organization/members/types";
 import { getAuth } from "firebase/auth";
 import { email } from "zod";
+import { getProgramByFacultyId } from "./programs";
 
 // Define the collection reference once at the top level for reuse.
 const usersCollection: CollectionReference<DocumentData> = collection(
@@ -62,10 +63,37 @@ export const getCurrentUserFacultyId = async (
 
   const facultyId = userDocSnap.data()?.facultyId;
   if (!facultyId) {
-    console.error("Faculty ID not found for the authenticated user.");
+    console.error("This is a course organization.");
     return null;
   }
   return facultyId;
+};
+
+/**
+ * Fetches the complete user document for the currently authenticated user.
+ * This is more efficient as it retrieves all necessary IDs in one go.
+ * @returns The user's data object or null if not found.
+ */
+export const getCurrentUserData = async () => {
+  const currentUser = getAuth().currentUser;
+  if (!currentUser) {
+    console.error("No user is currently authenticated.");
+    return null;
+  }
+
+  try {
+    const userDocRef = doc(db, "users", currentUser.uid);
+    const userDocSnap = await getDoc(userDocRef);
+
+    if (!userDocSnap.exists()) {
+      console.error("Authenticated user's document not found.");
+      return null;
+    }
+    return { uid: currentUser.uid, ...userDocSnap.data() };
+  } catch (error) {
+    handleFirestoreError(error, "fetching current user");
+    return null;
+  }
 };
 
 export const getCurrentUser = async (uid: string) => {
@@ -87,44 +115,59 @@ export const getCurrentUser = async (uid: string) => {
 };
 
 // --- EXPORTED FUNCTIONS ---
-
+/**
+ * Fetches users based on the current user's context (faculty or program).
+ */
 export const getUsers = async () => {
   try {
-    const facultyId = await getCurrentUserFacultyId(
-      getAuth().currentUser?.uid || ""
-    );
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    if (!currentUser) return [];
+
+    // Determine the query field and value based on user type
+    const queryField = currentUser.facultyId ? "facultyId" : "programId";
+    const queryValue = currentUser.facultyId || currentUser.programId;
+
+    if (!queryValue) {
+      console.error("User has neither facultyId nor programId.");
+      return [];
+    }
+
     const usersQuery = query(
       usersCollection,
       where("isDeleted", "==", false),
       where("role", "==", "user"),
-      where("facultyId", "==", facultyId || "")
+      where(queryField, "==", queryValue)
     );
+
     const querySnapshot = await getDocs(usersQuery);
     return querySnapshot.docs.map((doc) => ({
       id: doc.id,
       member: { ...doc.data() },
     }));
   } catch (error) {
-    // Standardized error handling.
     handleFirestoreError(error, "fetch users");
-    return []; // Return an empty array on failure.
+    return [];
   }
 };
 
 export const getRecentUsers = async () => {
   try {
-    const facultyId = await getCurrentUserFacultyId(
-      getAuth().currentUser?.uid || ""
-    );
-    if (!facultyId) {
-      console.log("Could not determine faculty ID for the current user.");
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    if (!currentUser) return [];
+
+    // Determine the query field and value based on user type
+    const queryField = currentUser.facultyId ? "facultyId" : "programId";
+    const queryValue = currentUser.facultyId || currentUser.programId;
+
+    if (!queryValue) {
+      console.error("User has neither facultyId nor programId.");
       return [];
     }
     const recentUsersQuery = query(
       usersCollection,
       where("role", "==", "user"),
       where("isDeleted", "==", false),
-      where("facultyId", "==", facultyId),
+      where(queryField, "==", queryValue),
       orderBy("createdAt", "desc"),
       limit(5)
     );
@@ -211,15 +254,22 @@ export const searchUserByStudentId = async (
   // Encapsulated logic in a single try/catch block for comprehensive error handling.
   try {
     // Replaced duplicated code with a call to the new helper function.
-    const facultyId = await getCurrentUserFacultyId(currentUser?.uid);
-    if (!facultyId) {
-      return null; // Stop if we can't get the facultyId.
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    if (!currentUser) return null;
+
+    // Determine the query field and value based on user type
+    const queryField = currentUser.facultyId ? "facultyId" : "programId";
+    const queryValue = currentUser.facultyId || currentUser.programId;
+
+    if (!queryValue) {
+      console.error("User has neither facultyId nor programId.");
+      return null;
     }
 
     const searchQuery = query(
       usersCollection,
       where("studentId", "==", studentId),
-      where("facultyId", "==", facultyId),
+      where(queryField, "==", queryValue),
       where("isDeleted", "==", false)
     );
 
@@ -257,17 +307,22 @@ export const searchUserByName = async (
       // Return empty if the search name is blank after trimming.
       return [];
     }
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    if (!currentUser) return [];
 
-    const facultyId = await getCurrentUserFacultyId(currentUser?.uid);
-    if (!facultyId) {
-      console.log("Could not determine faculty ID for the current user.");
+    // Determine the query field and value based on user type
+    const queryField = currentUser.facultyId ? "facultyId" : "programId";
+    const queryValue = currentUser.facultyId || currentUser.programId;
+
+    if (!queryValue) {
+      console.error("User has neither facultyId nor programId.");
       return [];
     }
 
     // 1. Query all non-deleted users for the given faculty.
     const allUsersQuery = query(
       usersCollection,
-      where("facultyId", "==", facultyId),
+      where(queryField, "==", queryValue),
       where("isDeleted", "==", false)
     );
 

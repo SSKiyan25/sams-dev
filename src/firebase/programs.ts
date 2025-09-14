@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "./firebase.config";
-import { Program } from "@/features/organization/members/types";
+import { Member, Program } from "@/features/organization/members/types";
 import { getAuth } from "firebase/auth";
-import { getCurrentUserFacultyId } from "./users";
+import { getCurrentUserData, getCurrentUserFacultyId } from "./users";
 
 const handleFirestoreError = (error: any, context: string) => {
   console.error(`Error ${context}:`, error);
@@ -12,6 +12,23 @@ const handleFirestoreError = (error: any, context: string) => {
 
 export const getPrograms = async () => {
   try {
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    if (!currentUser) return [];
+
+    // Determine the query field and value based on user type
+    const field = currentUser.facultyId ? "facultyId" : "programId";
+    const value = currentUser.facultyId || currentUser.programId;
+
+    if (!value) {
+      console.error("User has neither facultyId nor programId.");
+      return [];
+    }
+
+    if (field === "programId") {
+      // If the user is a student, fetch only their program
+      const program = await getProgramById(value);
+      return program ? [program] : [];
+    }
     const programsCollection = collection(db, "programs");
     const querySnapshot = await getDocs(programsCollection);
     return querySnapshot.docs.map((doc) => ({
@@ -34,15 +51,21 @@ export const getProgramById = async (programId: string) => {
 
 export const getProgramByFacultyId = async () => {
   try {
-    const facultyId = await getCurrentUserFacultyId(
-      getAuth().currentUser?.uid || ""
-    );
-    if (!facultyId) {
-      console.log("Could not determine faculty ID for the current user.");
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    if (!currentUser) return null;
+    const queryField = currentUser.facultyId ? "facultyId" : "programId";
+    const queryValue = currentUser.facultyId || currentUser.programId;
+    if (!queryValue) {
+      console.error("User has neither facultyId nor program Id.");
       return null;
     }
+
+    if (queryField === "programId") {
+      const program = await getProgramById(queryValue);
+      return program ? [program] : null;
+    }
     const programsCollection = collection(db, "programs");
-    const q = query(programsCollection, where("facultyId", "==", facultyId));
+    const q = query(programsCollection, where("facultyId", "==", queryValue));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map((doc) => ({
       id: doc.id,

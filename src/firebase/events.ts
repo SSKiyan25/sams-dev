@@ -23,8 +23,9 @@ import {
   determineEventStatus,
   getEventsNeedingStatusUpdate,
 } from "@/utils/eventStatusUtils";
-import { getCurrentUserFacultyId } from "./users";
+import { getCurrentUserData, getCurrentUserFacultyId } from "./users";
 import { getAuth } from "firebase/auth";
+import { Member } from "@/features/organization/members/types";
 
 const eventsCollection = collection(db, "events");
 
@@ -77,18 +78,9 @@ export const getPaginatedEvents = async (
     if (!currentUser) {
       throw new Error("User must be authenticated to fetch events");
     }
-    
-    const facultyId = await getCurrentUserFacultyId(currentUser.uid);
-    if (!facultyId) {
-      throw new Error("Could not determine faculty ID for the current user");
-    }
 
     // Base query - filter by faculty and non-deleted events
-    let baseQuery = query(
-      eventsCollection, 
-      where("isDeleted", "==", false),
-      where("facultyId", "==", facultyId)
-    );
+    let baseQuery = query(eventsCollection, where("isDeleted", "==", false));
 
     // Add status filter if provided and not "all"
     if (status && status !== "all") {
@@ -169,14 +161,16 @@ export const getPaginatedEvents = async (
 export const addEvent = async (eventData: EventFormData) => {
   try {
     // Get the current user's faculty ID
-    const currentUser = getAuth().currentUser;
-    if (!currentUser) {
-      throw new Error("User must be authenticated to create events");
-    }
-    
-    const facultyId = await getCurrentUserFacultyId(currentUser.uid);
-    if (!facultyId) {
-      throw new Error("Could not determine faculty ID for the current user");
+     const currentUser = await getCurrentUserData() as unknown as Member;
+    if (!currentUser) return [];
+
+    // Determine the query field and value based on user type
+    const queryField = currentUser.facultyId ? "facultyId" : "programId";
+    const queryValue = currentUser.facultyId || currentUser.programId;
+
+    if (!queryValue) {
+      console.error("User has neither facultyId nor programId.");
+      return [];
     }
 
     // Validate that the event date is not in the past
@@ -225,7 +219,7 @@ export const addEvent = async (eventData: EventFormData) => {
       attendees: 0,
       status,
       isDeleted: false,
-      facultyId, // Associate event with the creating faculty
+      [queryField]: queryValue,
     });
     return docRef.id;
   } catch (error) {
@@ -339,20 +333,21 @@ export const getEvents = async (
 ): Promise<Event[]> => {
   try {
     // Get the current user's faculty ID
-    const currentUser = getAuth().currentUser;
-    if (!currentUser) {
-      throw new Error("User must be authenticated to fetch events");
-    }
-    
-    const facultyId = await getCurrentUserFacultyId(currentUser.uid);
-    if (!facultyId) {
-      throw new Error("Could not determine faculty ID for the current user");
-    }
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    if (!currentUser) return [];
 
+    // Determine the query field and value based on user type
+    const queryField = currentUser.facultyId ? "facultyId" : "programId";
+    const queryValue = currentUser.facultyId || currentUser.programId;
+
+    if (!queryValue) {
+      console.error("User has neither facultyId nor programId.");
+      return [];
+    }
     let q = query(
       eventsCollection, 
       where("isDeleted", "==", false),
-      where("facultyId", "==", facultyId)
+      where(queryField, "==", queryValue)
     );
     if (status) {
       q = query(q, where("status", "==", status));
@@ -380,22 +375,24 @@ export const getEvents = async (
 export const getEventsByStatus = async (status: string) => {
   try {
     // Get the current user's faculty ID
-    const currentUser = getAuth().currentUser;
-    if (!currentUser) {
-      throw new Error("User must be authenticated to fetch events");
-    }
-    
-    const facultyId = await getCurrentUserFacultyId(currentUser.uid);
-    if (!facultyId) {
-      throw new Error("Could not determine faculty ID for the current user");
-    }
+     const currentUser = (await getCurrentUserData()) as unknown as Member;
+     if (!currentUser) return [];
+
+     // Determine the query field and value based on user type
+     const queryField = currentUser.facultyId ? "facultyId" : "programId";
+     const queryValue = currentUser.facultyId || currentUser.programId;
+
+     if (!queryValue) {
+       console.error("User has neither facultyId nor programId.");
+       return [];
+     }
 
     const eventsRef = collection(db, "events");
     const q = query(
       eventsRef,
       where("status", "==", status),
       where("isDeleted", "==", false),
-      where("facultyId", "==", facultyId)
+      where(queryField, "==", queryValue)
     );
     const querySnapshot = await getDocs(q);
 
@@ -413,23 +410,13 @@ export const getEventsByStatus = async (status: string) => {
 
 export const getEventById = async (eventId: string): Promise<Event | null> => {
   try {
-    // Get the current user's faculty ID
-    const currentUser = getAuth().currentUser;
-    if (!currentUser) {
-      throw new Error("User must be authenticated to fetch event");
-    }
-    
-    const facultyId = await getCurrentUserFacultyId(currentUser.uid);
-    if (!facultyId) {
-      throw new Error("Could not determine faculty ID for the current user");
-    }
 
     const eventDoc = doc(db, "events", eventId);
     const docSnap = await getDoc(eventDoc);
 
     if (docSnap.exists()) {
       const data = docSnap.data();
-      if (data && data.isDeleted === false && data.facultyId === facultyId) {
+      if (data && data.isDeleted === false) {
         return transformEventData({ id: docSnap.id, data: () => data });
       }
     }
