@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,67 +11,138 @@ import {
   UsersIcon,
   Grid3X3,
   List,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials } from "../utils";
 import Link from "next/link";
 import { getRecentAttendance } from "@/firebase";
 import { AttendanceRecord } from "../types";
+import { toast } from "sonner";
 
 interface RecentAttendanceProps {
   eventId: string;
   type: "time-in" | "time-out";
   organizationId?: string;
+  // New prop to trigger a refresh when new attendance is logged
+  newAttendanceLogged?: boolean;
 }
+
+// Global cache to persist data between component remounts
+const attendanceCache = new Map<
+  string,
+  {
+    records: AttendanceRecord[];
+    timestamp: number;
+  }
+>();
+
+// Minimum time between manual refreshes (3 seconds)
+const REFRESH_COOLDOWN = 3000;
 
 export function RecentAttendance({
   eventId,
   type,
   organizationId = "",
+  newAttendanceLogged = false,
 }: RecentAttendanceProps) {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [showNames, setShowNames] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [currentPage, setCurrentPage] = useState(1);
-  const RECORDS_PER_PAGE = 6;
+  const [refreshDisabled, setRefreshDisabled] = useState(false);
 
-  const loadAttendance = useCallback(async () => {
-    setIsLoading(true);
+  // Track the last refresh timestamp
+  const lastRefreshRef = useRef<number>(0);
 
-    try {
-      // Simulate network delay
-      // await new Promise((resolve) => setTimeout(resolve, 800));
+  // Create a cache key based on event ID and type
+  const cacheKey = `${eventId}-${type}`;
 
-      const recentRecords = (await getRecentAttendance(
-        eventId,
-        type
-      )) as unknown as AttendanceRecord[];
-      setRecords(recentRecords);
-      setIsLoading(false);
-    } catch (error) {
-      console.error("Failed to load recent attendance:", error);
-      setRecords([]);
-      setIsLoading(false);
-    }
-  }, [eventId, type]);
+  const isInitialLoadRef = useRef(true);
 
+  const loadAttendance = useCallback(
+    async (forceRefresh = false) => {
+      // Check if we should rate limit this refresh
+      const now = Date.now();
+      if (
+        !forceRefresh &&
+        !isInitialLoadRef.current &&
+        now - lastRefreshRef.current < REFRESH_COOLDOWN
+      ) {
+        toast.info("Please wait before refreshing again");
+        return;
+      }
+
+      if (isInitialLoadRef.current) {
+        isInitialLoadRef.current = false;
+      }
+
+      // Use cache if available and not forcing refresh
+      if (!forceRefresh && attendanceCache.has(cacheKey)) {
+        const cachedData = attendanceCache.get(cacheKey)!;
+        setRecords(cachedData.records);
+        return;
+      }
+
+      // Set loading state and disable refresh button
+      setIsLoading(true);
+      setRefreshDisabled(true);
+
+      try {
+        // Update the last refresh timestamp
+        lastRefreshRef.current = now;
+
+        // Fetch fresh data from Firestore
+        const recentRecords = (await getRecentAttendance(
+          eventId,
+          type
+        )) as unknown as AttendanceRecord[];
+
+        // Update the UI
+        setRecords(recentRecords);
+
+        // Store in cache
+        attendanceCache.set(cacheKey, {
+          records: recentRecords,
+          timestamp: now,
+        });
+      } catch (error) {
+        console.error("Failed to load recent attendance:", error);
+        toast.error("Failed to load recent attendance");
+        setRecords([]);
+      } finally {
+        setIsLoading(false);
+
+        // Re-enable refresh button after cooldown
+        setTimeout(() => {
+          setRefreshDisabled(false);
+        }, REFRESH_COOLDOWN);
+      }
+    },
+    [eventId, type, cacheKey]
+  );
+
+  // Handle initial load and prop changes
   useEffect(() => {
-    // Make sure loadAttendance is defined above this useEffect!
-    loadAttendance();
+    // Check if we have cached data
+    if (attendanceCache.has(cacheKey)) {
+      // Always use cache if it exists, regardless of age
+      const cachedData = attendanceCache.get(cacheKey)!;
+      setRecords(cachedData.records);
 
-    // Set up a refresh interval (every 30 seconds)
-    // Uncomment the next line to enable auto-refresh
-    // const intervalId = setInterval(loadAttendance, 30000);
+      // Just update the UI to show cache age
+      return;
+    }
 
-    // Uncomment the next line for cleanup if interval is used
-    // return () => clearInterval(intervalId);
+    // Only load from Firestore if no cache exists at all
+    loadAttendance(false);
+  }, [cacheKey, loadAttendance]);
 
-    // If not using interval, just return nothing
-    return;
-  }, [loadAttendance]);
+  // Refresh when a new attendance is logged
+  useEffect(() => {
+    if (newAttendanceLogged) {
+      loadAttendance(true);
+    }
+  }, [newAttendanceLogged, loadAttendance]);
 
   const formatTime = (timestamp: string) => {
     if (!timestamp) return "Not recorded";
@@ -84,29 +155,21 @@ export function RecentAttendance({
     return `${formattedHours}:${minutes} ${ampm}`;
   };
 
-  // Show only the records for the current page
-  const totalRecords = records.length;
-  const totalPages = Math.ceil(totalRecords / RECORDS_PER_PAGE);
-  const startIndex = (currentPage - 1) * RECORDS_PER_PAGE;
-  const endIndex = startIndex + RECORDS_PER_PAGE;
-  const visibleRecords = records.slice(startIndex, endIndex);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const handlePrevPage = () => {
-    setCurrentPage((prev) => Math.max(1, prev - 1));
-  };
-
-  const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(totalPages, prev + 1));
-  };
-
   // Determine the attendees page URL
   const attendeesUrl = organizationId
     ? `/organization/${organizationId}/events/${eventId}/attendees`
     : `/org-events/${eventId}/attendees`;
+
+  const handleRefreshClick = () => {
+    loadAttendance(true);
+  };
+
+  // Calculate cache status
+  const cachedData = attendanceCache.get(cacheKey);
+  const cacheAge = cachedData
+    ? Math.floor((Date.now() - cachedData.timestamp) / 1000)
+    : 0;
+  const hasCache = !!cachedData;
 
   return (
     <div className="space-y-6 flex flex-col flex-1">
@@ -119,56 +182,82 @@ export function RecentAttendance({
             Students who have recently{" "}
             {type === "time-in" ? "timed in" : "timed out"} for this event
           </p>
+          {hasCache && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Data cached {cacheAge} seconds ago
+            </p>
+          )}
         </div>
-        <div className="flex gap-3 w-full sm:w-auto">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
-            className="h-9 flex-1 sm:flex-none font-nunito-sans font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-          >
-            {viewMode === "grid" ? (
-              <>
-                <List className="h-3.5 w-3.5 mr-2" />
-                List View
-              </>
-            ) : (
-              <>
-                <Grid3X3 className="h-3.5 w-3.5 mr-2" />
-                Grid View
-              </>
-            )}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={loadAttendance}
-            className="h-9 flex-1 sm:flex-none font-nunito-sans font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-          >
-            <RefreshCcw className="h-3.5 w-3.5 mr-2" />
-            Refresh
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setShowNames(!showNames)}
-            className="h-9 flex-1 sm:flex-none font-nunito-sans font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-          >
-            {showNames ? (
-              <>
-                <EyeOffIcon className="h-4 w-4 mr-2" />
-                Hide Names
-              </>
-            ) : (
-              <>
-                <EyeIcon className="h-4 w-4 mr-2" />
-                Show Names
-              </>
-            )}
-          </Button>
+        <div className="flex items-center justify-end gap-1.5 w-full">
+          <div className="inline-flex items-center rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-0.5 shadow-sm w-full sm:w-auto">
+            {/* List/Grid toggle - only show on sm and up */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
+              className={`hidden sm:flex flex-1 h-9 rounded-sm text-xs sm:text-sm font-nunito-sans font-medium ${
+                viewMode === "grid"
+                  ? "text-gray-600 dark:text-gray-400"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              }`}
+            >
+              {viewMode === "grid" ? (
+                <>
+                  <List className="h-3.5 w-3.5 mr-1.5 sm:mr-2" />
+                  <span className="sm:inline">List</span>
+                </>
+              ) : (
+                <>
+                  <Grid3X3 className="h-3.5 w-3.5 mr-1.5 sm:mr-2" />
+                  <span className="sm:inline">Grid</span>
+                </>
+              )}
+            </Button>
+
+            {/* Divider - only show if List/Grid toggle is visible */}
+            <div className="hidden sm:block h-9 border-l border-gray-200 dark:border-gray-700 mx-0.5"></div>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleRefreshClick}
+              disabled={refreshDisabled || isLoading}
+              className={`flex-1 h-9 rounded-sm text-xs sm:text-sm font-nunito-sans font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                refreshDisabled ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+            >
+              <RefreshCcw
+                className={`h-3.5 w-3.5 mr-1.5 sm:mr-2 ${
+                  isLoading ? "animate-spin" : ""
+                }`}
+              />
+              <span className="sm:inline">Refresh</span>
+            </Button>
+
+            <div className="h-9 border-l border-gray-200 dark:border-gray-700 mx-0.5"></div>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowNames(!showNames)}
+              className="flex-1 h-9 rounded-sm text-xs sm:text-sm font-nunito-sans font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              {showNames ? (
+                <>
+                  <EyeOffIcon className="h-3.5 w-3.5 mr-1.5 sm:mr-2" />
+                  <span className="sm:inline">Hide</span>
+                </>
+              ) : (
+                <>
+                  <EyeIcon className="h-3.5 w-3.5 mr-1.5 sm:mr-2" />
+                  <span className="sm:inline">Show</span>
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -195,7 +284,7 @@ export function RecentAttendance({
           <div className="flex flex-col flex-1">
             {viewMode === "grid" ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1">
-                {visibleRecords.map((record) => (
+                {records.map((record) => (
                   <div
                     key={record.id}
                     className="h-32 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors shadow-sm flex flex-col"
@@ -244,7 +333,7 @@ export function RecentAttendance({
               </div>
             ) : (
               <div className="space-y-3 flex-1">
-                {visibleRecords.map((record) => (
+                {records.map((record) => (
                   <div
                     key={record.id}
                     className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors shadow-sm"
@@ -299,45 +388,6 @@ export function RecentAttendance({
             )}
           </div>
 
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePrevPage}
-                disabled={currentPage === 1}
-                className="h-8 w-8 p-0 font-nunito-sans font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (page) => (
-                  <Button
-                    key={page}
-                    variant={currentPage === page ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handlePageChange(page)}
-                    className="h-8 w-8 p-0 font-nunito-sans font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    {page}
-                  </Button>
-                )
-              )}
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-                className="h-8 w-8 p-0 font-nunito-sans font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-
           {/* View All Attendees Button */}
           {!isLoading && (
             <div className="flex justify-center pt-4">
@@ -348,7 +398,7 @@ export function RecentAttendance({
               >
                 <Link href={attendeesUrl}>
                   <UsersIcon className="h-4 w-4 mr-2" />
-                  View All Attendees ({totalRecords})
+                  View All Attendees
                 </Link>
               </Button>
             </div>

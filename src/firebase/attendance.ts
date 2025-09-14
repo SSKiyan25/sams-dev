@@ -123,7 +123,7 @@ export const logAttendance = async ({
 };
 
 /**
- * Fetches the 10 most recent attendance records for an event, enriched with valid student data.
+ * Fetches the 9 most recent attendance records for an event, enriched with valid student data.
  * Records are excluded if the student does not exist or does not belong to the current user's faculty.
  * @param eventId - The ID of the event.
  * @param type - The type of log to sort by ('time-in' or 'time-out').
@@ -140,14 +140,14 @@ export const getRecentAttendance = async (
     const attendanceCollection = collection(db, "eventAttendees");
     const timestampField = type === "time-in" ? "timeIn" : "timeOut";
 
-    // Step 1: Fetch the 10 most recent attendance documents from Firestore.
+    // Step 1: Fetch the 9 most recent attendance documents from Firestore.
     const q: Query<DocumentData> = query(
       attendanceCollection,
       where("eventId", "==", eventId),
       where("student.facultyId", "==", facultyId || ""),
       where(timestampField, "!=", null),
       orderBy(timestampField, "desc"),
-      limit(10)
+      limit(9)
     );
 
     const querySnapshot = await getDocs(q);
@@ -201,6 +201,7 @@ export const getRecentAttendance = async (
     return [];
   }
 };
+
 export const checkLogAttendanceExist = async (
   eventId: string,
   studentId: string,
