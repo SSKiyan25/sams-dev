@@ -137,7 +137,7 @@ export function ShortcutLinks({
   );
 
   return (
-    <Card className="group relative overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 border-0 bg-gradient-to-br from-background via-background/95 to-muted/30 backdrop-blur-xl">
+    <Card className="group relative overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 border-0 bg-gradient-to-br from-background via-background/95 to-muted/30 backdrop-blur-xl animate-fade-in-up animation-delay-600">
       {/* Subtle background pattern */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-50"></div>
       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/10 to-transparent rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-1000"></div>
@@ -170,7 +170,7 @@ export function ShortcutLinks({
           {isLoading ? (
             <EventSkeletons />
           ) : allEvents.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground">
+            <div className="text-center py-16 text-muted-foreground animate-fade-in-up animation-delay-800">
               <div className="p-4 rounded-2xl bg-muted/30 w-fit mx-auto mb-4">
                 <CalendarRange className="h-8 w-8 opacity-50" />
               </div>
@@ -178,13 +178,13 @@ export function ShortcutLinks({
               <p className="text-sm">Create your first event to get started</p>
             </div>
           ) : (
-            allEvents.map((event) => (
+            allEvents.map((event, index) => (
               <Link
                 href={`/org-events/${event.id}/attendees`}
                 key={event.id}
                 className="block group"
               >
-                <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 border-2 border-border/30 hover:border-primary/40 bg-gradient-to-r from-background/80 to-muted/20 backdrop-blur-sm hover:from-background hover:to-primary/5">
+                <Card className={`overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 border-2 border-border/30 hover:border-primary/40 bg-gradient-to-r from-background/80 to-muted/20 backdrop-blur-sm hover:from-background hover:to-primary/5 animate-fade-in-up animation-delay-${800 + index * 100}`}>
                   <div className="p-4">
                     {/* Compact Header */}
                     <div className="flex items-start justify-between gap-3 mb-3">
