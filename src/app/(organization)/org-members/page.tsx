@@ -67,6 +67,8 @@ export default function MembersPage() {
   const [bulkImportResult, setBulkImportResult] =
     useState<BulkImportResult | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [isFormSubmitting, setIsFormSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [selectedMember, setSelectedMember] = useState<MemberData | null>(null);
 
   const handleAddMember = () => {
@@ -85,7 +87,8 @@ export default function MembersPage() {
   };
 
   const confirmDelete = async () => {
-    if (selectedMember) {
+    if (selectedMember && !isDeleting) {
+      setIsDeleting(true);
       try {
         await deleteUser(selectedMember.id);
         toast.success("Member deleted successfully");
@@ -94,6 +97,7 @@ export default function MembersPage() {
         toast.error("Failed to delete member");
         console.error(error);
       } finally {
+        setIsDeleting(false);
         setIsDeleteDialogOpen(false);
         setSelectedMember(null);
       }
@@ -101,6 +105,7 @@ export default function MembersPage() {
   };
 
   const handleFormSubmit = async (data: Member) => {
+    setIsFormSubmitting(true);
     try {
       if (selectedMember) {
         await updateUser(selectedMember.id, data);
@@ -120,6 +125,7 @@ export default function MembersPage() {
       );
       console.error(error);
     } finally {
+      setIsFormSubmitting(false);
       setIsFormOpen(false);
       setSelectedMember(null);
     }
@@ -145,7 +151,7 @@ export default function MembersPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
-        <div className="mb-8">
+        <div className="mb-8 animate-fade-in-up animation-delay-200">
           <MembersHeader
             onSearch={performSearch}
             onAddMember={handleAddMember}
@@ -176,7 +182,7 @@ export default function MembersPage() {
           )} */}
 
         {/* Filters Section */}
-        <div className="mb-6">
+        <div className="mb-6 animate-fade-in-up animation-delay-400">
           <MembersFilters
             programs={programs}
             onSearch={handleSearch}
@@ -191,20 +197,9 @@ export default function MembersPage() {
         </div>
 
         {/* Main Content */}
-        <div className="space-y-6">
-          {isLoading || isRefreshing ? (
-            <MembersSkeleton />
-          ) : isSearchActive ? (
-            <MembersSearchResults
-              searchQuery={searchQuery}
-              searchResults={searchResults}
-              programs={programs}
-              faculties={faculties}
-              onEdit={handleEditMember}
-              onDelete={handleDeleteMember}
-              onClearSearch={clearSearch}
-              isSearching={isSearching}
-            />
+        <div className="space-y-6 animate-fade-in-up animation-delay-600">
+          {isLoading ? (
+            <MembersSkeleton viewMode={viewMode} />
           ) : viewMode === "card" ? (
             <MembersList
               members={members}
@@ -224,20 +219,16 @@ export default function MembersPage() {
           )}
         </div>
 
-        {/* Pagination - only show when not searching */}
-        {!isLoading &&
-          !isRefreshing &&
-          !isSearchActive &&
-          members.length > 0 &&
-          totalPages > 1 && (
-            <div className="mt-8">
-              <MembersPagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-              />
-            </div>
-          )}
+        {/* Pagination */}
+        {!isLoading && !isRefreshing && !isSearchActive && members.length > 0 && totalPages > 1 && (
+          <div className="mt-8 animate-fade-in-up animation-delay-800">
+            <MembersPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          </div>
+        )}
 
         {/* Debug tools (only in development)
         {process.env.NODE_ENV === "development" && (
@@ -282,12 +273,14 @@ export default function MembersPage() {
           member={selectedMember}
           facultyData={faculties}
           programData={programs}
+          isSubmitting={isFormSubmitting}
         />
 
         <DeleteConfirmationDialog
           open={isDeleteDialogOpen}
           onOpenChange={setIsDeleteDialogOpen}
           onConfirm={confirmDelete}
+          isDeleting={isDeleting}
         />
 
         <BulkImportDialog
