@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { MemberData, Program, Faculty } from "../types";
-import { getFaculties, getProgramByFacultyId } from "@/firebase";
+import { getFaculties, getProgramByFacultyId, getPrograms } from "@/firebase";
 import { getPaginatedUsers } from "@/firebase/members";
 import { toast } from "sonner";
 import {
@@ -69,6 +69,7 @@ export function usePaginatedMembers() {
     if (!forceRefresh && isStaticCacheValid()) {
       const { faculties: cachedFaculties, programs: cachedPrograms } =
         getStaticCache();
+      // this is where the program is returned as NULL
       setFaculties(cachedFaculties || []);
       setPrograms(cachedPrograms || []);
       return;
@@ -77,9 +78,9 @@ export function usePaginatedMembers() {
     try {
       const [rawFaculties, rawPrograms] = await Promise.all([
         getFaculties(),
-        getProgramByFacultyId(),
+        getPrograms(),
       ]);
-
+      console.log(rawFaculties, rawPrograms);
       // Ensure we have all required fields with proper type checking
       const typedFaculties: Faculty[] = Array.isArray(rawFaculties)
         ? rawFaculties.map((item: any) => ({
@@ -158,6 +159,7 @@ export function usePaginatedMembers() {
         // Update state
         setMembers(transformedMembers);
         setTotalMembers(result.total);
+        console.log("Fetched members from server:", transformedMembers);
 
         // Cache the results (only if not searching)
         if (!isSearchActive) {

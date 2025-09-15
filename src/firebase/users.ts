@@ -63,8 +63,7 @@ export const getCurrentUserFacultyId = async (
 
   const facultyId = userDocSnap.data()?.facultyId;
   if (!facultyId) {
-    console.error("This is a course organization.");
-    return null;
+    return "";
   }
   return facultyId;
 };
@@ -131,6 +130,8 @@ export const getUsers = async () => {
       console.error("User has neither facultyId nor programId.");
       return [];
     }
+
+    console.log("Query Field:", queryField);
 
     const usersQuery = query(
       usersCollection,

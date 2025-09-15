@@ -23,7 +23,7 @@ import {
   determineEventStatus,
   getEventsNeedingStatusUpdate,
 } from "@/utils/eventStatusUtils";
-import { getCurrentUserData, getCurrentUserFacultyId } from "./users";
+import { getCurrentUserData } from "./users";
 import { getAuth } from "firebase/auth";
 import { Member } from "@/features/organization/members/types";
 
@@ -32,12 +32,12 @@ const eventsCollection = collection(db, "events");
 // Helper to manage errors
 const handleFirestoreError = (error: any, context: string) => {
   console.error(`Error ${context}:`, error);
-  
+
   // If it's already an Error object with a message, preserve it
   if (error instanceof Error) {
     throw error;
   }
-  
+
   // Otherwise, create a generic error
   throw new Error(`Failed to ${context}`);
 };
@@ -74,13 +74,17 @@ export const getPaginatedEvents = async (
 ): Promise<PaginatedEvents> => {
   try {
     // Get the current user's faculty ID
-    const currentUser = getAuth().currentUser;
-    if (!currentUser) {
-      throw new Error("User must be authenticated to fetch events");
-    }
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+
+    const queryField = currentUser.facultyId ? "facultyId" : "programId";
+    const queryValue = currentUser.facultyId || currentUser.programId;
 
     // Base query - filter by faculty and non-deleted events
-    let baseQuery = query(eventsCollection, where("isDeleted", "==", false));
+    let baseQuery = query(
+      eventsCollection,
+      where("isDeleted", "==", false),
+      where(queryField, "==", queryValue)
+    );
 
     // Add status filter if provided and not "all"
     if (status && status !== "all") {

@@ -20,11 +20,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { getAuth } from "firebase/auth";
-import {
-  getCurrentUserData,
-  getCurrentUserFacultyId,
-  searchUserByStudentId,
-} from "./users"; // Assuming this is optimized
+import { getCurrentUserData, searchUserByStudentId } from "./users"; // Assuming this is optimized
 import {
   AttendanceRecord,
   EventAttendance,

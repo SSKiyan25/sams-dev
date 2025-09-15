@@ -10,7 +10,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { useEffect, useState } from "react";
-import { getCurrentUserFacultyId } from "@/firebase";
+import { getCurrentUserFacultyId, getFaculties, getPrograms } from "@/firebase";
 import { getAuth } from "firebase/auth";
 
 interface MembersTableProps {
@@ -29,13 +29,16 @@ export function MembersTable({
   onDelete,
 }: MembersTableProps) {
   const [facultyId, setFacultyId] = useState<string | null>(null);
-  const getProgramName = (programId: string) => {
-    const program = programs.find((p) => p.id === programId);
+  // NOTE just used temporarily the programs and faculties in server code query to fix the null issue
+  const getProgramName = async (programId: string) => {
+    const newPrograms = (await getPrograms()) as Program[];
+    const program = newPrograms.find((p) => p.id === programId);
     return program ? program.name : "N/A";
   };
 
-  const getFacultyName = (facultyId: string) => {
-    const faculty = faculties.find((f) => f.id === facultyId);
+  const getFacultyName = async (facultyId: string) => {
+    const newFaculties = (await getFaculties()) as Faculty[];
+    const faculty = newFaculties.find((f) => f.id === facultyId);
     return faculty ? faculty.name : "N/A";
   };
 
