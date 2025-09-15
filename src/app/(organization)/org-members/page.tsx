@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Member,
-  Faculty,
-  Program,
   MemberData,
   BulkImportResult,
 } from "@/features/organization/members/types";
@@ -16,25 +14,52 @@ import { MembersTable } from "@/features/organization/members/components/Members
 import { MembersSkeleton } from "@/features/organization/members/components/MembersSkeleton";
 import { MembersHeader } from "@/features/organization/members/components/MembersHeader";
 import { MembersFilters } from "@/features/organization/members/components/MembersFilters";
-//import { MembersSearchBar } from "@/features/organization/members/components/MembersSearchBar";
 import { MembersPagination } from "@/features/organization/members/components/MembersPagination";
 import { ViewMode } from "@/features/organization/members/components/ViewToggle";
 import {
   addUser,
   checkStudentIdExist,
   deleteUser,
-  getFaculties,
-  getProgramByFacultyId,
-  getPrograms,
-  getUsers,
   processFileForBulkImport,
   updateUser,
 } from "@/firebase";
 import { toast } from "sonner";
 import { BulkImportResultModal } from "@/features/organization/members/components/BulkImportResultModal";
+import { MembersSearchResults } from "@/features/organization/members/components/MembersSearchResults";
+import { usePaginatedMembers } from "@/features/organization/members/hooks/usePaginatedMembers";
+// import { CheckCircleIcon } from "lucide-react";
+// import { debugCache } from "@/features/organization/members/services/membersCache";
 
 export default function MembersPage() {
-  const [members, setMembers] = useState<MemberData[]>([]);
+  const {
+    members,
+    faculties,
+    programs,
+    totalMembers,
+    totalPages,
+    currentPage,
+    searchQuery,
+    programFilter,
+    viewMode,
+    isLoading,
+    isRefreshing,
+    isSearchActive,
+    isSearching,
+    searchResults,
+    // dataSource,
+    // cacheStatus,
+    performSearch,
+    handleSearch,
+    handleProgramFilter,
+    handleSortBy,
+    handlePageChange,
+    handleViewModeChange,
+    refreshData,
+    clearSearch,
+    // clearCache,
+  } = usePaginatedMembers();
+
+  // Local UI state
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
@@ -43,74 +68,6 @@ export default function MembersPage() {
     useState<BulkImportResult | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [selectedMember, setSelectedMember] = useState<MemberData | null>(null);
-  const [faculties, setFaculties] = useState<Faculty[]>([]);
-  const [programs, setPrograms] = useState<Program[]>([]);
-  const [viewMode, setViewMode] = useState<ViewMode>("card");
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [programFilter, setProgramFilter] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
-
-  //MOCK DATA!!! COMMENT OUT WHEN ABOUT TO COMMIT
-  // useEffect(() => {
-  //   const mockResult: BulkImportResult = {
-  //     success: true,
-  //     successfulImports: 3,
-  //     errors: [
-  //       { row: 2, studentId: "22-1-00123", error: "Invalid Faculty name FACULTY OF PSEUDOSCIENCE. Available faculties:" },
-  //       { row: 5, studentId: "22-1-00456", error: "Invalid Program name BS IN ENVI SCIENCE. Available programs: BS in Forestry, BS in Environmental Science, BS in Agricultural and Biosystems Engineering, BS in Computer Science, BS in Mechanical Engineering, BS in Geodetic Engineering, BS in Civil Engineering" },
-  //     ],
-  //     duplicates: ["S789"],
-  //     totalProcessed: 0
-  //   };
-  //   setBulkImportResult(mockResult);
-  //   setIsBulkImportOpenResult(true);
-  // }, []);
-
-  // Pagination constants
-  const ITEMS_PER_PAGE_CARD = 12;
-  const ITEMS_PER_PAGE_TABLE = 10;
-
-  // Load saved view mode from localStorage
-  useEffect(() => {
-    const savedViewMode = localStorage.getItem("membersViewMode") as ViewMode;
-    if (
-      savedViewMode &&
-      (savedViewMode === "card" || savedViewMode === "table")
-    ) {
-      setViewMode(savedViewMode);
-    }
-  }, []);
-
-  // Save view mode to localStorage when changed
-  const handleViewModeChange = (mode: ViewMode) => {
-    setViewMode(mode);
-    localStorage.setItem("membersViewMode", mode);
-  };
-
-  const fetchData = async () => {
-    setIsLoading(true);
-    try {
-      const [fetchedMembers, fetchedFaculties, fetchedPrograms] =
-        await Promise.all([
-          getUsers(),
-          getFaculties(),
-          getProgramByFacultyId(),
-        ]);
-      setMembers(fetchedMembers as unknown as MemberData[]);
-      setFaculties(fetchedFaculties as unknown as Faculty[]);
-      setPrograms(fetchedPrograms as unknown as Program[]);
-    } catch (error) {
-      console.error("Failed to fetch data", error);
-      toast.error("Failed to load member data. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   const handleAddMember = () => {
     setSelectedMember(null);
@@ -130,14 +87,12 @@ export default function MembersPage() {
   const confirmDelete = async () => {
     if (selectedMember) {
       try {
-        setMembers(members.filter((member) => member.id !== selectedMember.id));
         await deleteUser(selectedMember.id);
         toast.success("Member deleted successfully");
+        refreshData(); // Refresh data after deletion
       } catch (error) {
         toast.error("Failed to delete member");
         console.error(error);
-        // Refetch to ensure UI is in sync with server
-        fetchData();
       } finally {
         setIsDeleteDialogOpen(false);
         setSelectedMember(null);
@@ -158,7 +113,7 @@ export default function MembersPage() {
         await addUser(data);
         toast.success("Member added successfully");
       }
-      fetchData(); // Refetch data to update the list
+      refreshData(); // Refresh data after update
     } catch (error) {
       toast.error(
         selectedMember ? "Failed to update member" : "Failed to add member"
@@ -177,7 +132,7 @@ export default function MembersPage() {
       setBulkImportResult(result);
       setIsBulkImportOpen(false);
       setIsBulkImportOpenResult(true);
-      fetchData(); // Refresh member list after imports
+      refreshData(); // Refresh data after bulk import
     } catch (error) {
       console.error("Bulk import failed:", error);
       toast.error("Failed to process the file. Please try again.");
@@ -186,146 +141,73 @@ export default function MembersPage() {
     }
   };
 
-  // Handle search activation/deactivation
-  const onSearch = (query: string) => {
-    setSearchQuery(query);
-    setCurrentPage(1); // Reset to first page when search changes
-  };
-
-  const handleProgramFilter = (programId: string) => {
-    setProgramFilter(programId);
-    setCurrentPage(1); // Reset to first page when filter changes
-  };
-
-  const handleSortBy = (sortBy: string) => {
-    // Implement sorting logic here based on sortBy value
-    // For example, sort by name, date added, etc.
-    // This is a placeholder implementation
-    const sortedMembers = [...members];
-    if (sortBy === "name-asc") {
-      sortedMembers.sort((a, b) =>
-        a.member.firstName.localeCompare(b.member.firstName)
-      );
-    } else if (sortBy === "name-desc") {
-      sortedMembers.sort((a, b) =>
-        b.member.firstName.localeCompare(a.member.firstName)
-      );
-    } else if (sortBy === "id-asc") {
-      sortedMembers.sort((a, b) =>
-        a.member.studentId.localeCompare(b.member.studentId)
-      );
-    } else if (sortBy === "id-desc") {
-      sortedMembers.sort((a, b) =>
-        b.member.studentId.localeCompare(a.member.studentId)
-      );
-    } else if (sortBy === "date-desc") {
-      sortedMembers.sort((a, b) => {
-        const dateA = a.member.createdAt
-          ? new Date(a.member.createdAt.toDate())
-          : new Date(0);
-        const dateB = b.member.createdAt
-          ? new Date(b.member.createdAt.toDate())
-          : new Date(0);
-        return dateA.getTime() - dateB.getTime();
-      });
-    } else if (sortBy === "date-asc") {
-      sortedMembers.sort((a, b) => {
-        const dateA = a.member.createdAt
-          ? new Date(a.member.createdAt.toDate())
-          : new Date(0);
-        const dateB = b.member.createdAt
-          ? new Date(b.member.createdAt.toDate())
-          : new Date(0);
-        return dateB.getTime() - dateA.getTime();
-      });
-    }
-    setMembers(sortedMembers);
-    setCurrentPage(1); // Reset to first page when sort changes
-  };
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  // Filter and search members
-  const filteredMembers = members.filter((member) => {
-    const matchesSearch =
-      searchQuery === "" ||
-      member.member.firstName
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      member.member.lastName
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      member.member.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.member.studentId.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesProgram =
-      programFilter === "all" || member.member.programId === programFilter;
-
-    return matchesSearch && matchesProgram;
-  });
-
-  // Pagination
-  const itemsPerPage =
-    viewMode === "card" ? ITEMS_PER_PAGE_CARD : ITEMS_PER_PAGE_TABLE;
-  const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
-  const paginatedMembers = filteredMembers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  // Reset to page 1 when search/filter changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, programFilter]);
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-8">
           <MembersHeader
-            onSearch={onSearch}
+            onSearch={performSearch}
             onAddMember={handleAddMember}
             onBulkImport={() => setIsBulkImportOpen(true)}
-            totalMembers={members.length}
+            totalMembers={totalMembers}
+            onRefresh={refreshData}
+            isRefreshing={isRefreshing}
           />
         </div>
 
-        {/* Search results indicator */}
-        {/* {isSearchActive && (
-          <div className="mb-6">
-            <MembersSearchBar
-              searchQuery={searchQuery}
-              resultsCount={filteredMembers.length}
-              onClear={clearSearch}
-            />
-          </div>
-        )} */}
+        {/* Cache indicator */}
+        {/* {!isLoading &&
+          !isRefreshing &&
+          dataSource === "cache" &&
+          cacheStatus.isFromCache && (
+            <div className="mb-4 flex items-center justify-between">
+              <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+                <CheckCircleIcon className="h-3 w-3 mr-1" />
+                Using cached data ({cacheStatus.ageText})
+              </span>
+              <button
+                onClick={refreshData}
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Refresh
+              </button>
+            </div>
+          )} */}
 
         {/* Filters Section */}
         <div className="mb-6">
           <MembersFilters
             programs={programs}
-            onSearch={onSearch}
+            onSearch={handleSearch}
             onProgramFilter={handleProgramFilter}
             onSortBy={handleSortBy}
             searchTerm={searchQuery}
             programFilter={programFilter}
-            disabled={isLoading}
-            viewMode={viewMode}
+            disabled={isLoading || isRefreshing}
+            viewMode={viewMode as ViewMode}
             onViewChange={handleViewModeChange}
           />
         </div>
 
         {/* Main Content */}
         <div className="space-y-6">
-          {isLoading ? (
+          {isLoading || isRefreshing ? (
             <MembersSkeleton />
+          ) : isSearchActive ? (
+            <MembersSearchResults
+              searchQuery={searchQuery}
+              searchResults={searchResults}
+              programs={programs}
+              faculties={faculties}
+              onEdit={handleEditMember}
+              onDelete={handleDeleteMember}
+              onClearSearch={clearSearch}
+              isSearching={isSearching}
+            />
           ) : viewMode === "card" ? (
             <MembersList
-              members={paginatedMembers}
+              members={members}
               programs={programs}
               faculties={faculties}
               onEdit={handleEditMember}
@@ -333,7 +215,7 @@ export default function MembersPage() {
             />
           ) : (
             <MembersTable
-              members={paginatedMembers}
+              members={members}
               programs={programs}
               faculties={faculties}
               onEdit={handleEditMember}
@@ -342,17 +224,57 @@ export default function MembersPage() {
           )}
         </div>
 
-        {/* Pagination */}
-        {!isLoading && filteredMembers.length > 0 && totalPages > 1 && (
-          <div className="mt-8">
-            <MembersPagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-            />
-          </div>
-        )}
+        {/* Pagination - only show when not searching */}
+        {!isLoading &&
+          !isRefreshing &&
+          !isSearchActive &&
+          members.length > 0 &&
+          totalPages > 1 && (
+            <div className="mt-8">
+              <MembersPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          )}
 
+        {/* Debug tools (only in development)
+        {process.env.NODE_ENV === "development" && (
+          <div className="mt-8 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+            <h3 className="text-sm font-medium mb-2">Debug Tools</h3>
+            <div className="flex flex-wrap gap-2 mb-2">
+              <button
+                onClick={clearCache}
+                className="text-xs px-2 py-1 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded"
+              >
+                Clear Cache
+              </button>
+              <button
+                onClick={() => {
+                  const stats = debugCache.getCacheSize();
+                  toast.info(`Cache size: ${stats} KB`);
+                  console.log({
+                    cacheSize: stats,
+                    entries: debugCache.getEntryCount(),
+                    keys: debugCache.getAllKeys(),
+                  });
+                }}
+                className="text-xs px-2 py-1 bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded"
+              >
+                Show Cache Stats
+              </button>
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              {dataSource === "cache"
+                ? "Using cached data"
+                : "Using server data"}
+              {cacheStatus.isFromCache && ` (${cacheStatus.ageText})`}
+            </div>
+          </div>
+        )} */}
+
+        {/* Modals and Dialogs */}
         <MemberForm
           open={isFormOpen}
           onOpenChange={setIsFormOpen}
