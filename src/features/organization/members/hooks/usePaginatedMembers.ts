@@ -273,7 +273,6 @@ export function usePaginatedMembers() {
         page: 1,
         pageSize: 50, // Limit search results to prevent loading too many
         searchQuery: query,
-        programId: "all", // Don't filter by program for search
         sortBy: "name-asc",
       });
 

@@ -28,7 +28,7 @@ import {
 import { Member } from "@/features/organization/members/types";
 import { incrementEventAttendees } from "./events";
 import { SearchParams } from "@/features/organization/attendees/types";
-
+import { Event } from "@/features/organization/dashboard/types";
 // --- Reusable Constants & Helpers ---
 
 /**
@@ -40,6 +40,10 @@ const attendanceCollection: CollectionReference<DocumentData> = collection(
   "eventAttendees"
 );
 
+const eventsCollection: CollectionReference<DocumentData> = collection(
+  db,
+  "events"
+);
 /**
  * A centralized error handler to keep error logging consistent.
  * @param error - The caught error object.
@@ -362,24 +366,46 @@ export const getAttendanceRecord = async (
 
 export const totalAttendeesForAllEvent = async (): Promise<number> => {
   try {
-    const currentUser = (await getCurrentUserData()) as unknown as Member;
-    if (!currentUser) return 0;
-
-    // **CHANGED**: Dynamically set the query field and value
-    const queryField = currentUser.facultyId
-      ? "student.facultyId"
-      : "student.programId";
-    const queryValue = currentUser.facultyId || currentUser.programId;
-
-    if (!queryValue) {
+    const currentUser = (await getCurrentUserData()) as Member | null;
+    if (!currentUser) {
+      console.log("No current user found.");
       return 0;
     }
 
-    const q = query(attendanceCollection, where(queryField, "==", queryValue));
-    const snapshot = await getCountFromServer(q);
-    return snapshot.data().count;
+    // 1. Build the query to get events based on the user's context.
+    let eventsQuery: Query;
+    if (currentUser.facultyId) {
+      eventsQuery = query(
+        eventsCollection,
+        where("facultyId", "==", currentUser.facultyId)
+      );
+    } else if (currentUser.programId) {
+      eventsQuery = query(
+        eventsCollection,
+        where("programId", "==", currentUser.programId)
+      );
+    } else {
+      console.log("User is not associated with a faculty or program.");
+      return 0; // No context to query by.
+    }
+
+    // 2. Fetch all matching events in a single database call.
+    const eventsSnapshot = await getDocs(eventsQuery);
+    if (eventsSnapshot.empty) {
+      return 0; // No events found.
+    }
+
+    // 3. Sum the 'attendees' from each event document.
+    let totalAttendees = 0;
+    eventsSnapshot.forEach((doc) => {
+      // Use "reduce" for a more functional approach to summing
+      const eventData = (doc.data() as unknown as Event);
+      totalAttendees += eventData.attendees || 0; // Add count, defaulting to 0 if undefined
+    });
+
+    return totalAttendees;
   } catch (error) {
-    handleFirestoreError(error, `counting total attendees`);
+    handleFirestoreError(error, `getting total attendees from events`);
     return 0;
   }
 };
