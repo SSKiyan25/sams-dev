@@ -156,6 +156,8 @@ export function RecentAttendance({
     return `${formattedHours}:${minutes} ${ampm}`;
   };
 
+  
+
   // Determine the attendees page URL
   const attendeesUrl = organizationId
     ? `/organization/${organizationId}/events/${eventId}/attendees`
