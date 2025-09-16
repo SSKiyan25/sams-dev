@@ -409,3 +409,4 @@ export const totalAttendeesForAllEvent = async (): Promise<number> => {
     return 0;
   }
 };
+
