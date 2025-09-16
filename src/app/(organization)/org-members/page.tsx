@@ -147,7 +147,7 @@ export default function MembersPage() {
         {/* Page Header */}
         <div className="mb-8">
           <MembersHeader
-            onSearch={performSearch}
+            onSearch={handleSearch}
             onAddMember={handleAddMember}
             onBulkImport={() => setIsBulkImportOpen(true)}
             totalMembers={totalMembers}
