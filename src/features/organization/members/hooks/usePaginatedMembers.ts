@@ -80,7 +80,6 @@ export function usePaginatedMembers() {
         getFaculties(),
         getPrograms(),
       ]);
-      console.log(rawFaculties, rawPrograms);
       // Ensure we have all required fields with proper type checking
       const typedFaculties: Faculty[] = Array.isArray(rawFaculties)
         ? rawFaculties.map((item: any) => ({
@@ -159,8 +158,6 @@ export function usePaginatedMembers() {
         // Update state
         setMembers(transformedMembers);
         setTotalMembers(result.total);
-        console.log("Fetched members from server:", transformedMembers);
-
         // Cache the results (only if not searching)
         if (!isSearchActive) {
           updateMembersCache(cacheKey, transformedMembers, result.total);

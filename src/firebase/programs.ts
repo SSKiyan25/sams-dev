@@ -30,12 +30,19 @@ export const getPrograms = async () => {
 
     // For other users (e.g., faculty, admin), fetch all programs.
     // This preserves the original logic for non-student roles.
-    const programsCollection = collection(db, "programs");
-    const querySnapshot = await getDocs(programsCollection);
-    return querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    
+   if (currentUser.facultyId) {
+     const programsCollection = collection(db, "programs");
+     const q = query(
+       programsCollection,
+       where("facultyId", "==", currentUser.facultyId)
+     );
+     const querySnapshot = await getDocs(q);
+     return querySnapshot.docs.map((doc) => ({
+       id: doc.id,
+       ...doc.data(),
+     }));
+   }
   } catch (error) {
     handleFirestoreError(error, "fetch programs");
   }

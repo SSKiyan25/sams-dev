@@ -21,6 +21,8 @@ export const MEMBERS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes for member data
 const MAX_CACHE_ENTRIES = 40; // Maximum number of pages to cache
 const MAX_CACHE_SIZE_KB = 10000; // Maximum cache size (10MB)
 
+const membersCache = new Map<string, MembersPageData>();
+
 // Static data cache (faculties/programs)
 let staticCache: StaticDataCache = {
   faculties: null,
@@ -29,17 +31,38 @@ let staticCache: StaticDataCache = {
 };
 
 // Initialize from localStorage if available
-try {
-  const storedStaticCache = localStorage.getItem("members-static-cache");
-  if (storedStaticCache) {
-    staticCache = JSON.parse(storedStaticCache);
+if (typeof window !== "undefined") {
+  try {
+    const storedStaticCache = localStorage.getItem("members-static-cache");
+    if (storedStaticCache) {
+      staticCache = JSON.parse(storedStaticCache);
+    }
+  } catch (error) {
+    console.error("Failed to load static cache from localStorage", error);
   }
-} catch (error) {
-  console.error("Failed to load static cache from localStorage", error);
-}
 
-// Members cache
-const membersCache = new Map<string, MembersPageData>();
+  try {
+    // Load existing cache entries from localStorage
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith("members-data-")) {
+        try {
+          const cacheKey = key.replace("members-data-", "");
+          const storedData = localStorage.getItem(key);
+          if (storedData) {
+            membersCache.set(cacheKey, JSON.parse(storedData));
+          }
+        } catch (innerError) {
+          console.error(`Failed to parse cache for key: ${key}`, innerError);
+        }
+      }
+    });
+  } catch (error) {
+    console.error(
+      "Failed to initialize members cache from localStorage",
+      error
+    );
+  }
+}
 
 // Initialize members cache from localStorage
 try {
@@ -337,6 +360,29 @@ export const invalidateCache = () => {
   } catch (e) {
     // Ignore storage errors
   }
+};
+
+/**
+ * Clears all user-specific data from localStorage and memory.
+ * This should be called on user logout.
+ */
+export const clearAllCachesOnLogout = () => {
+  // Clear the dynamic members cache
+  clearMembersCache();
+
+  // Clear the static cache for faculties and programs
+  staticCache = {
+    faculties: null,
+    programs: null,
+    lastFetch: 0,
+  };
+  try {
+    localStorage.removeItem("members-static-cache");
+  } catch (error) {
+    console.error("Failed to clear static cache from localStorage", error);
+  }
+
+  console.log("All user-specific caches have been cleared.");
 };
 
 // Export cache debugging functions for dev tools

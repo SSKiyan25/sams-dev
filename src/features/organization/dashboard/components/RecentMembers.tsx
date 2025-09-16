@@ -28,12 +28,9 @@ export function RecentMembers({
     };
 
     fetchPrograms();
-    console.log("Programs data on mount:", programs);
   }, []);
 
   function getProgramName(programId: string) {
-    console.log("Programs data:", programs);
-    console.log(programId);
     const program = programs.find((p) => p.id === programId);
     return program ? program.name : "Unknown Program";
   }

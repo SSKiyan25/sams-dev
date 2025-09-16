@@ -16,10 +16,10 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { MemberFormData } from "@/lib/validators";
-import { Member } from "@/features/organization/members/types";
+import { Member, Program } from "@/features/organization/members/types";
 import { getAuth } from "firebase/auth";
 import { email } from "zod";
-import { getProgramByFacultyId } from "./programs";
+import { getProgramByFacultyId, getProgramById } from "./programs";
 
 // Define the collection reference once at the top level for reuse.
 const usersCollection: CollectionReference<DocumentData> = collection(
@@ -96,7 +96,6 @@ export const getCurrentUserData = async () => {
 };
 
 export const getCurrentUser = async (uid: string) => {
-  console.log("Current User UID:", uid);
   if (!uid) {
     console.error("No user is currently authenticated.");
     return null;
@@ -130,8 +129,6 @@ export const getUsers = async () => {
       console.error("User has neither facultyId nor programId.");
       return [];
     }
-
-    console.log("Query Field:", queryField);
 
     const usersQuery = query(
       usersCollection,
@@ -209,6 +206,11 @@ export const addUser = async (userData: MemberFormData) => {
     }
     if (userData.yearLevel === undefined) {
       userData.yearLevel = 0;
+    }
+    if (userData.facultyId === "" || userData.facultyId == null) {
+      userData.facultyId =
+        ((await getProgramById(userData.programId)) as Program | null)
+          ?.facultyId || "";
     }
     const docRef = await addDoc(usersCollection, {
       ...userData,
