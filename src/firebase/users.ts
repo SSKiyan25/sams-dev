@@ -20,6 +20,11 @@ import { Member, Program } from "@/features/organization/members/types";
 import { getAuth } from "firebase/auth";
 import { email } from "zod";
 import { getProgramByFacultyId, getProgramById } from "./programs";
+import {
+  getCacheKey,
+  getMembersCacheEntry,
+  updateMembersCache,
+} from "@/features/organization/members/services/membersCache";
 
 // Define the collection reference once at the top level for reuse.
 const usersCollection: CollectionReference<DocumentData> = collection(
@@ -304,55 +309,76 @@ export const searchUserByName = async (
   name: string,
   currentUser: any
 ): Promise<Member[]> => {
-  try {
-    const trimmedName = name.trim().toLowerCase();
-    if (!trimmedName) {
-      // Return empty if the search name is blank after trimming.
-      return [];
-    }
-    const currentUser = (await getCurrentUserData()) as unknown as Member;
-    if (!currentUser) return [];
+  const trimmedName = name.trim().toLowerCase();
+  if (!trimmedName) {
+    return [];
+  }
 
-    // Determine the query field and value based on user type
-    const queryField = currentUser.facultyId ? "facultyId" : "programId";
-    const queryValue = currentUser.facultyId || currentUser.programId;
+  // Generate a cache key for the search query
+  const cacheKey = getCacheKey({
+    page: 1,
+    pageSize: 50,
+    programFilter: "",
+    searchQuery: trimmedName,
+    sortBy: "name-asc",
+  });
+
+  // Try to get results from cache first
+  const cachedData = getMembersCacheEntry(cacheKey);
+  if (cachedData) {
+    return cachedData.members.map((m) => m.member);
+  }
+
+  try {
+    const currentUserData = (await getCurrentUserData()) as unknown as Member;
+    if (!currentUserData) return [];
+
+    const queryField = currentUserData.facultyId ? "facultyId" : "programId";
+    const queryValue = currentUserData.facultyId || currentUserData.programId;
 
     if (!queryValue) {
       console.error("User has neither facultyId nor programId.");
       return [];
     }
 
-    // 1. Query all non-deleted users for the given faculty.
-    const allUsersQuery = query(
+    // Server-side query to narrow down the results
+    const searchQuery = query(
       usersCollection,
       where(queryField, "==", queryValue),
-      where("isDeleted", "==", false)
+      where("isDeleted", "==", false),
+      where("firstName", ">=", trimmedName),
+      where("firstName", "<=", trimmedName + "\uf8ff")
     );
 
-    const querySnapshot = await getDocs(allUsersQuery);
+    const querySnapshot = await getDocs(searchQuery);
 
-    // 2. Filter the results on the client-side.
+    // Client-side filtering for a "contains" search
     const matchingMembers = querySnapshot.docs
       .map((doc) => ({
         id: doc.id,
         ...(doc.data() as Omit<Member, "id">),
       }))
       .filter((member) => {
-        // Concatenate first and last name to create a full name for searching.
         const fullName = `${member.firstName || ""} ${
           member.lastName || ""
         }`.toLowerCase();
-
-        // Check if the full name includes the search term.
         return fullName.includes(trimmedName);
       });
+
+    // Cache the search results
+    const membersToCache = matchingMembers.map((member) => ({
+      id: member.id,
+      member,
+    }));
+    updateMembersCache(cacheKey, membersToCache, membersToCache.length);
 
     return matchingMembers;
   } catch (error) {
     handleFirestoreError(error, `search for name "${name}"`);
-    return []; // Return an empty array on error.
+    return [];
   }
 };
+
 export const getUserById = async (userId: string): Promise<Member | null> => {
   try {
     const querySnapshot = await getDocs(
