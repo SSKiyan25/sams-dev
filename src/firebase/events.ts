@@ -24,8 +24,9 @@ import {
   getEventsNeedingStatusUpdate,
 } from "@/utils/eventStatusUtils";
 import { getCurrentUserData } from "./users";
-import { getAuth } from "firebase/auth";
+// import { getAuth } from "firebase/auth";
 import { Member } from "@/features/organization/members/types";
+import { cacheService, CACHE_DURATIONS } from "@/services/cacheService";
 
 const eventsCollection = collection(db, "events");
 
@@ -60,7 +61,7 @@ export interface PaginatedEvents {
 }
 
 /**
- * Get paginated events with server-side filtering and sorting
+ * Get paginated events with server-side filtering, sorting, and caching
  */
 export const getPaginatedEvents = async (
   status?: "ongoing" | "upcoming" | "completed" | "archived" | "all",
@@ -73,84 +74,128 @@ export const getPaginatedEvents = async (
   filterDate?: Date
 ): Promise<PaginatedEvents> => {
   try {
-    // Get the current user's faculty ID
-    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    // Create a cache key based on the query parameters
+    const datePart = filterDate
+      ? filterDate.toISOString().split("T")[0]
+      : "no-date";
 
-    const queryField = currentUser.facultyId ? "facultyId" : "programId";
-    const queryValue = currentUser.facultyId || currentUser.programId;
+    const cacheKey = `events:paginated:${status}:${sortField}-${sortDirection}:${pageSize}:${skip}:${datePart}`;
 
-    // Base query - filter by faculty and non-deleted events
-    let baseQuery = query(
-      eventsCollection,
-      where("isDeleted", "==", false),
-      where(queryField, "==", queryValue)
-    );
+    return await cacheService.getOrFetch<PaginatedEvents>(
+      cacheKey,
+      async () => {
+        // Get the current user's faculty ID
+        const currentUser = (await getCurrentUserData()) as unknown as Member;
 
-    // Add status filter if provided and not "all"
-    if (status && status !== "all") {
-      baseQuery = query(baseQuery, where("status", "==", status));
-    }
+        const queryField = currentUser.facultyId ? "facultyId" : "programId";
+        const queryValue = currentUser.facultyId || currentUser.programId;
 
-    // Add date filter if provided
-    // In Firestore, we need to filter by a specific day range
-    if (filterDate) {
-      // Start of the day
-      const startDate = new Date(filterDate);
-      startDate.setHours(0, 0, 0, 0);
-
-      // End of the day
-      const endDate = new Date(filterDate);
-      endDate.setHours(23, 59, 59, 999);
-
-      // Add date range filter
-      baseQuery = query(
-        baseQuery,
-        where("date", ">=", Timestamp.fromDate(startDate)),
-        where("date", "<=", Timestamp.fromDate(endDate))
-      );
-    }
-
-    // Add sorting
-    const sortFieldPath =
-      sortField === "name" || sortField === "attendees" ? sortField : "date";
-    const sortedQuery = query(baseQuery, orderBy(sortFieldPath, sortDirection));
-
-    // Get total count for pagination
-    const countSnapshot = await getCountFromServer(sortedQuery);
-    const totalCount = countSnapshot.data().count;
-
-    // Execute query - get all results for this query
-    const snapshot = await getDocs(sortedQuery);
-    const allEvents = snapshot.docs.map(transformEventData);
-
-    // Manual pagination using skip and limit
-    const events = allEvents.slice(skip, skip + pageSize);
-
-    // Update event statuses if needed
-    const eventsToUpdate = getEventsNeedingStatusUpdate(events);
-    if (eventsToUpdate.length > 0) {
-      await updateEventStatuses(eventsToUpdate);
-      // If we're filtering by status, refetch to get accurate results
-      if (status && status !== "all") {
-        return getPaginatedEvents(
-          status,
-          sortField,
-          sortDirection,
-          pageSize,
-          startAfterDoc,
-          searchQuery,
-          skip,
-          filterDate
+        // Base query - filter by faculty and non-deleted events
+        let baseQuery = query(
+          eventsCollection,
+          where("isDeleted", "==", false),
+          where(queryField, "==", queryValue)
         );
-      }
-    }
 
-    return {
-      events,
-      totalCount,
-      lastDoc: null, // We're not using cursor pagination anymore
-      hasMore: skip + pageSize < totalCount,
-    };
+        // Add status filter if provided and not "all"
+        if (status && status !== "all") {
+          baseQuery = query(baseQuery, where("status", "==", status));
+        }
+
+        // Add date filter if provided
+        // In Firestore, we need to filter by a specific day range
+        if (filterDate) {
+          // Start of the day
+          const startDate = new Date(filterDate);
+          startDate.setHours(0, 0, 0, 0);
+
+          // End of the day
+          const endDate = new Date(filterDate);
+          endDate.setHours(23, 59, 59, 999);
+
+          // Add date range filter
+          baseQuery = query(
+            baseQuery,
+            where("date", ">=", Timestamp.fromDate(startDate)),
+            where("date", "<=", Timestamp.fromDate(endDate))
+          );
+        }
+
+        // Add sorting
+        const sortFieldPath =
+          sortField === "name" || sortField === "attendees"
+            ? sortField
+            : "date";
+        const sortedQuery = query(
+          baseQuery,
+          orderBy(sortFieldPath, sortDirection)
+        );
+
+        // Get total count for pagination - this is an expensive operation
+        // so we'll cache it separately with a longer TTL
+        const countCacheKey = `events:count:${status}:${queryField}-${queryValue}:${datePart}`;
+
+        const totalCount = await cacheService.getOrFetch<number>(
+          countCacheKey,
+          async () => {
+            const countSnapshot = await getCountFromServer(sortedQuery);
+            return countSnapshot.data().count;
+          },
+          CACHE_DURATIONS.EVENTS * 2 // Cache counts for longer
+        );
+
+        // If there are no events, return early
+        if (totalCount === 0) {
+          return {
+            events: [],
+            totalCount: 0,
+            lastDoc: null,
+            hasMore: false,
+          };
+        }
+
+        // Execute query - get all results for this query
+        const snapshot = await getDocs(sortedQuery);
+        const allEvents = snapshot.docs.map(transformEventData);
+
+        // Manual pagination using skip and limit
+        const events = allEvents.slice(skip, skip + pageSize);
+
+        // Check if any events need status updates
+        const eventsToUpdate = getEventsNeedingStatusUpdate(events);
+        if (eventsToUpdate.length > 0) {
+          await updateEventStatuses(eventsToUpdate);
+
+          // If we're filtering by status, we need to refresh the data
+          // to make sure we get accurate results
+          if (status && status !== "all") {
+            // Invalidate relevant caches
+            cacheService.invalidateByPrefix(`events:paginated:${status}`);
+            cacheService.invalidate(countCacheKey);
+
+            // Recursive call to get fresh data
+            return getPaginatedEvents(
+              status,
+              sortField,
+              sortDirection,
+              pageSize,
+              startAfterDoc,
+              searchQuery,
+              skip,
+              filterDate
+            );
+          }
+        }
+
+        return {
+          events,
+          totalCount,
+          lastDoc: null, // We're not using cursor pagination anymore
+          hasMore: skip + pageSize < totalCount,
+        };
+      },
+      CACHE_DURATIONS.EVENTS // Cache for 15 minutes by default
+    );
   } catch (error) {
     handleFirestoreError(error, "fetch paginated events");
     return {
@@ -165,7 +210,7 @@ export const getPaginatedEvents = async (
 export const addEvent = async (eventData: EventFormData) => {
   try {
     // Get the current user's faculty ID
-     const currentUser = await getCurrentUserData() as unknown as Member;
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
     if (!currentUser) return [];
 
     // Determine the query field and value based on user type
@@ -180,10 +225,10 @@ export const addEvent = async (eventData: EventFormData) => {
     // Validate that the event date is not in the past
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0); // Set to start of day for comparison
-    
+
     const eventDate = new Date(eventData.date);
     eventDate.setHours(0, 0, 0, 0); // Set to start of day for comparison
-    
+
     if (eventDate < currentDate) {
       throw new Error("Cannot create an event with a date in the past");
     }
@@ -206,7 +251,9 @@ export const addEvent = async (eventData: EventFormData) => {
     // 3. Time In End should be before Time Out Start (Time In period should complete before Time Out begins)
     if (eventData.timeInEnd && eventData.timeOutStart) {
       if (eventData.timeInEnd > eventData.timeOutStart) {
-        throw new Error("Time In period must complete before Time Out period begins");
+        throw new Error(
+          "Time In period must complete before Time Out period begins"
+        );
       }
     }
 
@@ -225,6 +272,10 @@ export const addEvent = async (eventData: EventFormData) => {
       isDeleted: false,
       [queryField]: queryValue,
     });
+
+    // Invalidate all event caches after adding a new event
+    cacheService.invalidateByPrefix("events:");
+
     return docRef.id;
   } catch (error) {
     handleFirestoreError(error, "add event");
@@ -254,14 +305,18 @@ export const updateEvent = async (
     // 3. Time In End should be before Time Out Start (Time In period should complete before Time Out begins)
     if (eventData.timeInEnd && eventData.timeOutStart) {
       if (eventData.timeInEnd > eventData.timeOutStart) {
-        throw new Error("Time In period must complete before Time Out period begins");
+        throw new Error(
+          "Time In period must complete before Time Out period begins"
+        );
       }
     }
 
     // Get current event to check if it belongs to the faculty and if it's archived
     const currentEvent = await getEventById(eventId);
     if (!currentEvent) {
-      throw new Error("Event not found or you don't have permission to update it");
+      throw new Error(
+        "Event not found or you don't have permission to update it"
+      );
     }
 
     const eventDoc = doc(db, "events", eventId);
@@ -283,6 +338,10 @@ export const updateEvent = async (
       date: Timestamp.fromDate(eventData.date),
       status, // Set status automatically based on date
     });
+
+    // Invalidate specific event cache and all paginated events
+    cacheService.invalidate(`event:${eventId}`);
+    cacheService.invalidateByPrefix("events:");
   } catch (error) {
     handleFirestoreError(error, `update event with ID ${eventId}`);
   }
@@ -294,6 +353,10 @@ export const incrementEventAttendees = async (eventId: string) => {
     await updateDoc(eventDoc, {
       attendees: increment(1),
     });
+
+    // Invalidate specific event cache and any paginated events
+    cacheService.invalidate(`event:${eventId}`);
+    cacheService.invalidateByPrefix("events:");
   } catch (error) {
     handleFirestoreError(
       error,
@@ -307,6 +370,7 @@ export const updateEventStatuses = async (
 ): Promise<boolean> => {
   try {
     const batch = writeBatch(db);
+    let updatesApplied = false;
 
     events.forEach((event) => {
       // Skip archived events - they stay archived
@@ -321,55 +385,80 @@ export const updateEventStatuses = async (
 
       if (event.status !== newStatus) {
         batch.update(eventDoc, { status: newStatus });
+        updatesApplied = true;
       }
     });
 
-    await batch.commit();
-    return true;
+    // Only commit if there are actual updates
+    if (updatesApplied) {
+      await batch.commit();
+
+      // Invalidate all event caches since statuses changed
+      cacheService.invalidateByPrefix("events:");
+    }
+
+    return updatesApplied;
   } catch (error) {
     console.error("Error updating event statuses:", error);
     return false;
   }
 };
 
+/**
+ * Get all events with caching, optionally filtered by status
+ */
 export const getEvents = async (
   status?: "ongoing" | "upcoming" | "completed"
 ): Promise<Event[]> => {
   try {
-    // Get the current user's faculty ID
-    const currentUser = (await getCurrentUserData()) as unknown as Member;
-    if (!currentUser) return [];
+    // Create cache key based on status
+    const cacheKey = `events:all:${status || "all"}`;
 
-    // Determine the query field and value based on user type
-    const queryField = currentUser.facultyId ? "facultyId" : "programId";
-    const queryValue = currentUser.facultyId || currentUser.programId;
+    return await cacheService.getOrFetch<Event[]>(
+      cacheKey,
+      async () => {
+        // Get the current user's faculty ID
+        const currentUser = (await getCurrentUserData()) as unknown as Member;
+        if (!currentUser) return [];
 
-    if (!queryValue) {
-      console.error("User has neither facultyId nor programId.");
-      return [];
-    }
-    let q = query(
-      eventsCollection, 
-      where("isDeleted", "==", false),
-      where(queryField, "==", queryValue)
+        // Determine the query field and value based on user type
+        const queryField = currentUser.facultyId ? "facultyId" : "programId";
+        const queryValue = currentUser.facultyId || currentUser.programId;
+
+        if (!queryValue) {
+          console.error("User has neither facultyId nor programId.");
+          return [];
+        }
+        let q = query(
+          eventsCollection,
+          where("isDeleted", "==", false),
+          where(queryField, "==", queryValue)
+        );
+        if (status) {
+          q = query(q, where("status", "==", status));
+        }
+        const querySnapshot = await getDocs(q);
+        const events = querySnapshot.docs.map(transformEventData);
+
+        // Check for events that need status updates
+        const eventsToUpdate = getEventsNeedingStatusUpdate(events);
+        if (eventsToUpdate.length > 0) {
+          const updatesApplied = await updateEventStatuses(eventsToUpdate);
+
+          // If we're filtering by status and updates were applied, refetch to get accurate results
+          if (status && updatesApplied) {
+            // Invalidate cache
+            cacheService.invalidate(cacheKey);
+
+            // Recursive call to get fresh data
+            return getEvents(status);
+          }
+        }
+
+        return events;
+      },
+      CACHE_DURATIONS.EVENTS
     );
-    if (status) {
-      q = query(q, where("status", "==", status));
-    }
-    const querySnapshot = await getDocs(q);
-    const events = querySnapshot.docs.map(transformEventData);
-
-    // Check for events that need status updates
-    const eventsToUpdate = getEventsNeedingStatusUpdate(events);
-    if (eventsToUpdate.length > 0) {
-      await updateEventStatuses(eventsToUpdate);
-      // If we're filtering by status, refetch to get accurate results
-      if (status) {
-        return getEvents(status);
-      }
-    }
-
-    return events;
   } catch (error) {
     handleFirestoreError(error, "fetch events");
     return []; // Return empty array on error
@@ -378,34 +467,43 @@ export const getEvents = async (
 
 export const getEventsByStatus = async (status: string) => {
   try {
-    // Get the current user's faculty ID
-     const currentUser = (await getCurrentUserData()) as unknown as Member;
-     if (!currentUser) return [];
+    // Create cache key based on status
+    const cacheKey = `events:status:${status}`;
 
-     // Determine the query field and value based on user type
-     const queryField = currentUser.facultyId ? "facultyId" : "programId";
-     const queryValue = currentUser.facultyId || currentUser.programId;
+    return await cacheService.getOrFetch<Event[]>(
+      cacheKey,
+      async () => {
+        // Get the current user's faculty ID
+        const currentUser = (await getCurrentUserData()) as unknown as Member;
+        if (!currentUser) return [];
 
-     if (!queryValue) {
-       console.error("User has neither facultyId nor programId.");
-       return [];
-     }
+        // Determine the query field and value based on user type
+        const queryField = currentUser.facultyId ? "facultyId" : "programId";
+        const queryValue = currentUser.facultyId || currentUser.programId;
 
-    const eventsRef = collection(db, "events");
-    const q = query(
-      eventsRef,
-      where("status", "==", status),
-      where("isDeleted", "==", false),
-      where(queryField, "==", queryValue)
+        if (!queryValue) {
+          console.error("User has neither facultyId nor programId.");
+          return [];
+        }
+
+        const eventsRef = collection(db, "events");
+        const q = query(
+          eventsRef,
+          where("status", "==", status),
+          where("isDeleted", "==", false),
+          where(queryField, "==", queryValue)
+        );
+        const querySnapshot = await getDocs(q);
+
+        const events: Event[] = [];
+        querySnapshot.forEach((doc) => {
+          events.push(transformEventData(doc));
+        });
+
+        return events;
+      },
+      CACHE_DURATIONS.EVENTS
     );
-    const querySnapshot = await getDocs(q);
-
-    const events: Event[] = [];
-    querySnapshot.forEach((doc) => {
-      events.push(transformEventData(doc));
-    });
-
-    return events;
   } catch (error) {
     console.error("Error fetching events by status:", error);
     return [];
@@ -414,17 +512,25 @@ export const getEventsByStatus = async (status: string) => {
 
 export const getEventById = async (eventId: string): Promise<Event | null> => {
   try {
+    // Create cache key for this event
+    const cacheKey = `event:${eventId}`;
 
-    const eventDoc = doc(db, "events", eventId);
-    const docSnap = await getDoc(eventDoc);
+    return await cacheService.getOrFetch<Event | null>(
+      cacheKey,
+      async () => {
+        const eventDoc = doc(db, "events", eventId);
+        const docSnap = await getDoc(eventDoc);
 
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      if (data && data.isDeleted === false) {
-        return transformEventData({ id: docSnap.id, data: () => data });
-      }
-    }
-    return null;
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data && data.isDeleted === false) {
+            return transformEventData({ id: docSnap.id, data: () => data });
+          }
+        }
+        return null;
+      },
+      CACHE_DURATIONS.EVENTS
+    );
   } catch (error) {
     handleFirestoreError(error, `get event with ID ${eventId}`);
     return null;
@@ -436,11 +542,17 @@ export const archiveEvent = async (eventId: string) => {
     // Verify the event belongs to the current faculty before archiving
     const currentEvent = await getEventById(eventId);
     if (!currentEvent) {
-      throw new Error("Event not found or you don't have permission to archive it");
+      throw new Error(
+        "Event not found or you don't have permission to archive it"
+      );
     }
 
     const eventDoc = doc(db, "events", eventId);
     await updateDoc(eventDoc, { status: "archived" });
+
+    // Invalidate specific event cache and all paginated events
+    cacheService.invalidate(`event:${eventId}`);
+    cacheService.invalidateByPrefix("events:");
   } catch (error) {
     handleFirestoreError(error, `archive event with ID ${eventId}`);
   }
@@ -451,20 +563,27 @@ export const deleteEvent = async (eventId: string) => {
     // Verify the event belongs to the current faculty before deleting
     const currentEvent = await getEventById(eventId);
     if (!currentEvent) {
-      throw new Error("Event not found or you don't have permission to delete it");
+      throw new Error(
+        "Event not found or you don't have permission to delete it"
+      );
     }
 
     const eventDoc = doc(db, "events", eventId);
     await updateDoc(eventDoc, { isDeleted: true }); // Soft delete
+
+    // Invalidate specific event cache and all paginated events
+    cacheService.invalidate(`event:${eventId}`);
+    cacheService.invalidateByPrefix("events:");
   } catch (error) {
     handleFirestoreError(error, `delete event with ID ${eventId}`);
   }
 };
 
-export const getOngoingEvents = async () => {
+// Convenience methods with caching
+export const getOngoingEvents = async (): Promise<Event[]> => {
   return (await getEvents("ongoing")) as Event[];
 };
 
-export const getUpcomingEvents = async () => {
+export const getUpcomingEvents = async (): Promise<Event[]> => {
   return (await getEvents("upcoming")) as Event[];
 };
