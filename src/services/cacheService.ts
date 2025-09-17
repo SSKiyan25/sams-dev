@@ -136,4 +136,10 @@ export const CACHE_DURATIONS = {
   EVENTS: 15 * 60 * 1000, // 15 minutes
   ATTENDANCE: 5 * 60 * 1000, // 5 minutes
   SEARCH_RESULTS: 2 * 60 * 1000, // 2 minutes
+  DASHBOARD: {
+    STATS: 5 * 60 * 1000, // 5 minutes
+    ONGOING_EVENTS: 60 * 1000, // 1 minute (since status changes frequently)
+    UPCOMING_EVENTS: 15 * 60 * 1000, // 15 minutes
+    RECENT_MEMBERS: 30 * 60 * 1000, // 30 minutes
+  },
 };
