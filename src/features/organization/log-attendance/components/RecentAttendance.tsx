@@ -16,8 +16,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials } from "../utils";
 import Link from "next/link";
 import { getRecentAttendance } from "@/firebase";
-import { AttendanceRecord } from "../types";
+import { AttendanceRecord, EventAttendance } from "../types";
 import { toast } from "sonner";
+import { record } from "zod";
 
 interface RecentAttendanceProps {
   eventId: string;
@@ -31,7 +32,7 @@ interface RecentAttendanceProps {
 const attendanceCache = new Map<
   string,
   {
-    records: AttendanceRecord[];
+    records: EventAttendance[];
     timestamp: number;
   }
 >();
@@ -46,7 +47,7 @@ export function RecentAttendance({
   newAttendanceLogged = false,
 }: RecentAttendanceProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [records, setRecords] = useState<EventAttendance[]>([]);
   const [showNames, setShowNames] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [refreshDisabled, setRefreshDisabled] = useState(false);
@@ -95,7 +96,7 @@ export function RecentAttendance({
         const recentRecords = (await getRecentAttendance(
           eventId,
           type
-        )) as unknown as AttendanceRecord[];
+        )) as unknown as EventAttendance[];
 
         // Update the UI
         setRecords(recentRecords);
@@ -154,6 +155,8 @@ export function RecentAttendance({
 
     return `${formattedHours}:${minutes} ${ampm}`;
   };
+
+  
 
   // Determine the attendees page URL
   const attendeesUrl = organizationId
@@ -325,7 +328,9 @@ export function RecentAttendance({
                     <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mt-auto">
                       <ClockIcon className="h-3.5 w-3.5 mr-1.5" />
                       <span className="font-nunito-sans font-medium">
-                        {formatTime(record.timestamp)}
+                        {formatTime(
+                          type === "time-in" ? record.timeIn : record.timeOut
+                        )}
                       </span>
                     </div>
                   </div>
@@ -370,7 +375,11 @@ export function RecentAttendance({
                         <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                           <ClockIcon className="h-3.5 w-3.5 mr-1.5" />
                           <span className="font-nunito-sans font-medium">
-                            {formatTime(record.timestamp)}
+                            {formatTime(
+                              type === "time-in"
+                                ? record.timeIn
+                                : record.timeOut
+                            )}
                           </span>
                         </div>
                         <Badge

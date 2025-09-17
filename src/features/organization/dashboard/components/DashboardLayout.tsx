@@ -1,174 +1,28 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { MembersStats } from "./MembersStats";
 import { ShortcutLinks } from "./ShortcutLinks";
 import { RecentMembers } from "./RecentMembers";
-import { useEffect, useState } from "react";
-import {
-  getEvents,
-  getOngoingEvents,
-  getRecentUsers,
-  getUpcomingEvents,
-  getUsers,
-  totalAttendeesForAllEvent,
-} from "@/firebase";
-import { Event } from "../types";
-import { Member } from "../../members/types";
-
-// Type for Firebase event data
-interface FirebaseEvent {
-  id: number;
-  name: string;
-  date: string | Date;
-  location: string;
-  timeInStart?: string | null;
-  timeInEnd?: string | null;
-  timeOutStart?: string | null;
-  timeOutEnd?: string | null;
-  attendees?: number;
-  isMajor?: boolean;
-  createdAt?: any;
-  isDeleted?: boolean;
-  note?: string;
-}
+import { MobileDashboard } from "./MobileDashboard";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import { useDashboard } from "../hooks/useDashboard";
 
 export function DashboardLayout() {
-  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
-  const [ongoingEvents, setOngoingEvents] = useState<Event[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [studentStats, setStudentStats] = useState({
-    totalStudents: 0,
-    totalEvents: 0,
-    overallAttendanceRate: 0,
-    averageAttendance: 0,
-    totalAttendances: 0,
-    peakAttendance: 0,
-    totalAbsences: 0,
-  });
-  const [eventAttendance, setEventAttendance] = useState<Event[]>([]);
-  const [users, setUsers] = useState<Member[]>([]);
+  const { stats, upcomingEvents, ongoingEvents, recentMembers, isLoading } =
+    useDashboard();
 
-  // Helper function to map Firebase events to our Event type
-  const mapToEvent = (
-    event: FirebaseEvent,
-    status: "upcoming" | "ongoing"
-  ): Event => ({
-    id: String(event.id || ""), // Convert number to string
-    name: event.name || "",
-    date: event.date || new Date(),
-    location: event.location || "",
-    status,
-    timeInStart: event.timeInStart || null,
-    timeInEnd: event.timeInEnd || null,
-    timeOutStart: event.timeOutStart || null,
-    timeOutEnd: event.timeOutEnd || null,
-    attendees: event.attendees || 0,
-    majorEvent: event.isMajor || false,
-    createdAt: event.createdAt,
-    isDeleted: event.isDeleted || false,
-    note: event.note || "",
-  });
-  const fetchDashboardData = async () => {
-    setIsLoading(true);
-    try {
-      // Simulate network delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+  const isMobile = useIsMobile();
 
-      // Fetch all required data in parallel
-      const [upcoming, ongoing, users, allEvents, recentUser] =
-        await Promise.all([
-          getUpcomingEvents(),
-          getOngoingEvents(),
-          getUsers(),
-          getEvents(),
-          getRecentUsers(),
-        ]);
-
-      // --- Process User Data ---
-      setUsers(
-        recentUser.map((user: any) => ({
-          ...user.member,
-        })) as unknown as Member[]
-      );
-
-      // --- Process Event Data ---
-      const mappedUpcoming = upcoming.map((event: FirebaseEvent) =>
-        mapToEvent(event, "upcoming")
-      );
-      const mappedOngoing = ongoing.map((event: FirebaseEvent) =>
-        mapToEvent(event, "ongoing")
-      );
-      setUpcomingEvents(mappedUpcoming);
-      setOngoingEvents(mappedOngoing);
-      setEventAttendance(allEvents as unknown as Event[]);
-
-      // --- NEW: Advanced Statistics Calculation ---
-
-      const totalStudents = users.length;
-      const totalEvents = allEvents.length;
-
-      // Handle case with no events or students to avoid division by zero
-      if (totalEvents === 0 || totalStudents === 0) {
-        setStudentStats({
-          totalStudents: totalStudents,
-          totalEvents: totalEvents,
-          overallAttendanceRate: 0,
-          averageAttendance: 0,
-          totalAttendances: 0,
-          totalAbsences: 0,
-          peakAttendance: 0,
-        });
-        setIsLoading(false);
-        return; // Exit early
-      }
-
-      // 1. Get a simple array of attendee counts for each event
-      const eventAttendances = allEvents.map(
-        (event) => (event as unknown as Event).attendees || 0
-      );
-
-      // 2. Calculate Total Attendances (sum of all check-ins across all events)
-      const totalAttendances = await totalAttendeesForAllEvent();
-
-      // 3. Calculate the maximum possible attendances
-      const totalPossibleAttendances = totalEvents * totalStudents;
-
-      // 4. Calculate Overall Attendance Rate
-      const overallAttendanceRate =
-        (totalAttendances / totalPossibleAttendances) * 100;
-
-      // 5. Calculate Average Attendance Per Event
-      const averageAttendance = totalAttendances / totalEvents;
-
-      // 6. Find the Peak (highest) Attendance for a single event
-      const peakAttendance = Math.max(...eventAttendances);
-
-      // 7. Calculate Total Absences
-      const totalAbsences = totalPossibleAttendances - totalAttendances;
-
-      // --- Set the new, improved state ---
-      // It's recommended to create a new state object to hold all these stats
-      setStudentStats({
-        totalStudents,
-        totalEvents,
-        totalAttendances,
-        // Use toFixed(1) to show one decimal place for percentages and averages
-        overallAttendanceRate: parseFloat(overallAttendanceRate.toFixed(1)),
-        averageAttendance: parseFloat(averageAttendance.toFixed(1)),
-        peakAttendance,
-        totalAbsences,
-      });
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  // console.log("Dashboard isLoading:", isLoading);
+  if (isMobile) {
+    return (
+      <MobileDashboard
+        isLoading={isLoading}
+        studentStats={stats}
+        eventAttendance={[...upcomingEvents, ...ongoingEvents]}
+        upcomingEvents={upcomingEvents}
+        ongoingEvents={ongoingEvents}
+        recentMembers={recentMembers}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -223,8 +77,8 @@ export function DashboardLayout() {
 
           <MembersStats
             isLoading={isLoading}
-            studentStats={studentStats}
-            eventAttendance={eventAttendance}
+            studentStats={stats}
+            eventAttendance={[...upcomingEvents, ...ongoingEvents]}
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in-up animation-delay-400">
@@ -235,7 +89,7 @@ export function DashboardLayout() {
             />
             <RecentMembers
               isLoading={isLoading}
-              recentMembers={users.slice(0, 10)}
+              recentMembers={recentMembers}
             />
           </div>
         </div>

@@ -14,4 +14,5 @@ export interface Event {
   createdAt?: any; // For Timestamp objects
   isDeleted?: boolean;
   note?: string;
+  facultyId?: string; // Faculty ID to associate event with creating faculty
 }

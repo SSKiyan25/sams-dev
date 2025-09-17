@@ -1,145 +1,121 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect } from "react";
-import { DocumentSnapshot } from "firebase/firestore";
-import { EventAttendance } from "../../log-attendance/types";
-import { getAttendanceRecord, getEventById } from "@/firebase";
-import { Event } from "../../events/types";
-import { SearchParams } from "../types";
+import { useEventDetails } from "./internal/useEventDetails";
+import { useAttendeesList } from "./internal/useAttendeesList";
+import { usePagination } from "./internal/usePagination";
+import { useEventFilters } from "./internal/useEventFilters";
+// import { SearchParams } from "../types";
 
-const PAGE_SIZE = 10;
-
-type SortOption = {
-  field: string;
-  direction: "asc" | "desc";
-};
-
+// This is the main hook that combines all the other hooks
 export const useEventAttendees = (eventId: string) => {
-  const [eventData, setEventData] = useState<Event>();
-  const [attendees, setAttendees] = useState<EventAttendance[]>([]);
-  const [totalAttendees, setTotalAttendees] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [attendeesLoading, setAttendeesLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const [searchQuery, setSearchQuery] = useState<SearchParams | null>(null);
-  const [cursors, setCursors] = useState<(DocumentSnapshot | null)[]>([null]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortOption, setSortOption] = useState<SortOption>({
-    field: "firstName",
-    direction: "asc",
-  });
-  const [programFilter, setProgramFilter] = useState<string | null>(null);
+  // Get event details
+  const {
+    eventData,
+    loading: eventLoading,
+    error: eventError,
+    refreshEventDetails,
+  } = useEventDetails(eventId);
 
-  useEffect(() => {
-    const performFetch = async () => {
-      if (!eventId) return;
-      setAttendeesLoading(true);
+  // Manage filters and search
+  const {
+    searchQuery,
+    sortOption,
+    programFilter,
+    handleSearch,
+    handleSortChange,
+    handleProgramFilter,
+  } = useEventFilters();
 
-      const cursorForCurrentPage = cursors[currentPage - 1];
+  // Manage pagination state and cursors
+  const {
+    currentPage,
+    totalPages,
+    setTotalPages,
+    directPageJump,
+    setDirectPageJump,
+    getCursorStorage,
+    getCursors,
+    setCursors,
+    resetPagination, // We'll expose this in the return value
+    goToSpecificPage,
+    handlePageChange,
+  } = usePagination(eventId, sortOption, programFilter, searchQuery);
 
-      try {
-        const {
-          records: fetchedAttendees,
-          total,
-          nextCursor,
-        } = await getAttendanceRecord(
-          eventId,
-          PAGE_SIZE,
-          sortOption,
-          cursorForCurrentPage || undefined,
-          programFilter ?? undefined,
-          searchQuery
-        );
+  // Get attendees list with pagination and filtering
+  const {
+    attendees,
+    totalAttendees,
+    loading: attendeesLoading,
+    error: attendeesError,
+    dataSource,
+    refreshAttendees,
+  } = useAttendeesList(
+    eventId,
+    currentPage,
+    directPageJump,
+    searchQuery,
+    sortOption,
+    programFilter,
+    getCursors,
+    setCursors,
+    getCursorStorage,
+    setTotalPages,
+    setDirectPageJump
+  );
 
-        setAttendees(fetchedAttendees);
-        setTotalAttendees(total);
-
-        // This state update is now safe because `cursors` is not a dependency of this useEffect
-        if (nextCursor && cursors.length === currentPage) {
-          setCursors((prev) => [...prev, nextCursor]);
-        }
-      } catch (err) {
-        setError(err as Error);
-      } finally {
-        setAttendeesLoading(false);
-      }
-    };
-
-    performFetch();
-
-    // The dependencies are the values that should trigger a new fetch.
-    // `cursors` is intentionally omitted to prevent the loop.
-  }, [eventId, currentPage, searchQuery, sortOption, programFilter]);
-
-  useEffect(() => {
-    const fetchEventDetails = async () => {
-      if (!eventId) return;
-      setLoading(true);
-      try {
-        const event = (await getEventById(eventId)) as Event;
-        setEventData(event);
-      } catch (err) {
-        setError(err as Error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchEventDetails();
-  }, [eventId]);
-
-  const resetPagination = () => {
-    setCurrentPage(1);
-    setCursors([null]);
+  // Modified handler to reset pagination when changing filters
+  const handleFilterProgramChange = (program: string | undefined) => {
+    handleProgramFilter(program);
+    resetPagination(); // Reset pagination when filters change
   };
 
-  const handleSearch = (query: SearchParams) => {
-    setSearchQuery(query);
-    resetPagination();
+  const handleFilterSortChange = (value: string) => {
+    handleSortChange(value);
+    resetPagination(); // Reset pagination when sort changes
   };
 
-  const handleSortChange = (value: string) => {
-    const [field, direction] = value.split("-") as [string, "asc" | "desc"];
-    setSortOption({ field, direction });
-    resetPagination();
+  const handleFilterSearch = (query: any) => {
+    handleSearch(query);
+    resetPagination(); // Reset pagination when search changes
   };
 
-  const handleProgramFilter = (program: string | undefined) => {
-    setProgramFilter(program || null);
-    resetPagination();
+  // Combine refresh functions
+  const refreshData = () => {
+    refreshEventDetails();
+    refreshAttendees();
   };
-
-  const handlePageChange = (direction: "next" | "prev") => {
-    if (direction === "next" && currentPage < cursors.length) {
-      setCurrentPage((prev) => prev + 1);
-    } else if (direction === "prev" && currentPage > 1) {
-      setCurrentPage((prev) => prev - 1);
-    }
-  };
-
-  const totalPages = Math.ceil(totalAttendees / PAGE_SIZE);
 
   return {
+    // Event data
     eventData,
+
+    // Attendees data
     attendees,
     totalAttendees,
     totalPages,
     currentPage,
-    loading,
+
+    // Loading and error states
+    loading: eventLoading,
     attendeesLoading,
-    error,
+    error: eventError || attendeesError,
+    dataSource,
+
+    // Pagination actions
     goToNextPage: () => handlePageChange("next"),
     goToPrevPage: () => handlePageChange("prev"),
-    goToSpecificPage: (page: number) => {
-      if (page >= 1 && page <= totalPages) {
-        setCurrentPage(page);
-      }
-    },
-    hasNextPage: currentPage < cursors.length,
+    goToSpecificPage,
+    resetPagination, // Expose this for manual resets
+    hasNextPage: currentPage < getCursorStorage().totalPages,
     hasPrevPage: currentPage > 1,
-    handleSearch,
-    handleSortChange,
-    handleProgramFilter,
-    // Note: refreshAttendees is removed as it's no longer needed in this pattern
+
+    // Filter/search actions - use the wrapped versions that reset pagination
+    handleSearch: handleFilterSearch,
+    handleSortChange: handleFilterSortChange,
+    handleProgramFilter: handleFilterProgramChange,
+
+    // Refresh action
+    refreshData,
   };
 };

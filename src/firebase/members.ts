@@ -13,7 +13,8 @@ import {
   getCountFromServer,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
-import { getCurrentUserFacultyId } from "./users";
+import { getCurrentUserData, getCurrentUserFacultyId } from "./users";
+import { Member } from "@/features/organization/members/types";
 
 const usersCollection: CollectionReference<DocumentData> = collection(
   db,
@@ -45,14 +46,10 @@ export const getPaginatedUsers = async (options: {
       sortBy = "name-asc",
     } = options;
 
-    const facultyId = await getCurrentUserFacultyId(
-      getAuth().currentUser?.uid || ""
-    );
+    const currentUserData = (await getCurrentUserData()) as unknown as Member;
 
-    if (!facultyId) {
-      console.error("Could not determine faculty ID");
-      return { members: [], total: 0 };
-    }
+    const queryField = currentUserData.facultyId ? "facultyId" : "programId";
+    const queryValue = currentUserData.facultyId ?? currentUserData.programId;
 
     // Determine sort field and direction
     let sortField = "firstName";
@@ -82,7 +79,7 @@ export const getPaginatedUsers = async (options: {
         usersCollection,
         where("isDeleted", "==", false),
         where("role", "==", "user"),
-        where("facultyId", "==", facultyId)
+        where(queryField, "==", queryValue)
       );
 
       // Add program filter if specified
@@ -146,7 +143,7 @@ export const getPaginatedUsers = async (options: {
         usersCollection,
         where("isDeleted", "==", false),
         where("role", "==", "user"),
-        where("facultyId", "==", facultyId)
+        where(queryField, "==", queryValue)
       );
 
       // Add program filter for count if needed
@@ -163,7 +160,7 @@ export const getPaginatedUsers = async (options: {
         usersCollection,
         where("isDeleted", "==", false),
         where("role", "==", "user"),
-        where("facultyId", "==", facultyId)
+        where(queryField, "==", queryValue)
       );
 
       // Add program filter if specified
@@ -184,7 +181,7 @@ export const getPaginatedUsers = async (options: {
           usersCollection,
           where("isDeleted", "==", false),
           where("role", "==", "user"),
-          where("facultyId", "==", facultyId)
+          where(queryField, "==", queryValue)
         );
 
         // Add program filter if specified
