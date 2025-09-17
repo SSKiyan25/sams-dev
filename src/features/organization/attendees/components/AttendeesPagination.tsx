@@ -7,6 +7,8 @@ interface AttendeesPaginationProps {
   handleNextPage: () => void;
   handlePrevPage: () => void;
   onPageChange?: (page: number) => void;
+  hasNextPage: boolean; // New prop
+  hasPrevPage: boolean; // New prop
 }
 
 export function AttendeesPagination({
@@ -15,6 +17,8 @@ export function AttendeesPagination({
   handleNextPage,
   handlePrevPage,
   onPageChange,
+  hasNextPage, // Use this instead of currentPage === totalPages
+  hasPrevPage, // Use this instead of currentPage === 1
 }: AttendeesPaginationProps) {
   // Generate page numbers
   const getPageNumbers = () => {
@@ -50,7 +54,9 @@ export function AttendeesPagination({
       if (end < totalPages - 1) pages.push(-2); // -2 represents ellipsis
 
       // Always show the last page
-      pages.push(totalPages);
+      if (totalPages > 1) {
+        pages.push(totalPages);
+      }
     }
 
     return pages;
@@ -62,7 +68,7 @@ export function AttendeesPagination({
         variant="outline"
         size="icon"
         onClick={handlePrevPage}
-        disabled={currentPage === 1}
+        disabled={!hasPrevPage} // Use hasPrevPage instead
       >
         <ChevronLeftIcon className="h-4 w-4" />
       </Button>
@@ -93,7 +99,7 @@ export function AttendeesPagination({
         variant="outline"
         size="icon"
         onClick={handleNextPage}
-        disabled={currentPage === totalPages}
+        disabled={!hasNextPage} // Use hasNextPage instead
       >
         <ChevronRightIcon className="h-4 w-4" />
       </Button>

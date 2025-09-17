@@ -328,17 +328,21 @@ export const buildAttendanceQueryConstraints = (
  * @param searchQuery - (Optional) An object containing the search query string and the type of search ('name' or 'id').
  * @returns A Promise resolving to an object with the list of records, the total count, and the cursor for the next page.
  */
+// Update the function signature to accept a pageJump parameter
 export const getAttendanceRecord = async (
   eventId: string,
   pageSize: number,
   sort: { field: string; direction: "asc" | "desc" },
   cursor?: DocumentSnapshot,
   filterProgram?: string,
-  searchQuery?: SearchParams | null
+  searchQuery?: SearchParams | null,
+  isPageJump?: boolean // Add this parameter
 ): Promise<{
   records: EventAttendance[];
   total: number;
   nextCursor: DocumentSnapshot | null;
+  cursors?: DocumentSnapshot[]; // Add this to return intermediate cursors
+  recordsForPage?: Record<number, EventAttendance[]>; // Add this to return records for specific pages
 }> => {
   try {
     // Get cached student IDs if doing a name search
@@ -400,6 +404,70 @@ export const getAttendanceRecord = async (
     // add the 'startAfter' constraint to begin fetching from the last document of the previous page.
     if (cursor) {
       queryConstraints.push(startAfter(cursor));
+    }
+
+    // When handling page jumps, replace PAGE_SIZE with pageSize
+    if (isPageJump) {
+      // For page jumps, we need to track all intermediate cursors
+      const intermediateResults: Record<number, EventAttendance[]> = {};
+      const intermediateCursors: DocumentSnapshot[] = [];
+
+      // Execute the query to get all documents up to the desired page
+      const dataQuery = query(attendanceCollection, ...queryConstraints);
+      const querySnapshot = await getDocs(dataQuery);
+
+      // Process all documents and track cursors for each page
+      const allDocs = querySnapshot.docs;
+      let currentPageDocs: DocumentSnapshot[] = [];
+      let currentPageIndex = 1; // Pages are 1-indexed
+
+      // Split documents into pages and collect cursors
+      for (let i = 0; i < allDocs.length; i++) {
+        const doc = allDocs[i];
+        currentPageDocs.push(doc);
+
+        // When we reach a page boundary, process the page
+        // FIXED: Use pageSize instead of PAGE_SIZE
+        if (currentPageDocs.length === pageSize || i === allDocs.length - 1) {
+          // Convert docs to records for this page
+          const pageRecords = currentPageDocs.map((doc) => {
+            const data = doc.data();
+            // FIXED: Check if data exists before accessing properties
+            return {
+              id: doc.id,
+              ...data,
+              // FIXED: Check if data exists
+              timeIn: data?.timeIn?.toDate() ?? null,
+              timeOut: data?.timeOut?.toDate() ?? null,
+            } as EventAttendance;
+          });
+
+          // Store records for this page
+          intermediateResults[currentPageIndex] = pageRecords;
+
+          // Store cursor for the next page (last doc of current page)
+          if (i < allDocs.length - 1) {
+            intermediateCursors.push(
+              currentPageDocs[currentPageDocs.length - 1]
+            );
+          }
+
+          // Reset for next page
+          currentPageDocs = [];
+          currentPageIndex++;
+        }
+      }
+
+      // Return all the cursors and records we've collected
+      // FIXED: Use pageSize instead of PAGE_SIZE
+      return {
+        records:
+          intermediateResults[Math.ceil(allDocs.length / pageSize)] || [],
+        total,
+        nextCursor: allDocs.length > 0 ? allDocs[allDocs.length - 1] : null,
+        cursors: intermediateCursors,
+        recordsForPage: intermediateResults,
+      };
     }
 
     // Execute the final query to get the documents for the current page.
