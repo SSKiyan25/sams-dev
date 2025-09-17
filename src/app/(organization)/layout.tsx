@@ -117,7 +117,6 @@ export default function OrganizationLayout({
     avatar: user.avatar,
   };
 
-  console.log(userData);
 
   return (
     <div className="flex min-h-screen w-full">

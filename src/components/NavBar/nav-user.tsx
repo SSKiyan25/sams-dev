@@ -20,6 +20,7 @@ import {
 import { signOut } from "firebase/auth";
 import { auth } from "@/firebase/firebase.config";
 import { LoadingScreen } from "@/components/ui/loading-screen";
+import { clearAllCachesOnLogout } from "@/features/organization/members/services/membersCache";
 // import { useRouter } from "next/navigation";
 
 interface User {
@@ -41,6 +42,8 @@ export function NavUser({ user }: NavUserProps) {
   const handleSignOut = async () => {
     try {
       setIsSigningOut(true);
+
+      clearAllCachesOnLogout();
 
       // First, sign out from Firebase
       await signOut(auth);

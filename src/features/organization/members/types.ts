@@ -15,6 +15,7 @@ export type Member = {
 export type Program = {
   id: string;
   name: string;
+  facultyId?: string;
   code?: string; // Program code like "BSCS", "BSES", "BSCE"
 };
 

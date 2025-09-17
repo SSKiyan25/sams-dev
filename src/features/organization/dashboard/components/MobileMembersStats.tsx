@@ -37,8 +37,8 @@ import {
   Activity,
 } from "lucide-react";
 import { Event } from "../types";
-import { attendeesPresentCountForEvent } from "@/firebase";
 import { useEffect, useState } from "react";
+import { getEventById } from "@/firebase";
 
 interface MembersStatsProps {
   isLoading?: boolean;
@@ -212,9 +212,9 @@ export function MobileMembersStats({
 
       setIsFetchingEventData(true);
       try {
-        const count = await attendeesPresentCountForEvent(
-          internalSelectedEvent.id
-        );
+        const count =
+          ((await getEventById(internalSelectedEvent.id)) as unknown as Event)
+            .attendees || 0;
         setSelectedEventPresentCount(count);
       } catch (error) {
         console.error("Error fetching event attendance:", error);

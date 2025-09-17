@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Search, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { Program } from "../types";
 import { ViewToggle, ViewMode } from "./ViewToggle";
@@ -37,18 +37,29 @@ export function MembersFilters({
   onViewChange,
 }: MembersFiltersProps) {
   const [sortBy, setSortBy] = useState<string>("name-asc");
-  
-  // Check if screen is mobile - hide view toggle on mobile
+  const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
+
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
+  useEffect(() => {
+    setLocalSearchTerm(searchTerm);
+  }, [searchTerm]);
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onSearch(e.target.value);
+    setLocalSearchTerm(e.target.value);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault(); // Prevents any default form submission behavior
+      onSearch(localSearchTerm); // Fire the actual search
+    }
   };
 
   const handleClearSearch = () => {
+    setLocalSearchTerm("");
     onSearch("");
   };
-
   const handleSortByChange = (value: string) => {
     setSortBy(value);
     onSortBy(value);
@@ -70,17 +81,18 @@ export function MembersFilters({
       <div className="space-y-3 sm:space-y-0">
         {/* Mobile/Tablet: Stack filters vertically */}
         <div className="flex flex-col gap-3 lg:hidden">
-          {/* Search Input - Full width */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
             <Input
               placeholder="Search by name, ID or email..."
               className="pl-10 pr-10 h-10 border-gray-200 dark:border-gray-700"
-              value={searchTerm}
+              value={localSearchTerm} // Use local state for the value
               onChange={handleSearchChange}
+              onKeyDown={handleKeyDown} // Add the key down handler
               disabled={disabled}
             />
-            {searchTerm && (
+            {/* The clear button logic remains the same and will work correctly */}
+            {localSearchTerm && (
               <Button
                 variant="ghost"
                 size="sm"
