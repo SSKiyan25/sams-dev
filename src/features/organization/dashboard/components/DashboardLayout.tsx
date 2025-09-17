@@ -4,6 +4,8 @@ import { MembersStats } from "./MembersStats";
 import { ShortcutLinks } from "./ShortcutLinks";
 import { RecentMembers } from "./RecentMembers";
 import { useEffect, useState } from "react";
+import { MobileDashboard } from "./MobileDashboard";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import {
   getEvents,
   getOngoingEvents,
@@ -47,6 +49,7 @@ export function DashboardLayout() {
   });
   const [eventAttendance, setEventAttendance] = useState<Event[]>([]);
   const [users, setUsers] = useState<Member[]>([]);
+  const isMobile = useIsMobile();
 
   // Helper function to map Firebase events to our Event type
   const mapToEvent = (
@@ -170,6 +173,18 @@ export function DashboardLayout() {
 
   // console.log("Dashboard isLoading:", isLoading);
 
+  if (isMobile) {
+    return (
+      <MobileDashboard
+        isLoading={isLoading}
+        studentStats={studentStats}
+        eventAttendance={eventAttendance}
+        upcomingEvents={upcomingEvents}
+        ongoingEvents={ongoingEvents}
+        recentMembers={users.slice(0, 10)}
+      />
+    );
+  }
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -16,10 +16,12 @@ import {
   UserPlusIcon,
   UsersIcon,
   StarIcon,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { Event } from "../types";
 import { formatDate } from "@/utils/useGeneralUtils";
+import { useState } from "react";
 
 interface EventCardProps {
   event: Event;
@@ -36,6 +38,9 @@ export function EventCard({
   onUnarchive,
   onDelete,
 }: EventCardProps) {
+  const [isOperationLoading, setIsOperationLoading] = useState(false);
+  const [isViewAttendeesLoading, setIsViewAttendeesLoading] = useState(false);
+  const [isLogAttendanceLoading, setIsLogAttendanceLoading] = useState(false);
   // Format time to 12-hour format
   const formatTime = (time: string | null) => {
     if (!time) return null;
@@ -122,6 +127,49 @@ export function EventCard({
     onEdit(event);
   };
 
+  const handleArchiveEvent = async () => {
+    setIsOperationLoading(true);
+    try {
+      await onArchive(event);
+    } finally {
+      setIsOperationLoading(false);
+    }
+  };
+
+  const handleUnarchiveEvent = async () => {
+    setIsOperationLoading(true);
+    try {
+      await onUnarchive(event);
+    } finally {
+      setIsOperationLoading(false);
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    setIsOperationLoading(true);
+    try {
+      await onDelete(event);
+    } finally {
+      setIsOperationLoading(false);
+    }
+  };
+
+  const handleViewAttendees = () => {
+    setIsViewAttendeesLoading(true);
+    // Simulate brief loading for user feedback
+    setTimeout(() => {
+      setIsViewAttendeesLoading(false);
+    }, 500);
+  };
+
+  const handleLogAttendance = () => {
+    setIsLogAttendanceLoading(true);
+    // Simulate brief loading for user feedback
+    setTimeout(() => {
+      setIsLogAttendanceLoading(false);
+    }, 500);
+  };
+
   return (
     <Card className="group hover:shadow-lg transition-all duration-300 border-blue-300 dark:border-blue-600 bg-blue-50/30 dark:bg-blue-900/10 overflow-hidden h-full flex flex-col">
       {/* Card Header */}
@@ -185,28 +233,52 @@ export function EventCard({
                 {event.status === "archived" ? (
                   <>
                     <DropdownMenuItem 
-                      onClick={() => onUnarchive(event)} 
+                      onClick={handleUnarchiveEvent} 
                       className="font-medium"
+                      disabled={isOperationLoading}
                     >
-                      Unarchive
+                      {isOperationLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Unarchiving...
+                        </>
+                      ) : (
+                        "Unarchive"
+                      )}
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => onDelete(event)}
+                      onClick={handleDeleteEvent}
                       className="text-red-600 dark:text-red-400 font-medium"
+                      disabled={isOperationLoading}
                     >
-                      Delete
+                      {isOperationLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Deleting...
+                        </>
+                      ) : (
+                        "Delete"
+                      )}
                     </DropdownMenuItem>
                   </>
                 ) : (
                   <>
-                    <DropdownMenuItem onClick={handleEditEvent} className="font-medium">
+                    <DropdownMenuItem onClick={handleEditEvent} className="font-medium" disabled={isOperationLoading}>
                       Edit Event
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => onArchive(event)}
+                      onClick={handleArchiveEvent}
                       className="text-red-600 dark:text-red-400 font-medium"
+                      disabled={isOperationLoading}
                     >
-                      Archive
+                      {isOperationLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Archiving...
+                        </>
+                      ) : (
+                        "Archive"
+                      )}
                     </DropdownMenuItem>
                   </>
                 )}
@@ -314,10 +386,21 @@ export function EventCard({
                 variant="outline"
                 size="sm"
                 className="w-full justify-center hover:bg-gray-50 dark:hover:bg-gray-700 font-semibold text-sm h-11 border-2"
+                disabled={isViewAttendeesLoading}
+                onClick={handleViewAttendees}
               >
                 <Link href={`/org-events/${event.id}/attendees`}>
-                  <UsersIcon className="mr-2 h-4 w-4" />
-                  View Attendees
+                  {isViewAttendeesLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <UsersIcon className="mr-2 h-4 w-4" />
+                      View Attendees
+                    </>
+                  )}
                 </Link>
               </Button>
 
@@ -326,10 +409,21 @@ export function EventCard({
                   asChild
                   size="sm"
                   className="w-full justify-center bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 font-bold text-sm h-12 shadow-md hover:shadow-lg transition-all duration-200"
+                  disabled={isLogAttendanceLoading}
+                  onClick={handleLogAttendance}
                 >
                   <Link href={`/org-events/${event.id}/log-attendance`}>
-                    <UserPlusIcon className="mr-2 h-4 w-4" />
-                    {event.status === "completed" ? "Log Special Attendance" : "Log Attendance"}
+                    {isLogAttendanceLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <UserPlusIcon className="mr-2 h-4 w-4" />
+                        {event.status === "completed" ? "Log Special Attendance" : "Log Attendance"}
+                      </>
+                    )}
                   </Link>
                 </Button>
               )}
