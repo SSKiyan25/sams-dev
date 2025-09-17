@@ -76,7 +76,7 @@ export default function EventsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
-        <div className="mb-8">
+        <div className="mb-8 animate-fade-in-up animation-delay-200">
           <EventsHeader
             onSearch={onSearch}
             onEventAdded={() => {
@@ -88,7 +88,7 @@ export default function EventsPage() {
 
         {/* Search results indicator */}
         {isSearchActive && (
-          <div className="mb-6">
+          <div className="mb-6 animate-fade-in-up animation-delay-300">
             <EventsSearchBar
               searchQuery={searchQuery}
               resultsCount={totalEvents}
@@ -98,7 +98,7 @@ export default function EventsPage() {
         )}
 
         {/* Filters Section */}
-        <div className="mb-6">
+        <div className="mb-6 animate-fade-in-up animation-delay-400">
           <EventsFilters
             onSetDate={handleDateChange}
             onSortBy={handleSort}
@@ -111,7 +111,7 @@ export default function EventsPage() {
         {/* Main Content */}
         {isSearchActive ? (
           // Search results view - no tabs, no pagination
-          <div className="space-y-6">
+          <div className="space-y-6 animate-fade-in-up animation-delay-600">
             {loading ? (
               <EventsSkeletonLoader viewMode={viewMode} />
             ) : (
@@ -124,7 +124,7 @@ export default function EventsPage() {
           </div>
         ) : (
           // Normal tabbed view with pagination
-          <div className="space-y-6">
+          <div className="space-y-6 animate-fade-in-up animation-delay-600">
             <Tabs
               value={currentTab}
               className="w-full"
@@ -139,7 +139,7 @@ export default function EventsPage() {
 
               <TabsContent value={currentTab} className="mt-6">
                 {loading ? (
-                  <EventsSkeletonLoader />
+                  <EventsSkeletonLoader viewMode={viewMode} />
                 ) : (
                   <EventsList
                     events={events}
@@ -154,7 +154,7 @@ export default function EventsPage() {
 
         {/* Pagination */}
         {!loading && totalEvents > 0 && !isSearchActive && (
-          <div className="mt-8 flex justify-center">
+          <div className="mt-8 flex justify-center animate-fade-in-up animation-delay-800">
             <EventsPagination
               currentPage={currentPage}
               totalPages={totalPages}

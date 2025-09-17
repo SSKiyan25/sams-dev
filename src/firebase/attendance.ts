@@ -20,7 +20,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { getAuth } from "firebase/auth";
-import { getCurrentUserFacultyId, searchUserByStudentId } from "./users";
+import { getCurrentUserData, searchUserByStudentId } from "./users"; // Assuming this is optimized
 import {
   AttendanceRecord,
   EventAttendance,
@@ -28,8 +28,8 @@ import {
 // import { Member } from "@/features/organization/members/types";
 import { incrementEventAttendees } from "./events";
 import { SearchParams } from "@/features/organization/attendees/types";
+import { Event } from "@/features/organization/dashboard/types";
 import { cacheService } from "@/services/cacheService";
-
 // --- Reusable Constants & Helpers ---
 
 /**
@@ -41,6 +41,10 @@ const attendanceCollection: CollectionReference<DocumentData> = collection(
   "eventAttendees"
 );
 
+const eventsCollection: CollectionReference<DocumentData> = collection(
+  db,
+  "events"
+);
 /**
  * A centralized error handler to keep error logging consistent.
  * @param error - The caught error object.
@@ -133,29 +137,39 @@ export const logAttendance = async ({
  * @param eventId - The ID of the event.
  * @param type - The type of log to sort by ('time-in' or 'time-out').
  * @returns A promise that resolves to an array of recent, valid attendance records.
- */
+ */ 
 export const getRecentAttendance = async (
   eventId: string,
   type: "time-in" | "time-out"
-): Promise<AttendanceRecord[]> => {
+): Promise<EventAttendance[]> => {
   try {
     // Use cache with key that includes event ID and type
     const cacheKey = `recent-attendance:${eventId}:${type}`;
 
-    return await cacheService.getOrFetch<AttendanceRecord[]>(
+    return await cacheService.getOrFetch<EventAttendance[]>(
       cacheKey,
       async () => {
-        const facultyId = await getCurrentUserFacultyId(
-          getAuth().currentUser?.uid || ""
-        );
+        const currentUser = (await getCurrentUserData()) as unknown as Member;
+        if (!currentUser) return [];
+
+        // Determine the correct field and value for the query
+        const queryField = currentUser.facultyId
+          ? "student.facultyId"
+          : "student.programId";
+        const queryValue = currentUser.facultyId || currentUser.programId;
+
+        if (!queryValue) {
+          console.error("User has neither facultyId nor programId.");
+          return [];
+        }
+
         const timestampField = type === "time-in" ? "timeIn" : "timeOut";
 
-        // Step 1: Fetch the 9 most recent attendance documents from Firestore.
-        const q: Query<DocumentData> = query(
+        const q = query(
           attendanceCollection,
           where("eventId", "==", eventId),
-          where("student.facultyId", "==", facultyId || ""),
           where(timestampField, "!=", null),
+          where(queryField, "==", queryValue),
           orderBy(timestampField, "desc"),
           limit(9)
         );
@@ -163,34 +177,18 @@ export const getRecentAttendance = async (
         const querySnapshot = await getDocs(q);
         if (querySnapshot.empty) return [];
 
-        // Step 2: Map the raw documents to a preliminary list of records.
-        const records: AttendanceRecord[] = querySnapshot.docs.map((doc) => {
+        // Map to the EventAttendance type
+        return querySnapshot.docs.map((doc) => {
           const data = doc.data();
           return {
             id: doc.id,
-            userId: data.userId,
-            eventId: data.eventId,
-            timeIn: data.timeIn ? data.timeIn.toDate() : null,
-            timeOut: data.timeOut ? data.timeOut.toDate() : null,
-            status: data.status,
-            timestamp: (data[timestampField] as Timestamp)?.toDate(),
-          } as unknown as AttendanceRecord;
+            ...data,
+            timeIn: data.timeIn?.toDate() ?? null,
+            timeOut: data.timeOut?.toDate() ?? null,
+          } as EventAttendance;
         });
-
-        // Step 3: Use the embedded student data rather than making additional queries
-        const validRecords = records
-          .map((record) => {
-            const doc = querySnapshot.docs.find((d) => d.id === record.id);
-            if (doc) {
-              const data = doc.data();
-              record.student = data.student;
-            }
-            return record;
-          })
-          .filter((record) => record.student);
-
-        return validRecords;
-      }
+      },
+      30 * 60 * 1000 // 30 minute cache
     );
   } catch (error) {
     handleFirestoreError(
@@ -200,7 +198,6 @@ export const getRecentAttendance = async (
     return [];
   }
 };
-
 export const checkLogAttendanceExist = async (
   eventId: string,
   studentId: string,
@@ -280,61 +277,44 @@ export const searchStudentIdsByName = async (
 /**
  * Builds an array of Firestore query constraints for fetching attendance records.
  * @param eventId - The unique identifier for the event. This is a required filter.
- * @param filterProgram - (Optional) The program ID to filter attendees by.
- * @param studentIds - (Optional) An array of student IDs to filter the results with an 'in' query.
+ * @param currentUser - The authenticated user's data object.
+ * @param programFilter - (Optional) The program ID to filter attendees by.
  * @returns An array of QueryConstraint objects to be used with a Firestore query.
  */
 export const buildAttendanceQueryConstraints = (
   eventId: string,
-  filterProgram?: string,
-  facultyId?: string,
+  currentUser: Member,
+  programFilter?: string,
   studentIds?: string[]
 ): QueryConstraint[] => {
-  // Start with the mandatory constraint to filter by the specific event.
   const constraints: QueryConstraint[] = [where("eventId", "==", eventId)];
 
-  // If a program filter is provided, add it to the constraints.
-  // This targets a nested field within the 'student' map.
-  if (filterProgram) {
-    constraints.push(where("student.programId", "==", filterProgram));
-  }
-
-  // If a faculty ID is provided, add it to the constraints.
-  if (facultyId) {
-    constraints.push(where("student.facultyId", "==", facultyId));
+  // Dynamically add a filter for either facultyId or programId
+  if (currentUser.facultyId) {
+    constraints.push(where("student.facultyId", "==", currentUser.facultyId));
+    if (programFilter) {
+      constraints.push(where("student.programId", "==", programFilter));
+    }
+  } else if (currentUser.programId) {
+    constraints.push(where("student.programId", "==", currentUser.programId));
   }
 
   // If a list of student IDs is provided (e.g., from a separate search),
   // use a 'where in' clause for efficient filtering.
   if (studentIds && studentIds.length > 0) {
     // Firestore limits 'in' queries to a maximum of 30 values.
-    // Slice the array to ensure the query does not exceed this limit and cause an error.
     const limitedIds = studentIds.slice(0, 30);
     constraints.push(where("student.studentId", "in", limitedIds));
   }
 
-  // Return the final array of constraints.
   return constraints;
 };
-
-/**
- * Fetches a paginated and sorted list of attendance records for an event.
- * It first fetches all data based on filters and then applies the search query locally.
- * @param eventId - The unique identifier for the event to fetch records for.
- * @param pageSize - The number of records to return per page.
- * @param sort - An object specifying the field to sort by and the direction ('asc' or 'desc').
- * @param cursor - (Optional) The Firestore DocumentSnapshot to use as the starting point for the next page.
- * @param filterProgram - (Optional) The program ID to filter the attendance records by.
- * @param searchQuery - (Optional) An object containing the search query string and the type of search ('name' or 'id').
- * @returns A Promise resolving to an object with the list of records, the total count, and the cursor for the next page.
- */
-// Update the function signature to accept a pageJump parameter
 export const getAttendanceRecord = async (
   eventId: string,
   pageSize: number,
   sort: { field: string; direction: "asc" | "desc" },
   cursor?: DocumentSnapshot,
-  filterProgram?: string,
+  programFilter?: string,
   searchQuery?: SearchParams | null,
   isPageJump?: boolean // Add this parameter
 ): Promise<{
@@ -358,15 +338,17 @@ export const getAttendanceRecord = async (
       }
     }
 
-    const facultyId = await getCurrentUserFacultyId(
-      getAuth().currentUser?.uid || ""
-    );
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    if (!currentUser) {
+      // Not logged in, return an empty result.
+      return { records: [], total: 0, nextCursor: null };
+    }
 
-    // Build the base query constraints
+    // Build constraints based on the fetched user's data
     const baseConstraints = buildAttendanceQueryConstraints(
       eventId,
-      filterProgram,
-      facultyId || "",
+      currentUser,
+      programFilter,
       studentIds
     );
 
@@ -489,12 +471,15 @@ export const getAttendanceRecord = async (
       } as EventAttendance;
     });
 
-    // If a search query of type "id" is provided, perform a client-side filter
-    // For "name" searches, we've already filtered by student IDs
-    if (searchQuery?.type === "id" && searchQuery.query) {
-      records = records.filter((record) =>
-        record.student?.studentId.toString().includes(searchQuery.query)
-      );
+    // Apply search filtering
+    if (searchQuery) {
+      if (searchQuery.type === "id" && searchQuery.query) {
+        // For ID searches, filter client-side
+        records = records.filter((record) =>
+          record.student?.studentId.toString().includes(searchQuery.query)
+        );
+      }
+      // Name searches are already handled through studentIds before the query
     }
 
     // Determine the cursor for the next page.
@@ -508,65 +493,7 @@ export const getAttendanceRecord = async (
   }
 };
 
-export const attendeesPresentCountForEvent = async (eventId: string) => {
-  try {
-    // Use cache with event ID as key
-    const cacheKey = `attendees-present-count:${eventId}`;
-
-    return await cacheService.getOrFetch<number>(
-      cacheKey,
-      async () => {
-        const facultyId = await getCurrentUserFacultyId(
-          getAuth().currentUser?.uid || ""
-        );
-        const q = query(
-          attendanceCollection,
-          where("eventId", "==", eventId),
-          where("student.facultyId", "==", facultyId || ""),
-          where("status", "!=", "absent")
-        );
-        const snapshot = await getCountFromServer(q);
-        return snapshot.data().count;
-      },
-      10 * 60 * 1000 // 10 minute TTL
-    );
-  } catch (error) {
-    handleFirestoreError(error, `counting attendees for event ${eventId}`);
-    return 0;
-  }
-};
-
-export const totalAttendeesForEvent = async (eventId: string) => {
-  try {
-    // Use cache with event ID as key
-    const cacheKey = `attendees-total:${eventId}`;
-
-    return await cacheService.getOrFetch<number>(
-      cacheKey,
-      async () => {
-        const facultyId = await getCurrentUserFacultyId(
-          getAuth().currentUser?.uid || ""
-        );
-        const q = query(
-          attendanceCollection,
-          where("eventId", "==", eventId),
-          where("student.facultyId", "==", facultyId || "")
-        );
-        const snapshot = await getCountFromServer(q);
-        return snapshot.data().count;
-      },
-      10 * 60 * 1000 // 10 minute TTL
-    );
-  } catch (error) {
-    handleFirestoreError(
-      error,
-      `counting total attendees for event ${eventId}`
-    );
-    return 0;
-  }
-};
-
-export const totalAttendeesForAllEvent = async () => {
+export const totalAttendeesForAllEvent = async (): Promise<number> => {
   try {
     // Use cache for this expensive operation
     const cacheKey = `attendees-all-events`;
@@ -574,20 +501,50 @@ export const totalAttendeesForAllEvent = async () => {
     return await cacheService.getOrFetch<number>(
       cacheKey,
       async () => {
-        const facultyId = await getCurrentUserFacultyId(
-          getAuth().currentUser?.uid || ""
-        );
-        const q = query(
-          attendanceCollection,
-          where("student.facultyId", "==", facultyId || "")
-        );
-        const snapshot = await getCountFromServer(q);
-        return snapshot.data().count;
+        const currentUser = (await getCurrentUserData()) as Member | null;
+        if (!currentUser) {
+          console.log("No current user found.");
+          return 0;
+        }
+
+        // 1. Build the query to get events based on the user's context.
+        let eventsQuery: Query;
+        if (currentUser.facultyId) {
+          eventsQuery = query(
+            eventsCollection,
+            where("facultyId", "==", currentUser.facultyId)
+          );
+        } else if (currentUser.programId) {
+          eventsQuery = query(
+            eventsCollection,
+            where("programId", "==", currentUser.programId)
+          );
+        } else {
+          console.log("User is not associated with a faculty or program.");
+          return 0; // No context to query by.
+        }
+
+        // 2. Fetch all matching events in a single database call.
+        const eventsSnapshot = await getDocs(eventsQuery);
+        if (eventsSnapshot.empty) {
+          return 0; // No events found.
+        }
+
+        // 3. Sum the 'attendees' from each event document.
+        let totalAttendees = 0;
+        eventsSnapshot.forEach((doc) => {
+          // Use "reduce" for a more functional approach to summing
+          const eventData = (doc.data() as unknown as Event);
+          totalAttendees += eventData.attendees || 0; // Add count, defaulting to 0 if undefined
+        });
+
+        return totalAttendees;
       },
       30 * 60 * 1000 // 30 minute TTL - less frequent updates for this aggregate
     );
   } catch (error) {
-    handleFirestoreError(error, `counting total attendees for all events`);
+    handleFirestoreError(error, `getting total attendees from events`);
     return 0;
   }
 };
+

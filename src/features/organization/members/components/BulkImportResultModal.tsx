@@ -108,7 +108,7 @@ export function BulkImportResultModal({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-4 mb-0">
             <SummaryCard
               icon={CheckCircle2}
-              title="Successful"
+              title="Success"
               value={successCount}
               description="Members imported"
               colorClass="border-green-500"

@@ -73,13 +73,13 @@ export function StudentDetails({
         <Button
           type="submit"
           disabled={isSubmitting}
-          className={`flex-1 sm:flex-none h-10 font-nunito-sans font-semibold min-w-[120px] ${buttonClasses} ${
+          className={`flex-1 dark:bg-gray-800 sm:flex-none h-10 font-nunito-sans font-semibold min-w-[120px] ${buttonClasses} ${
             isSubmitting ? "opacity-80" : ""
           }`}
         >
           {isSubmitting ? (
             <span className="flex items-center">
-              <Loader2Icon className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2Icon className="h-4 w-4 mr-2 animate-spin dark:text-white dark:fill-gray-700" />
               Processing...
             </span>
           ) : (

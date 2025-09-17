@@ -58,7 +58,6 @@ export function ShortcutLinks({
     timeOutStart: string | null,
     timeOutEnd: string | null
   ) => {
-    console.log(timeInStart, timeInEnd, timeOutStart, timeOutEnd);
     if (timeInStart && timeInEnd && timeOutStart && timeOutEnd) {
       return (
         <>

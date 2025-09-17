@@ -23,18 +23,21 @@ import {
   determineEventStatus,
   getEventsNeedingStatusUpdate,
 } from "@/utils/eventStatusUtils";
+import { getCurrentUserData } from "./users";
+import { getAuth } from "firebase/auth";
+import { Member } from "@/features/organization/members/types";
 
 const eventsCollection = collection(db, "events");
 
 // Helper to manage errors
 const handleFirestoreError = (error: any, context: string) => {
   console.error(`Error ${context}:`, error);
-  
+
   // If it's already an Error object with a message, preserve it
   if (error instanceof Error) {
     throw error;
   }
-  
+
   // Otherwise, create a generic error
   throw new Error(`Failed to ${context}`);
 };
@@ -70,8 +73,18 @@ export const getPaginatedEvents = async (
   filterDate?: Date
 ): Promise<PaginatedEvents> => {
   try {
-    // Base query
-    let baseQuery = query(eventsCollection, where("isDeleted", "==", false));
+    // Get the current user's faculty ID
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+
+    const queryField = currentUser.facultyId ? "facultyId" : "programId";
+    const queryValue = currentUser.facultyId || currentUser.programId;
+
+    // Base query - filter by faculty and non-deleted events
+    let baseQuery = query(
+      eventsCollection,
+      where("isDeleted", "==", false),
+      where(queryField, "==", queryValue)
+    );
 
     // Add status filter if provided and not "all"
     if (status && status !== "all") {
@@ -151,6 +164,19 @@ export const getPaginatedEvents = async (
 
 export const addEvent = async (eventData: EventFormData) => {
   try {
+    // Get the current user's faculty ID
+     const currentUser = await getCurrentUserData() as unknown as Member;
+    if (!currentUser) return [];
+
+    // Determine the query field and value based on user type
+    const queryField = currentUser.facultyId ? "facultyId" : "programId";
+    const queryValue = currentUser.facultyId || currentUser.programId;
+
+    if (!queryValue) {
+      console.error("User has neither facultyId nor programId.");
+      return [];
+    }
+
     // Validate that the event date is not in the past
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0); // Set to start of day for comparison
@@ -197,6 +223,7 @@ export const addEvent = async (eventData: EventFormData) => {
       attendees: 0,
       status,
       isDeleted: false,
+      [queryField]: queryValue,
     });
     return docRef.id;
   } catch (error) {
@@ -231,10 +258,13 @@ export const updateEvent = async (
       }
     }
 
-    const eventDoc = doc(db, "events", eventId);
-
-    // Get current event to check if it's archived
+    // Get current event to check if it belongs to the faculty and if it's archived
     const currentEvent = await getEventById(eventId);
+    if (!currentEvent) {
+      throw new Error("Event not found or you don't have permission to update it");
+    }
+
+    const eventDoc = doc(db, "events", eventId);
 
     // If event is archived, maintain archived status
     // Otherwise, determine status based on date
@@ -306,7 +336,23 @@ export const getEvents = async (
   status?: "ongoing" | "upcoming" | "completed"
 ): Promise<Event[]> => {
   try {
-    let q = query(eventsCollection, where("isDeleted", "==", false));
+    // Get the current user's faculty ID
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    if (!currentUser) return [];
+
+    // Determine the query field and value based on user type
+    const queryField = currentUser.facultyId ? "facultyId" : "programId";
+    const queryValue = currentUser.facultyId || currentUser.programId;
+
+    if (!queryValue) {
+      console.error("User has neither facultyId nor programId.");
+      return [];
+    }
+    let q = query(
+      eventsCollection, 
+      where("isDeleted", "==", false),
+      where(queryField, "==", queryValue)
+    );
     if (status) {
       q = query(q, where("status", "==", status));
     }
@@ -332,11 +378,25 @@ export const getEvents = async (
 
 export const getEventsByStatus = async (status: string) => {
   try {
+    // Get the current user's faculty ID
+     const currentUser = (await getCurrentUserData()) as unknown as Member;
+     if (!currentUser) return [];
+
+     // Determine the query field and value based on user type
+     const queryField = currentUser.facultyId ? "facultyId" : "programId";
+     const queryValue = currentUser.facultyId || currentUser.programId;
+
+     if (!queryValue) {
+       console.error("User has neither facultyId nor programId.");
+       return [];
+     }
+
     const eventsRef = collection(db, "events");
     const q = query(
       eventsRef,
       where("status", "==", status),
-      where("isDeleted", "==", false)
+      where("isDeleted", "==", false),
+      where(queryField, "==", queryValue)
     );
     const querySnapshot = await getDocs(q);
 
@@ -354,6 +414,7 @@ export const getEventsByStatus = async (status: string) => {
 
 export const getEventById = async (eventId: string): Promise<Event | null> => {
   try {
+
     const eventDoc = doc(db, "events", eventId);
     const docSnap = await getDoc(eventDoc);
 
@@ -372,6 +433,12 @@ export const getEventById = async (eventId: string): Promise<Event | null> => {
 
 export const archiveEvent = async (eventId: string) => {
   try {
+    // Verify the event belongs to the current faculty before archiving
+    const currentEvent = await getEventById(eventId);
+    if (!currentEvent) {
+      throw new Error("Event not found or you don't have permission to archive it");
+    }
+
     const eventDoc = doc(db, "events", eventId);
     await updateDoc(eventDoc, { status: "archived" });
   } catch (error) {
@@ -381,6 +448,12 @@ export const archiveEvent = async (eventId: string) => {
 
 export const deleteEvent = async (eventId: string) => {
   try {
+    // Verify the event belongs to the current faculty before deleting
+    const currentEvent = await getEventById(eventId);
+    if (!currentEvent) {
+      throw new Error("Event not found or you don't have permission to delete it");
+    }
+
     const eventDoc = doc(db, "events", eventId);
     await updateDoc(eventDoc, { isDeleted: true }); // Soft delete
   } catch (error) {

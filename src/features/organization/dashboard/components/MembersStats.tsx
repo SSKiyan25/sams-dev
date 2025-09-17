@@ -37,7 +37,7 @@ import {
   UserX,
 } from "lucide-react";
 import { Event } from "../types";
-import { attendeesPresentCountForEvent } from "@/firebase";
+import { getEventById } from "@/firebase";
 const CustomTooltip = ({
   active,
   payload,
@@ -125,21 +125,25 @@ export function MembersStats({
   studentStats,
   eventAttendance,
 }: MembersStatsProps) {
-
   const getChartColors = () => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const computedStyle = getComputedStyle(document.documentElement);
       return {
-        textColor: computedStyle.getPropertyValue('--muted-foreground').trim() || '#6b7280',
-        borderColor: computedStyle.getPropertyValue('--border').trim() || '#e5e7eb',
-        backgroundColor: computedStyle.getPropertyValue('--background').trim() || '#ffffff',
-        foregroundColor: computedStyle.getPropertyValue('--foreground').trim() || '#000000',
+        textColor:
+          computedStyle.getPropertyValue("--muted-foreground").trim() ||
+          "#6b7280",
+        borderColor:
+          computedStyle.getPropertyValue("--border").trim() || "#e5e7eb",
+        backgroundColor:
+          computedStyle.getPropertyValue("--background").trim() || "#ffffff",
+        foregroundColor:
+          computedStyle.getPropertyValue("--foreground").trim() || "#000000",
       };
     }
     return {
-      textColor: '#6b7280', 
-      backgroundColor: '#ffffff',
-      foregroundColor: '#000000',
+      textColor: "#6b7280",
+      backgroundColor: "#ffffff",
+      foregroundColor: "#000000",
     };
   };
 
@@ -156,7 +160,8 @@ export function MembersStats({
     const fetchEventPresentCounts = async () => {
       const counts: { [key: string]: number } = {};
       for (const event of eventAttendance) {
-        const count = await attendeesPresentCountForEvent(event.id);
+        const count =
+          ((await getEventById(event.id)) as unknown as Event).attendees || 0;
         counts[event.id] = count;
       }
       setEventPresentCounts(counts);
@@ -391,8 +396,8 @@ export function MembersStats({
                 paddingTop: "24px",
                 fontSize: "14px",
                 fontWeight: 500,
-                fontFamily: 'Inter, system-ui, sans-serif',
-                color: chartColors.foregroundColor
+                fontFamily: "Inter, system-ui, sans-serif",
+                color: chartColors.foregroundColor,
               }}
               iconSize={12}
               iconType="circle"

@@ -74,28 +74,36 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
     <>
       {viewMode === "card" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {events.map((event) => (
-            <EventCard
+          {events.map((event, index) => (
+            <div
               key={event.id}
-              event={event}
-              onEdit={handleEditClick}
-              onArchive={handleArchiveClick}
-              onUnarchive={handleUnarchiveClick}
-              onDelete={handleDeleteClick}
-            />
+              className={`animate-fade-in-up animation-delay-${700 + (index % 6) * 100}`}
+            >
+              <EventCard
+                event={event}
+                onEdit={handleEditClick}
+                onArchive={handleArchiveClick}
+                onUnarchive={handleUnarchiveClick}
+                onDelete={handleDeleteClick}
+              />
+            </div>
           ))}
         </div>
       ) : (
         <div className="space-y-4">
-          {events.map((event) => (
-            <EventListItem
+          {events.map((event, index) => (
+            <div
               key={event.id}
-              event={event}
-              onEdit={handleEditClick}
-              onArchive={handleArchiveClick}
-              onUnarchive={handleUnarchiveClick}
-              onDelete={handleDeleteClick}
-            />
+              className={`animate-fade-in-up animation-delay-${700 + (index % 6) * 100}`}
+            >
+              <EventListItem
+                event={event}
+                onEdit={handleEditClick}
+                onArchive={handleArchiveClick}
+                onUnarchive={handleUnarchiveClick}
+                onDelete={handleDeleteClick}
+              />
+            </div>
           ))}
         </div>
       )}

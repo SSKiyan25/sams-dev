@@ -9,9 +9,6 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
-import { useEffect, useState } from "react";
-import { getCurrentUserFacultyId } from "@/firebase";
-import { getAuth } from "firebase/auth";
 
 interface MembersTableProps {
   members: MemberData[];
@@ -28,7 +25,6 @@ export function MembersTable({
   onEdit,
   onDelete,
 }: MembersTableProps) {
-  const [facultyId, setFacultyId] = useState<string | null>(null);
   const getProgramName = (programId: string) => {
     const program = programs.find((p) => p.id === programId);
     return program ? program.name : "N/A";
@@ -38,16 +34,6 @@ export function MembersTable({
     const faculty = faculties.find((f) => f.id === facultyId);
     return faculty ? faculty.name : "N/A";
   };
-
-  useEffect(() => {
-    const fetchProgramName = async () => {
-      const facultyId = await getCurrentUserFacultyId(
-        getAuth().currentUser?.uid || ""
-      );
-      setFacultyId(facultyId);
-    };
-    fetchProgramName();
-  }, [members]);
 
   if (members.length === 0) {
     return (
@@ -139,7 +125,7 @@ export function MembersTable({
                       Faculty:
                     </span>
                     <span className="text-gray-700 dark:text-gray-300 text-right">
-                      {getFacultyName(facultyId as string) || "N/A"}
+                      {getFacultyName(memberData.member.facultyId as string)}
                     </span>
                   </div>
                 </div>
@@ -200,7 +186,8 @@ export function MembersTable({
                   </TableCell>
                   <TableCell className="text-gray-700 dark:text-gray-300 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-sm hidden lg:table-cell">
                     <span className="truncate max-w-[120px] xl:max-w-none block">
-                      {getFacultyName(facultyId as string) || "N/A"}
+                      {getFacultyName(memberData.member?.facultyId as string) ||
+                        "N/A"}
                     </span>
                   </TableCell>
                   <TableCell className="text-gray-700 dark:text-gray-300 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-sm">
