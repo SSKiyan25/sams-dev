@@ -30,6 +30,7 @@ import { incrementEventAttendees } from "./events";
 import { SearchParams } from "@/features/organization/attendees/types";
 import { Event } from "@/features/organization/dashboard/types";
 import { cacheService } from "@/services/cacheService";
+import { Member } from "@/features/organization/members/types";
 // --- Reusable Constants & Helpers ---
 
 /**

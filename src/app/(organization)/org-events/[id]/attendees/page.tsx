@@ -164,12 +164,12 @@ export default function EventAttendeesPage() {
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-  
+
           <EventDetails
             event={eventData as unknown as Event}
             attendeeCount={totalAttendees}
           />
-  
+
           <div className="mb-6">
             <AttendeesHeader
               event={eventData as unknown as Event}
@@ -177,7 +177,7 @@ export default function EventAttendeesPage() {
               isExporting={isExporting}
             />
           </div>
-  
+
           {/* Filters Section */}
           <div className="mb-6">
             <AttendeesFilters
@@ -186,21 +186,21 @@ export default function EventAttendeesPage() {
               onProgramFilter={handleProgramFilter}
             />
           </div>
-  
+
           {/* Attendees List */}
           <div className="mb-6">
             {attendeesLoading ? (
               <AttendanceListSkeleton />
             ) : (
-              <AttendanceList 
-                attendees={attendees} 
+              <AttendanceList
+                attendees={attendees}
                 totalAttendees={totalAttendees}
                 currentPage={currentPage}
                 totalPages={totalPages}
               />
             )}
           </div>
-  
+
           {/* Pagination */}
           {totalAttendees > 0 && !attendeesLoading && (
             <div className="flex justify-center">
@@ -210,10 +210,11 @@ export default function EventAttendeesPage() {
                 handleNextPage={handleNextPage}
                 handlePrevPage={handlePrevPage}
                 onPageChange={goToSpecificPage}
+                hasNextPage={currentPage < totalPages}
+                hasPrevPage={currentPage > 1}
               />
             </div>
           )}
-  
         </div>
       </div>
     );

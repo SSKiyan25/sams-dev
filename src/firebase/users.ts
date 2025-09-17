@@ -296,6 +296,17 @@ export const searchUserByStudentId = async (
     return null;
   }
 };
+
+const generateKeywords = (name: string): string[] => {
+  if (!name) return [];
+  const lowerCaseName = name.toLowerCase();
+  const keywords = new Set<string>();
+  for (let i = 1; i <= lowerCaseName.length; i++) {
+    keywords.add(lowerCaseName.substring(0, i));
+  }
+  return Array.from(keywords);
+};
+
 /**
  * Searches for users by name within a specific faculty.
  * This function fetches all users from the faculty and performs a "contains"
@@ -341,33 +352,35 @@ export const searchUserByName = async (
       return [];
     }
 
-    // Server-side query to narrow down the results
+    // This query now performs the search directly in the database
     const searchQuery = query(
-      usersCollection,
-      where(queryField, "==", queryValue),
+      collection(db, "users"),
       where("isDeleted", "==", false),
-      where("firstName", ">=", trimmedName),
-      where("firstName", "<=", trimmedName + "\uf8ff")
+      where(queryField, "==", queryValue),
+      limit(50) // Always limit your reads
     );
 
     const querySnapshot = await getDocs(searchQuery);
 
-    // Client-side filtering for a "contains" search
-    const matchingMembers = querySnapshot.docs
-      .map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as Omit<Member, "id">),
-      }))
-      .filter((member) => {
-        const fullName = `${member.firstName || ""} ${
-          member.lastName || ""
-        }`.toLowerCase();
-        return fullName.includes(trimmedName);
-      });
+   const matchingMembers = querySnapshot.docs
+     .map((doc) => ({
+       id: doc.id,
+       ...doc.data() as Member,
+     }))
+     .filter((user) => {
+       const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
+       return fullName.includes(trimmedName);
+     }) as unknown as Member[];
+    // Sort the results alphabetically by full name
+    matchingMembers.sort((a, b) => {
+      const nameA = `${a.firstName} ${a.lastName}`.toLowerCase();
+      const nameB = `${b.firstName} ${b.lastName}`.toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
 
     // Cache the search results
     const membersToCache = matchingMembers.map((member) => ({
-      id: member.id,
+      id: member.studentId,
       member,
     }));
     updateMembersCache(cacheKey, membersToCache, membersToCache.length);
