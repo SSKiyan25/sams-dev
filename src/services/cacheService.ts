@@ -73,6 +73,18 @@ class CacheService {
     return data;
   }
 
+  // Get data from cache without fetching - returns null if not found or expired
+  public get<T>(key: string): CacheEntry<T> | null {
+    const cached = this.cache.get(key);
+    const now = Date.now();
+
+    if (cached && cached.expiresAt > now) {
+      return cached as CacheEntry<T>;
+    }
+
+    return null;
+  }
+
   // Manually set cache
   public set<T>(key: string, data: T, ttl: number = this.DEFAULT_TTL): void {
     const now = Date.now();
@@ -142,4 +154,5 @@ export const CACHE_DURATIONS = {
     UPCOMING_EVENTS: 15 * 60 * 1000, // 15 minutes
     RECENT_MEMBERS: 30 * 60 * 1000, // 30 minutes
   },
+  UI_STATE: 30 * 1000, // 30 seconds for UI state
 };

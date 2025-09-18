@@ -9,6 +9,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { EventsSkeletonLoader } from "@/features/organization/events/components/EventsSkeletonLoader";
 import { EventsSearchBar } from "@/features/organization/events/components/EventsSearchBar";
+import { EventsCacheLoader } from "@/features/organization/events/services/eventsCacheLoader";
 import {
   EventsTabNavigation,
   EventStatus,
@@ -32,7 +33,10 @@ export default function EventsPage() {
     } else {
       // Load saved view mode on desktop
       const savedViewMode = localStorage.getItem("eventsViewMode") as ViewMode;
-      if (savedViewMode && (savedViewMode === "card" || savedViewMode === "list")) {
+      if (
+        savedViewMode &&
+        (savedViewMode === "card" || savedViewMode === "list")
+      ) {
         setViewMode(savedViewMode);
       }
     }
@@ -58,6 +62,7 @@ export default function EventsPage() {
     handleSort,
     handleDateChange,
     searchQuery,
+    refresh,
   } = useEventsData(currentTab);
 
   // Handle search activation/deactivation
@@ -74,6 +79,9 @@ export default function EventsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Invisible component that preloads the events cache */}
+      <EventsCacheLoader />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-8 animate-fade-in-up animation-delay-200">
@@ -81,7 +89,7 @@ export default function EventsPage() {
             onSearch={onSearch}
             onEventAdded={() => {
               // Refresh the events list after adding a new event
-              handlePageChange(1);
+              refresh();
             }}
           />
         </div>
@@ -117,7 +125,7 @@ export default function EventsPage() {
             ) : (
               <EventsList
                 events={events}
-                onEventsUpdate={() => handleSearch(searchQuery)}
+                onEventsUpdate={refresh}
                 viewMode={viewMode}
               />
             )}
@@ -143,7 +151,7 @@ export default function EventsPage() {
                 ) : (
                   <EventsList
                     events={events}
-                    onEventsUpdate={() => handlePageChange(currentPage)}
+                    onEventsUpdate={refresh}
                     viewMode={viewMode}
                   />
                 )}
