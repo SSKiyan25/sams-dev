@@ -20,8 +20,7 @@ import {
 import { signOut } from "firebase/auth";
 import { auth } from "@/firebase/firebase.config";
 import { LoadingScreen } from "@/components/ui/loading-screen";
-import { clearAllCachesOnLogout } from "@/features/organization/members/services/membersCache";
-// import { useRouter } from "next/navigation";
+import { cacheUtils } from "@/utils/cacheUtils";
 
 interface User {
   name?: string;
@@ -37,31 +36,42 @@ interface NavUserProps {
 export function NavUser({ user }: NavUserProps) {
   const { isMobile } = useSidebar();
   const [isSigningOut, setIsSigningOut] = useState(false);
-  // const router = useRouter();
 
   const handleSignOut = async () => {
     try {
       setIsSigningOut(true);
 
-      clearAllCachesOnLogout();
+      // Set global signing out state first
+      cacheUtils.setSigningOut(true);
+
+      // Use centralized cache clearing utility
+      cacheUtils.clearOnLogout();
 
       // First, sign out from Firebase
       await signOut(auth);
 
-      // Then clear the session cookie
+      // Then clear the session cookie via the API
       const response = await fetch("/api/auth/signout", {
         method: "POST",
+        credentials: "include", // Important: Include credentials to manage cookies
       });
 
       if (!response.ok) {
-        throw new Error("Failed to sign out");
+        console.warn(
+          "API signout encountered an issue, continuing logout process"
+        );
       }
 
-      // Use a reload approach instead of redirect
+      // Use a reload approach for a clean slate
       window.location.href = "/?logout=true";
     } catch (error) {
       console.error("Error signing out:", error);
-      setIsSigningOut(false);
+
+      // Even if the signout fails, still clear caches
+      cacheUtils.clearOnLogout();
+
+      // And redirect to home
+      window.location.href = "/?logout=true";
     }
   };
 

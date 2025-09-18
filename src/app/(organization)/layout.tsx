@@ -10,10 +10,11 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { LoadingScreen } from "@/components/ui/loading-screen";
+import { cacheUtils } from "@/utils/cacheUtils";
 
 // Define icon map for the sidebar
 const iconMap = {
@@ -87,19 +88,41 @@ export default function OrganizationLayout({
 }>) {
   const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  // Check for signing out state on mount and when auth changes
+  useEffect(() => {
+    const checkSigningOutState = () => {
+      // Check if signing out is in progress
+      const signingOut = cacheUtils.isSigningOut();
+      setIsSigningOut(signingOut);
+    };
+
+    // Check initially
+    checkSigningOutState();
+
+    // Set up an interval to check regularly
+    const interval = setInterval(checkSigningOutState, 200);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Redirect to login if not authenticated
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
+    if (!loading && !isAuthenticated && !isSigningOut) {
       router.push("/login");
     }
-  }, [loading, isAuthenticated, router]);
+  }, [loading, isAuthenticated, router, isSigningOut]);
 
-  // Show loading state while authenticating
-  if (loading) {
+  // Show loading screen while authenticating or signing out
+  if (loading || isSigningOut) {
     return (
       <LoadingScreen
-        message="Loading your organization dashboard..."
+        message={
+          isSigningOut
+            ? "Signing out... Please come back soon! Your coral will miss you."
+            : "Loading your organization dashboard... Welcome! We're getting everything ready for you."
+        }
         className="bg-primary/5"
       />
     );
@@ -116,7 +139,6 @@ export default function OrganizationLayout({
     email: user.email,
     avatar: user.avatar,
   };
-
 
   return (
     <div className="flex min-h-screen w-full">
