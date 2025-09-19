@@ -197,6 +197,57 @@ export const getDashboardOngoingEvents = async (
   }
 };
 
+
+/**
+ * Gets dashboard-specific ongoing events with minimal fields
+ * Optimized to fetch only what's needed for the dashboard
+ */
+export const getDashboardEvents = async (
+  count = 5
+): Promise<Event[]> => {
+  try {
+    // Use cache with a specific key for this dashboard section
+    const cacheKey = `dashboard:events:${count}`;
+
+    return await cacheService.getOrFetch<Event[]>(
+      cacheKey,
+      async () => {
+        const currentUser = (await getCurrentUserData()) as unknown as Member;
+        if (!currentUser) return [];
+
+        // Determine if we're querying by faculty or program
+        const queryField = currentUser.facultyId ? "facultyId" : "programId";
+        const queryValue = currentUser.facultyId || currentUser.programId;
+
+        if (!queryValue) {
+          console.error("User has neither facultyId nor programId.");
+          return [];
+        }
+
+
+        // Query for events that are happening today
+        const eventsQuery = query(
+          collection(db, "events"),
+          where("isDeleted", "==", false),
+          where(queryField, "==", queryValue),
+          limit(count)
+        );
+
+        const querySnapshot = await getDocs(eventsQuery);
+
+        return querySnapshot.docs.map(transformEventData);
+        
+      },
+      60 * 1000 // Cache for 1 minute since ongoing status changes frequently
+    );
+  } catch (error) {
+    console.error("Error getting dashboard events:", error);
+    return [];
+  }
+};
+
+
+
 /**
  * Gets most recent members for the dashboard with minimal fields
  * Optimized to fetch only what's needed for the dashboard display

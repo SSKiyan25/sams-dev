@@ -6,9 +6,11 @@ import {
   getDashboardRecentMembers,
   getDashboardUpcomingEvents,
   getDashboardOngoingEvents,
+  getDashboardEvents,
 } from "@/firebase/dashboard";
 import { Event } from "../types";
 import { Member } from "../../members/types";
+import { set } from "zod";
 
 export interface DashboardStats {
   totalStudents: number;
@@ -23,6 +25,7 @@ export interface DashboardStats {
 export function useDashboard() {
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [ongoingEvents, setOngoingEvents] = useState<Event[]>([]);
+  const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [recentMembers, setRecentMembers] = useState<Member[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
     totalStudents: 0,
@@ -46,11 +49,13 @@ export function useDashboard() {
         dashboardStats,
         upcomingEventsData,
         ongoingEventsData,
+        allEventsData,
         recentMembersData,
       ] = await Promise.all([
         getDashboardStats(),
         getDashboardUpcomingEvents(5),
         getDashboardOngoingEvents(5),
+        getDashboardEvents(5),
         getDashboardRecentMembers(10),
       ]);
 
@@ -58,6 +63,7 @@ export function useDashboard() {
       setStats(dashboardStats);
       setUpcomingEvents(upcomingEventsData);
       setOngoingEvents(ongoingEventsData);
+      setAllEvents(allEventsData);
       setRecentMembers(recentMembersData);
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
@@ -83,6 +89,7 @@ export function useDashboard() {
     stats,
     upcomingEvents,
     ongoingEvents,
+    allEvents,
     recentMembers,
     isLoading,
     error,
