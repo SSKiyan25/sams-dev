@@ -19,6 +19,7 @@ import { SidebarTrigger } from "../ui/sidebar";
 import { signOut } from "firebase/auth";
 import { auth } from "@/firebase/firebase.config";
 import { LoadingScreen } from "@/components/ui/loading-screen";
+import { cacheUtils } from "@/utils/cacheUtils";
 
 // Define the User interface
 interface User {
@@ -65,24 +66,37 @@ export function SiteHeader({
     try {
       setIsLoggingOut(true);
 
+      // Set global signing out state first
+      cacheUtils.setSigningOut(true);
+
+      // Use centralized cache clearing utility
+      cacheUtils.clearOnLogout();
+
       // First, sign out from Firebase
       await signOut(auth);
 
-      // Then clear the session cookie
+      // Then clear the session cookie via the API
       const response = await fetch("/api/auth/signout", {
         method: "POST",
+        credentials: "include", // Important: Include credentials to manage cookies
       });
 
       if (!response.ok) {
-        throw new Error("Failed to sign out");
+        console.warn(
+          "API signout encountered an issue, continuing logout process"
+        );
       }
 
-      // Use a reload approach instead of redirect
-      // This ensures a fresh start without relying on state persistence
+      // Use a reload approach for a clean slate
       window.location.href = "/?logout=true";
     } catch (error) {
       console.error("Error signing out:", error);
-      setIsLoggingOut(false);
+
+      // Even if there's an error with signOut, still try to clear caches
+      cacheUtils.clearOnLogout();
+
+      // And still redirect to the login page
+      window.location.href = "/?logout=true";
     }
   };
 

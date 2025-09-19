@@ -160,9 +160,8 @@ export function MembersStats({
     const fetchEventPresentCounts = async () => {
       const counts: { [key: string]: number } = {};
       for (const event of eventAttendance) {
-        const count =
-          ((await getEventById(event.id)) as unknown as Event).attendees || 0;
-        counts[event.id] = count;
+        // Changed this to just use the attendees count from the event data
+        counts[event.id] = event.attendees || 0;
       }
       setEventPresentCounts(counts);
     };

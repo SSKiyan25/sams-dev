@@ -6,9 +6,14 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { useDashboard } from "../hooks/useDashboard";
 
 export function DashboardLayout() {
-  const { stats, upcomingEvents, ongoingEvents, recentMembers, isLoading } =
-    useDashboard();
-
+  const {
+    stats,
+    upcomingEvents,
+    ongoingEvents,
+    allEvents,
+    recentMembers,
+    isLoading,
+  } = useDashboard();
   const isMobile = useIsMobile();
 
   if (isMobile) {
@@ -16,7 +21,7 @@ export function DashboardLayout() {
       <MobileDashboard
         isLoading={isLoading}
         studentStats={stats}
-        eventAttendance={[...upcomingEvents, ...ongoingEvents]}
+        eventAttendance={[...upcomingEvents, ...ongoingEvents, ...allEvents]}
         upcomingEvents={upcomingEvents}
         ongoingEvents={ongoingEvents}
         recentMembers={recentMembers}
@@ -78,7 +83,11 @@ export function DashboardLayout() {
           <MembersStats
             isLoading={isLoading}
             studentStats={stats}
-            eventAttendance={[...upcomingEvents, ...ongoingEvents]}
+            eventAttendance={[
+              ...upcomingEvents,
+              ...ongoingEvents,
+              ...allEvents,
+            ]}
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in-up animation-delay-400">

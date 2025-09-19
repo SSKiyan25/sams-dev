@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 
 export async function POST() {
   try {
-    // Wait for the cookies() to resolve before calling set()
+    // Get the cookie store
     const cookieStore = await cookies();
 
     // Clear the session cookie by setting maxAge to 0
@@ -15,7 +15,10 @@ export async function POST() {
       secure: process.env.NODE_ENV === "production",
     });
 
-    return NextResponse.json({ status: "success" });
+    return NextResponse.json({
+      status: "success",
+      message: "Successfully signed out",
+    });
   } catch (error) {
     console.error("Error during signout:", error);
     return NextResponse.json({ error: "Failed to sign out" }, { status: 500 });

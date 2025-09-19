@@ -11,6 +11,13 @@ class CacheService {
   private cache: Map<string, CacheEntry<any>> = new Map();
   private DEFAULT_TTL = 60 * 60 * 1000; // 1 hour default TTL
 
+  // Cache hit/miss metrics for performance monitoring
+  private metrics = {
+    hits: 0,
+    misses: 0,
+    byKey: new Map<string, { hits: number; misses: number }>(),
+  };
+
   private constructor() {
     // Initialize from localStorage if available
     try {
@@ -53,12 +60,23 @@ class CacheService {
     const cached = this.cache.get(key);
     const now = Date.now();
 
+    // Update metrics for this key
+    if (!this.metrics.byKey.has(key)) {
+      this.metrics.byKey.set(key, { hits: 0, misses: 0 });
+    }
+    const keyMetrics = this.metrics.byKey.get(key)!;
+
     if (cached && cached.expiresAt > now) {
+      // Cache hit
+      this.metrics.hits++;
+      keyMetrics.hits++;
       console.log(`Cache hit for ${key}`);
       return cached.data as T;
     }
 
-    // No valid cache, fetch data
+    // Cache miss
+    this.metrics.misses++;
+    keyMetrics.misses++;
     console.log(`Cache miss for ${key}, fetching data...`);
     const data = await fetchFn();
 
@@ -71,6 +89,18 @@ class CacheService {
 
     this.saveToStorage();
     return data;
+  }
+
+  // Get data from cache without fetching - returns null if not found or expired
+  public get<T>(key: string): CacheEntry<T> | null {
+    const cached = this.cache.get(key);
+    const now = Date.now();
+
+    if (cached && cached.expiresAt > now) {
+      return cached as CacheEntry<T>;
+    }
+
+    return null;
   }
 
   // Manually set cache
@@ -106,12 +136,89 @@ class CacheService {
     localStorage.removeItem("app-data-cache");
   }
 
-  // Get cache stats
+  // Clear all application caches and local storage data
+  public clearAllOnLogout(): void {
+    // Clear the in-memory cache
+    this.cache.clear();
+
+    try {
+      // Clear app-data-cache from localStorage
+      localStorage.removeItem("app-data-cache");
+
+      // Only preserve theme preference
+      const preserveKeys = ["theme"];
+
+      // Get all localStorage keys and remove non-preserved ones
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && !preserveKeys.includes(key)) {
+          localStorage.removeItem(key);
+        }
+      }
+
+      // Reset metrics
+      this.metrics = {
+        hits: 0,
+        misses: 0,
+        byKey: new Map(),
+      };
+
+      console.log("Cache service cleared all data during logout");
+    } catch (error) {
+      console.error("Error during cache clearing:", error);
+      // Still attempt to clear the in-memory cache if localStorage fails
+      this.cache.clear();
+    }
+  }
+
+  // Extend TTL for frequently accessed cache items
+  public extendTTL(key: string, additionalTime: number): void {
+    const cached = this.cache.get(key);
+    if (cached) {
+      cached.expiresAt += additionalTime;
+      this.saveToStorage();
+    }
+  }
+
+  // Intelligently optimize cache based on access patterns
+  public optimizeCache(): void {
+    // Extend TTL for frequently accessed items
+    for (const [key, metrics] of this.metrics.byKey.entries()) {
+      if (
+        metrics.hits > 10 &&
+        metrics.hits / (metrics.hits + metrics.misses) > 0.8
+      ) {
+        // This is a frequently hit cache item, extend its TTL
+        const cached = this.cache.get(key);
+        if (cached) {
+          const extensionTime = 30 * 60 * 1000; // 30 minutes
+          cached.expiresAt = Math.max(
+            cached.expiresAt,
+            Date.now() + extensionTime
+          );
+        }
+      }
+    }
+
+    this.saveToStorage();
+  }
+
+  // Get cache stats and metrics
   public getStats() {
+    const hitRate =
+      this.metrics.hits + this.metrics.misses > 0
+        ? (this.metrics.hits / (this.metrics.hits + this.metrics.misses)) * 100
+        : 0;
+
     return {
       size: this.cache.size,
       keys: Array.from(this.cache.keys()),
       totalSizeKB: this.estimateCacheSizeKB(),
+      metrics: {
+        hits: this.metrics.hits,
+        misses: this.metrics.misses,
+        hitRate: `${hitRate.toFixed(2)}%`,
+      },
     };
   }
 
@@ -142,4 +249,5 @@ export const CACHE_DURATIONS = {
     UPCOMING_EVENTS: 15 * 60 * 1000, // 15 minutes
     RECENT_MEMBERS: 30 * 60 * 1000, // 30 minutes
   },
+  UI_STATE: 30 * 1000, // 30 seconds for UI state
 };

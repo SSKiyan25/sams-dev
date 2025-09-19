@@ -23,7 +23,19 @@ export function ShortcutLinks({
   ongoingEvents,
   isLoading,
 }: ShortcutLinksProps) {
-  const allEvents = [...ongoingEvents, ...upcomingEvents].slice(0, 3);
+  const uniqueEventsMap = new Map();
+
+  ongoingEvents.forEach((event) => {
+    uniqueEventsMap.set(event.id, event);
+  });
+
+  upcomingEvents.forEach((event) => {
+    if (!uniqueEventsMap.has(event.id)) {
+      uniqueEventsMap.set(event.id, event);
+    }
+  });
+
+  const allEvents = Array.from(uniqueEventsMap.values()).slice(0, 3);
 
   // console.log("ShortcutLinks props:", {
   //   upcomingEvents,
@@ -156,7 +168,12 @@ export function ShortcutLinks({
               </p>
             </div>
           </div>
-          <Button asChild variant="outline" size="sm" className="border-2 border-border/50 hover:border-primary/60 transition-all duration-300 bg-background/80 backdrop-blur-sm shadow-lg hover:shadow-xl hover:scale-105 font-semibold">
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="border-2 border-border/50 hover:border-primary/60 transition-all duration-300 bg-background/80 backdrop-blur-sm shadow-lg hover:shadow-xl hover:scale-105 font-semibold"
+          >
             <Link href="/org-events" className="flex items-center gap-2">
               View All
               <CalendarRange className="h-4 w-4" />
@@ -180,10 +197,14 @@ export function ShortcutLinks({
             allEvents.map((event, index) => (
               <Link
                 href={`/org-events/${event.id}/attendees`}
-                key={event.id}
+                key={`${event.id}-${index}`}
                 className="block group"
               >
-                <Card className={`overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 border-2 border-border/30 hover:border-primary/40 bg-gradient-to-r from-background/80 to-muted/20 backdrop-blur-sm hover:from-background hover:to-primary/5 animate-fade-in-up animation-delay-${800 + index * 100}`}>
+                <Card
+                  className={`overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 border-2 border-border/30 hover:border-primary/40 bg-gradient-to-r from-background/80 to-muted/20 backdrop-blur-sm hover:from-background hover:to-primary/5 animate-fade-in-up animation-delay-${
+                    800 + index * 100
+                  }`}
+                >
                   <div className="p-4">
                     {/* Compact Header */}
                     <div className="flex items-start justify-between gap-3 mb-3">
@@ -211,7 +232,9 @@ export function ShortcutLinks({
                           </Badge>
                         )}
                         <Badge
-                          variant={event.status === "ongoing" ? "default" : "secondary"}
+                          variant={
+                            event.status === "ongoing" ? "default" : "secondary"
+                          }
                           className={`text-xs px-2 py-0.5 transition-colors ${
                             event.status === "ongoing"
                               ? "bg-green-500 hover:bg-green-600 text-white"
@@ -231,8 +254,12 @@ export function ShortcutLinks({
                           <MapPinIcon className="h-3.5 w-3.5" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs text-muted-foreground font-medium">Location</p>
-                          <p className="text-foreground font-medium truncate">{event.location}</p>
+                          <p className="text-xs text-muted-foreground font-medium">
+                            Location
+                          </p>
+                          <p className="text-foreground font-medium truncate">
+                            {event.location}
+                          </p>
                         </div>
                       </div>
 
@@ -242,7 +269,9 @@ export function ShortcutLinks({
                           <UsersIcon className="h-3.5 w-3.5" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs text-muted-foreground font-medium">Attendees</p>
+                          <p className="text-xs text-muted-foreground font-medium">
+                            Attendees
+                          </p>
                           <p className="text-foreground font-medium">
                             {event.status === "ongoing"
                               ? `${event.attendees || 0} checked in`
@@ -259,7 +288,9 @@ export function ShortcutLinks({
                           <ClockIcon className="h-3.5 w-3.5" />
                         </div>
                         <div className="flex-1">
-                          <p className="text-xs text-muted-foreground font-medium mb-1">Schedule</p>
+                          <p className="text-xs text-muted-foreground font-medium mb-1">
+                            Schedule
+                          </p>
                           <div className="text-xs text-foreground font-medium">
                             {getTimeDisplay(
                               event.timeInStart ?? null,
