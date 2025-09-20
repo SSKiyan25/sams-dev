@@ -107,6 +107,7 @@ export function AttendeesFilters({
         <Select
           defaultValue="name"
           onValueChange={(value) => setSearchType(value as "name" | "id")}
+          disabled
         >
           <SelectTrigger className="w-[90px] rounded-r-none focus:ring-0">
             <SelectValue />
@@ -120,10 +121,11 @@ export function AttendeesFilters({
         {/* Search Input Field */}
         <div className="relative w-full">
           <Input
-            placeholder={`Search by ${searchType}...`}
+            placeholder={`Search by ${searchType} coming soon...`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="rounded-l-none pr-8"
+            disabled
           />
           {searchQuery && (
             <Button
@@ -132,6 +134,7 @@ export function AttendeesFilters({
               size="icon"
               className="absolute right-8 top-0 h-full"
               onClick={clearSearch}
+              disabled
             >
               <XIcon className="h-4 w-4" />
             </Button>
@@ -141,6 +144,7 @@ export function AttendeesFilters({
             variant="ghost"
             size="icon"
             className="absolute right-0 top-0 h-full"
+            disabled
           >
             <SearchIcon className="h-4 w-4" />
           </Button>

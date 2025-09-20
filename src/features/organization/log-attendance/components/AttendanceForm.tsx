@@ -393,7 +393,7 @@ export function AttendanceForm({
           </div>
 
           {/* Type Selection - Only show if both are available */}
-          {hasTimeIn && hasTimeOut && onTabChange && (
+          {/* {hasTimeIn && hasTimeOut && onTabChange && (
             <div className="mt-6 flex flex-wrap gap-2">
               <Button
                 variant={activeTab === "time-in" ? "default" : "outline"}
@@ -420,7 +420,7 @@ export function AttendanceForm({
                 Check-Out
               </Button>
             </div>
-          )}
+          )} */}
 
           {/* Current mode notice - reinforcement */}
           <div

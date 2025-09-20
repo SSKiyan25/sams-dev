@@ -297,13 +297,13 @@ export function MobileMembersStats({
                 <p className="text-xs lg:text-sm font-medium text-muted-foreground">
                   Total Students
                 </p>
-                <p className="text-lg lg:text-xl font-bold text-foreground">
+                <div className="text-lg lg:text-xl font-bold text-foreground">
                   {isLoading ? (
                     <Skeleton className="h-5 w-12 lg:h-6 lg:w-16" />
                   ) : (
                     studentStats.totalStudents.toLocaleString()
                   )}
-                </p>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -320,13 +320,13 @@ export function MobileMembersStats({
                 <p className="text-xs lg:text-sm font-medium text-muted-foreground">
                   Total Events
                 </p>
-                <p className="text-lg lg:text-xl font-bold text-foreground">
+                <div className="text-lg lg:text-xl font-bold text-foreground">
                   {isLoading ? (
                     <Skeleton className="h-5 w-12 lg:h-6 lg:w-16" />
                   ) : (
                     studentStats.totalEvents.toLocaleString()
                   )}
-                </p>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -343,13 +343,13 @@ export function MobileMembersStats({
                 <p className="text-xs lg:text-sm font-medium text-muted-foreground">
                   Total Attendances
                 </p>
-                <p className="text-lg lg:text-xl font-bold text-foreground">
+                <div className="text-lg lg:text-xl font-bold text-foreground">
                   {isLoading ? (
                     <Skeleton className="h-5 w-12 lg:h-6 lg:w-16" />
                   ) : (
                     studentStats.totalAttendances.toLocaleString()
                   )}
-                </p>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -366,13 +366,13 @@ export function MobileMembersStats({
                 <p className="text-xs lg:text-sm font-medium text-muted-foreground">
                   Total Absences
                 </p>
-                <p className="text-lg lg:text-xl font-bold text-foreground">
+                <div className="text-lg lg:text-xl font-bold text-foreground">
                   {isLoading ? (
                     <Skeleton className="h-5 w-12 lg:h-6 lg:w-16" />
                   ) : (
                     studentStats.totalAbsences.toLocaleString()
                   )}
-                </p>
+                </div>
               </div>
             </div>
           </CardContent>

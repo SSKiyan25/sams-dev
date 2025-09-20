@@ -50,17 +50,17 @@ const organizationData = {
       title: "Members",
       url: "/org-members",
       icon: "users",
-    },
-    {
-      title: "Reports",
-      url: "/organization/reports",
-      icon: "bar-chart",
-    },
-    {
-      title: "Settings",
-      url: "/organization/settings",
-      icon: "settings",
-    },
+    }
+    // {
+    //   title: "Reports",
+    //   url: "/organization/reports",
+    //   icon: "bar-chart",
+    // },
+    // {
+    //   title: "Settings",
+    //   url: "/organization/settings",
+    //   icon: "settings",
+    // },
   ],
   mobileNavLinks: [
     {
