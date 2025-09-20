@@ -56,16 +56,19 @@ export function MembersHeader({
         >
           <Input
             type="search"
-            placeholder="Search members..."
+            placeholder="Search member coming soon..."
             className="w-full pr-10"
             value={searchTerm}
             onChange={handleSearchChange}
+            disabled
+            title="Search feature is coming soon"
           />
           <Button
             type="submit"
             variant="ghost"
             size="sm"
             className="absolute right-0 top-0 h-full px-3"
+            disabled
           >
             <Search className="h-4 w-4" />
           </Button>
