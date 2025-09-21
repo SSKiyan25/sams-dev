@@ -46,18 +46,20 @@ export function SearchByNameForm({
         <div className="flex flex-col sm:flex-row gap-2">
           <Input
             id="student-name"
-            placeholder="Start typing student name..."
+            placeholder="Search student by name coming soon..."
             value={searchName}
             onChange={(e) => setSearchName(e.target.value)}
             onKeyDown={handleKeyDown}
             className="flex-1"
-            disabled={isSubmitting}
+            // disabled={isSubmitting}
+            disabled
           />
           <Button
             type="button"
             onClick={handleSearch}
-            disabled={isSubmitting || isSearching || !searchName.trim()}
+            // disabled={isSubmitting || isSearching || !searchName.trim()}
             className="w-full sm:w-auto"
+            disabled
           >
             {isSearching ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />

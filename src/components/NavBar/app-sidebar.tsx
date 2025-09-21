@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-"use client";
-
 import * as React from "react";
 import { LayoutDashboard, List, ChartBar } from "lucide-react";
 import { NavUser } from "./nav-user";
@@ -9,10 +6,7 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
+  SidebarLogo,
 } from "@/components/ui/sidebar";
 import Image from "next/image";
 import Link from "next/link";
@@ -32,7 +26,7 @@ interface NavItem {
 }
 
 interface IconMap {
-  [key: string]: React.ComponentType<any>;
+  [key: string]: React.ComponentType<{ className?: string }>;
 }
 
 interface AppSidebarProps {
@@ -59,36 +53,29 @@ export function AppSidebar({
   return (
     <Sidebar
       collapsible="offcanvas"
-      className={`bg-white border-r border-sidebar-border ${className || ""}`}
+      className={className}
       {...props}
     >
-      <SidebarHeader className="border-b border-sidebar-border/50">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="hover:bg-sidebar-accent/20 transition-colors"
-            >
-              <Link href="/" className="flex items-center gap-2 p-4 py-6.5">
-                <Image
-                  src="/enhanced-logo-final.svg"
-                  alt=""
-                  width={36}
-                  height={36}
-                  className="text-primary"
-                />
-                <span className="text-3xl font-semibold text-primary">
-                  CORAL
-                </span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
-      <SidebarContent className="py-2">
+      <SidebarLogo>
+        <Link href="/" className="flex items-center justify-start space-x-4 w-full py-2">
+          <Image
+            src="/enhanced-logo-final.svg"
+            alt="CORAL Logo"
+            width={48}
+            height={48}
+            className="text-primary flex-shrink-0"
+          />
+          <div className="flex flex-col">
+            <span className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+              CORAL
+            </span>
+          </div>
+        </Link>
+      </SidebarLogo>
+      <SidebarContent>
         <NavMain items={navMain} iconMap={iconMap} />
       </SidebarContent>
-      <SidebarFooter className="border-t border-sidebar-border/50 mt-auto">
+      <SidebarFooter>
         <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
