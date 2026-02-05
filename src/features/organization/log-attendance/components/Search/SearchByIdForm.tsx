@@ -13,6 +13,8 @@ interface SearchByIdFormProps {
     | "loading"
     | "success"
     | "error"
+    | "success-different-organization"
+    | "success-different-faculty"
     | "not-found"
     | "invalid-format";
   successMessage: string | null;

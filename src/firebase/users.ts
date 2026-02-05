@@ -270,12 +270,6 @@ export const searchUserByStudentId = async (
       where("isDeleted", "==", false)
     );
 
-    if (accessLevel === 1) {
-      searchQuery = query(searchQuery, where("programId", "==", currentUser.programId ?? ""));
-    } else if (accessLevel === 2) {
-      searchQuery = query(searchQuery, where("facultyId", "==", currentUser.facultyId ?? ""));
-    }
-
     const querySnapshot = await getDocs(searchQuery);
 
     if (querySnapshot.empty) {

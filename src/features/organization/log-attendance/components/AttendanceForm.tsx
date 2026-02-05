@@ -34,6 +34,7 @@ import { Member } from "../../members/types";
 import { useStudentSearch } from "../hooks/useStudentSearch";
 import { useAuthState } from "@/hooks/useAuthState";
 import { cn } from "@/lib/utils";
+import { StudentDetailsOutsideOrg } from "./Search/StudentDetailsOutsideOrg";
 
 interface AttendanceFormProps {
   event: Event;
@@ -479,6 +480,34 @@ export function AttendanceForm({
                       handleKeyDown={handleKeyDown}
                     />
                   </div>
+
+                  {searchResult.status === "success-different-organization" && searchResult.student && (
+                     <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-green-50/50 dark:bg-green-900/10">
+                        <StudentDetailsOutsideOrg
+                          student={searchResult.student}
+                          showNames={showNames}
+                          isSubmitting={isSubmitting}
+                          type={type}
+                          level="Organization"
+                          buttonVariant="success"
+                          onCancel={handleCancelSearch}
+                        />
+                      </div>
+                  )}
+
+                  {searchResult.status === "success-different-faculty" && searchResult.student && (
+                     <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-green-50/50 dark:bg-green-900/10">
+                        <StudentDetailsOutsideOrg
+                          student={searchResult.student}
+                          showNames={showNames}
+                          isSubmitting={isSubmitting}
+                          type={type}
+                          level="Faculty"
+                          buttonVariant="success"
+                          onCancel={handleCancelSearch}
+                        />
+                      </div>
+                  )}
 
                   {searchResult.status === "success" &&
                     searchResult.student && (
