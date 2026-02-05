@@ -69,9 +69,10 @@ export function usePaginatedMembers() {
     if (!forceRefresh && isStaticCacheValid()) {
       const { faculties: cachedFaculties, programs: cachedPrograms } =
         getStaticCache();
+      const programs = await getPrograms() as Program[];
       // this is where the program is returned as NULL
       setFaculties(cachedFaculties || []);
-      setPrograms(cachedPrograms || []);
+      setPrograms(programs);
       return;
     }
 

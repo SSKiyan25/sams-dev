@@ -11,6 +11,7 @@ import {
   limit,
   startAfter,
   getCountFromServer,
+  QueryConstraint,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { getCurrentUserData, getCurrentUserFacultyId } from "./users";
@@ -36,6 +37,7 @@ export const getPaginatedUsers = async (options: {
   searchQuery?: string;
   programId?: string;
   sortBy?: string;
+  accessLevel?: number;
 }) => {
   try {
     const {
@@ -47,9 +49,20 @@ export const getPaginatedUsers = async (options: {
     } = options;
 
     const currentUserData = (await getCurrentUserData()) as unknown as Member;
+    console.log(currentUserData)
+    const baseConstraints: QueryConstraint[] = [
+      where("isDeleted", "==", false),
+      where("role", "==", "user"),
+    ];
 
-    const queryField = currentUserData.facultyId ? "facultyId" : "programId";
-    const queryValue = currentUserData.facultyId ?? currentUserData.programId;
+    const accessLevel = currentUserData.accessLevel;
+
+    if (accessLevel === 1) {
+      baseConstraints.push(where("programId", "==", currentUserData.programId ?? ""));
+    } else if (accessLevel === 2) {
+      console.log(currentUserData.facultyId)
+      baseConstraints.push(where("facultyId", "==", currentUserData.facultyId ?? ""));
+    }
 
     // Determine sort field and direction
     let sortField = "firstName";
@@ -77,9 +90,7 @@ export const getPaginatedUsers = async (options: {
       // Build the base query for searching
       let searchBaseQuery = query(
         usersCollection,
-        where("isDeleted", "==", false),
-        where("role", "==", "user"),
-        where(queryField, "==", queryValue)
+        ...baseConstraints
       );
 
       // Add program filter if specified
@@ -141,9 +152,7 @@ export const getPaginatedUsers = async (options: {
       // Build base query for counting
       let countQuery = query(
         usersCollection,
-        where("isDeleted", "==", false),
-        where("role", "==", "user"),
-        where(queryField, "==", queryValue)
+        ...baseConstraints
       );
 
       // Add program filter for count if needed
@@ -158,9 +167,7 @@ export const getPaginatedUsers = async (options: {
       // Build data query with pagination
       let dataQuery = query(
         usersCollection,
-        where("isDeleted", "==", false),
-        where("role", "==", "user"),
-        where(queryField, "==", queryValue)
+        ...baseConstraints
       );
 
       // Add program filter if specified
@@ -179,9 +186,7 @@ export const getPaginatedUsers = async (options: {
         // We'll need to get the last document from the previous page
         let previousPageQuery = query(
           usersCollection,
-          where("isDeleted", "==", false),
-          where("role", "==", "user"),
-          where(queryField, "==", queryValue)
+          ...baseConstraints
         );
 
         // Add program filter if specified

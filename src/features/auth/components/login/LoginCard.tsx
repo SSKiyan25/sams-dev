@@ -12,6 +12,7 @@ import {
 import { auth } from "@/firebase/firebase.config";
 import { LoginLoadingOverlay } from "@/features/auth/components/login/LoginLoadingOverlay";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useRouter } from "next/navigation"
 
 export function LoginCard() {
   const [isLoading, setIsLoading] = useState(false);
@@ -23,6 +24,7 @@ export function LoginCard() {
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const router = useRouter()
 
   // Validate form on input changes after first submission attempt
   useEffect(() => {
@@ -111,8 +113,11 @@ export function LoginCard() {
       // Set success message
       setSuccessMessage("Login successful! Redirecting...");
 
-      // Navigate directly without setTimeout and without resetting isLoading
-      window.location.href = "/org-dashboard";
+      router.refresh()
+
+      // // Navigate directly without setTimeout and without resetting isLoading
+      // window.location.href = "/org-dashboard";
+      router.push("/")
     } catch (error: any) {
       console.error("Login failed", error);
 

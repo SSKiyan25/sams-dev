@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     });
 
     const userRole = userData.role ? String(userData.role) : "user";
-
+    
     cookieStore.set("userRole", userRole, {
       maxAge: expiresIn,
       httpOnly: true,
