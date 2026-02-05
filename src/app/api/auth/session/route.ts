@@ -41,9 +41,9 @@ export async function POST(request: NextRequest) {
       path: "/",
     });
 
-    const accessLevel = userData.accessLevel ? String(userData.accessLevel) : "0";
+    const userRole = userData.role ? String(userData.role) : "user";
 
-    cookieStore.set("accessLevel", accessLevel, {
+    cookieStore.set("userRole", userRole, {
       maxAge: expiresIn,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
