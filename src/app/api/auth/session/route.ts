@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import { cookies } from "next/headers";
-import { adminAuth } from "@/firebase/firebase-admin.config";
+import { adminAuth, adminDb } from "@/firebase/firebase-admin.config";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,6 +10,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "ID token is required" },
         { status: 400 }
+      );
+    }
+
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const uid = decodedToken.uid;
+    const userDoc = await adminDb.collection("users").doc(uid).get();
+    const userData = userDoc.data();
+
+    if(!userData){
+      return NextResponse.json(
+        { error: "User is not registered" },
+        { status: 404 }
       );
     }
 
@@ -23,6 +35,15 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
 
     cookieStore.set("session", sessionCookie, {
+      maxAge: expiresIn,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+    });
+
+    const userRole = userData.role ? String(userData.role) : "user";
+
+    cookieStore.set("userRole", userRole, {
       maxAge: expiresIn,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
