@@ -89,7 +89,7 @@ export function MembersFilters({
               value={localSearchTerm} // Use local state for the value
               onChange={handleSearchChange}
               onKeyDown={handleKeyDown} // Add the key down handler
-              disabled={disabled}
+              disabled={true}
             />
             {/* The clear button logic remains the same and will work correctly */}
             {localSearchTerm && (

@@ -30,7 +30,7 @@ import { incrementEventAttendees } from "./events";
 import { SearchParams } from "@/features/organization/attendees/types";
 import { Event } from "@/features/organization/dashboard/types";
 import { cacheService } from "@/services/cacheService";
-import { Member } from "@/features/organization/members/types";
+import { Member, MemberData } from "@/features/organization/members/types";
 // --- Reusable Constants & Helpers ---
 
 /**
@@ -86,19 +86,40 @@ export const logAttendance = async ({
     const querySnapshot = await getDocs(q);
     const now = Timestamp.now();
     const student = await searchUserByStudentId(
-      studentId,
-      getAuth().currentUser!
+      studentId
     );
+    const currentUserData = await getCurrentUserData() as unknown as Member;
     if (querySnapshot.empty) {
       // Create a new attendance record if one doesn't exist.
-      await addDoc(attendanceCollection, {
-        eventId,
-        student: student == null ? "unknown" : student,
-        userId: studentId,
-        timeIn: type === "time-in" ? now : null,
-        timeOut: type === "time-out" ? now : null,
-        status: "partially present",
-      });
+      let remark = null;
+      if(currentUserData.accessLevel === 1 && currentUserData.programId != student?.programId) {
+          remark = "registered in different program"
+      }
+      else if(currentUserData.accessLevel === 2 && currentUserData.facultyId != student?.facultyId) {
+        remark = "registered in different faculty"
+      }
+      if(remark) {
+        await addDoc(attendanceCollection, {
+          eventId,
+          student: student == null ? "unknown" : student,
+          userId: studentId,
+          timeIn: type === "time-in" ? now : null,
+          timeOut: type === "time-out" ? now : null,
+          status: "partially present",
+          remark
+        });
+      }
+      else {
+        await addDoc(attendanceCollection, {
+          eventId,
+          student: student == null ? "unknown" : student,
+          userId: studentId,
+          timeIn: type === "time-in" ? now : null,
+          timeOut: type === "time-out" ? now : null,
+          status: "partially present",
+        });
+      }
+      
       await incrementEventAttendees(eventId);
     } else {
       // Update the existing record.
@@ -167,35 +188,13 @@ export const getRecentAttendance = async (
 
         const timestampField = type === "time-in" ? "timeIn" : "timeOut";
 
-        let q;
-        if (accessLevel === 1) {
-          q = query(
-            attendanceCollection,
-            where("eventId", "==", eventId),
-            where(timestampField, "!=", null),
-            where("student.programId", "==", currentUser.programId),
-            orderBy(timestampField, "desc"),
-            limit(9)
-          );
-        } else if (accessLevel === 2) {
-          q = query(
-            attendanceCollection,
-            where("eventId", "==", eventId),
-            where(timestampField, "!=", null),
-            where("student.facultyId", "==", currentUser.facultyId),
-            orderBy(timestampField, "desc"),
-            limit(9)
-          );
-        } else {
-          // Level 3 or other: No program/faculty filter
-          q = query(
+        const q = query(
             attendanceCollection,
             where("eventId", "==", eventId),
             where(timestampField, "!=", null),
             orderBy(timestampField, "desc"),
             limit(9)
           );
-        }
 
         const querySnapshot = await getDocs(q);
         if (querySnapshot.empty) return [];
@@ -312,17 +311,17 @@ export const buildAttendanceQueryConstraints = (
 ): QueryConstraint[] => {
   const constraints: QueryConstraint[] = [where("eventId", "==", eventId)];
 
-  const accessLevel = currentUser.accessLevel;
+  // const accessLevel = currentUser.accessLevel;
 
-  // Dynamically add a filter for either facultyId or programId based on accessLevel
-  if (accessLevel === 1) {
-    constraints.push(where("student.programId", "==", currentUser.programId ?? ""));
-  } else if (accessLevel === 2) {
-    constraints.push(where("student.facultyId", "==", currentUser.facultyId ?? ""));
-    if (programFilter) {
-      constraints.push(where("student.programId", "==", programFilter));
-    }
-  }
+  // // Dynamically add a filter for either facultyId or programId based on accessLevel
+  // if (accessLevel === 1) {
+  //   constraints.push(where("student.programId", "==", currentUser.programId ?? ""));
+  // } else if (accessLevel === 2) {
+  //   constraints.push(where("student.facultyId", "==", currentUser.facultyId ?? ""));
+  //   if (programFilter) {
+  //     constraints.push(where("student.programId", "==", programFilter));
+  //   }
+  // }
   // Level 3 (Admin) sees all records for the event
 
   // If a list of student IDs is provided (e.g., from a separate search),

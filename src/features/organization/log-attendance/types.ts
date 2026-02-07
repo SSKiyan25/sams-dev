@@ -16,5 +16,6 @@ export type EventAttendance = {
   student: Member;
   timeIn: string;
   timeOut: string;
+  remark: "registered in different program" | "registered in different faculty" | null;
   status: "present" | "absent" | "partially absent";
 };

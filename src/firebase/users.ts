@@ -254,7 +254,6 @@ export const deleteUser = async (userId: string): Promise<void> => {
 
 export const searchUserByStudentId = async (
   studentId: string,
-  currentUser: any
 ): Promise<Member | null> => {
   // Encapsulated logic in a single try/catch block for comprehensive error handling.
   try {
@@ -269,12 +268,6 @@ export const searchUserByStudentId = async (
       where("studentId", "==", studentId),
       where("isDeleted", "==", false)
     );
-
-    if (accessLevel === 1) {
-      searchQuery = query(searchQuery, where("programId", "==", currentUser.programId ?? ""));
-    } else if (accessLevel === 2) {
-      searchQuery = query(searchQuery, where("facultyId", "==", currentUser.facultyId ?? ""));
-    }
 
     const querySnapshot = await getDocs(searchQuery);
 
