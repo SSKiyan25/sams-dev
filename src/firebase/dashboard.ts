@@ -41,21 +41,19 @@ export const getDashboardAttendeeCount = async (): Promise<number> => {
         const currentUser = (await getCurrentUserData()) as unknown as Member;
         if (!currentUser) return 0;
 
-        // Determine if we're querying by faculty or program
-        const queryField = currentUser.facultyId ? "facultyId" : "programId";
-        const queryValue = currentUser.facultyId || currentUser.programId;
-
-        if (!queryValue) {
-          console.error("User has neither facultyId nor programId.");
-          return 0;
-        }
-
-        // Create a query to get events for this faculty/program
-        const eventsQuery = query(
+        const accessLevel = currentUser.accessLevel;
+        let eventsQuery = query(
           collection(db, "events"),
-          where("isDeleted", "==", false),
-          where(queryField, "==", queryValue)
+          where("isDeleted", "==", false)
         );
+
+        if (accessLevel === 1) {
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 1));
+        } else if (accessLevel === 2) {
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 2));
+        } else if (accessLevel === 3) {
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 3));
+        }
 
         // Use getCountFromServer to avoid fetching document data
         const countSnapshot = await getCountFromServer(eventsQuery);
@@ -101,25 +99,28 @@ export const getDashboardUpcomingEvents = async (
         const currentUser = (await getCurrentUserData()) as unknown as Member;
         if (!currentUser) return [];
 
-        // Determine if we're querying by faculty or program
-        const queryField = currentUser.facultyId ? "facultyId" : "programId";
-        const queryValue = currentUser.facultyId || currentUser.programId;
+        const accessLevel = currentUser.accessLevel;
 
-        if (!queryValue) {
-          console.error("User has neither facultyId nor programId.");
-          return [];
-        }
-
-        // Create a query for upcoming events only
-        // Filter by date greater than today to avoid status recalculation
+        // Create a query for upcoming events
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const eventsQuery = query(
+        let eventsQuery = query(
           collection(db, "events"),
           where("isDeleted", "==", false),
-          where(queryField, "==", queryValue),
-          where("date", ">=", Timestamp.fromDate(today)),
+          where("date", ">=", Timestamp.fromDate(today))
+        );
+
+        if (accessLevel === 1) {
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 1));
+        } else if (accessLevel === 2) {
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 2));
+        } else if (accessLevel === 3) {
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 3));
+        }
+
+        eventsQuery = query(
+          eventsQuery,
           orderBy("date", "asc"),
           limit(count)
         );
@@ -154,14 +155,7 @@ export const getDashboardOngoingEvents = async (
         const currentUser = (await getCurrentUserData()) as unknown as Member;
         if (!currentUser) return [];
 
-        // Determine if we're querying by faculty or program
-        const queryField = currentUser.facultyId ? "facultyId" : "programId";
-        const queryValue = currentUser.facultyId || currentUser.programId;
-
-        if (!queryValue) {
-          console.error("User has neither facultyId nor programId.");
-          return [];
-        }
+        const accessLevel = currentUser.accessLevel;
 
         // Get today's date range for accurate filtering
         const today = new Date();
@@ -171,14 +165,22 @@ export const getDashboardOngoingEvents = async (
         endOfDay.setHours(23, 59, 59, 999);
 
         // Query for events that are happening today
-        const eventsQuery = query(
+        let eventsQuery = query(
           collection(db, "events"),
           where("isDeleted", "==", false),
-          where(queryField, "==", queryValue),
           where("date", ">=", Timestamp.fromDate(startOfDay)),
-          where("date", "<=", Timestamp.fromDate(endOfDay)),
-          limit(count)
+          where("date", "<=", Timestamp.fromDate(endOfDay))
         );
+
+        if (accessLevel === 1) {
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 1));
+        } else if (accessLevel === 2) {
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 2));
+        } else if (accessLevel === 3) {
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 3));
+        }
+
+        eventsQuery = query(eventsQuery, limit(count));
 
         const querySnapshot = await getDocs(eventsQuery);
 
@@ -215,23 +217,23 @@ export const getDashboardEvents = async (
         const currentUser = (await getCurrentUserData()) as unknown as Member;
         if (!currentUser) return [];
 
-        // Determine if we're querying by faculty or program
-        const queryField = currentUser.facultyId ? "facultyId" : "programId";
-        const queryValue = currentUser.facultyId || currentUser.programId;
+        const accessLevel = currentUser.accessLevel;
 
-        if (!queryValue) {
-          console.error("User has neither facultyId nor programId.");
-          return [];
+        // Query for events
+        let eventsQuery = query(
+          collection(db, "events"),
+          where("isDeleted", "==", false)
+        );
+
+        if (accessLevel === 1) {
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 1), where("programId", "==", currentUser.programId));
+        } else if (accessLevel === 2) {
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 2), where("facultyId", "==", currentUser.facultyId));
+        } else if (accessLevel === 3) {
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 3));
         }
 
-
-        // Query for events that are happening today
-        const eventsQuery = query(
-          collection(db, "events"),
-          where("isDeleted", "==", false),
-          where(queryField, "==", queryValue),
-          limit(count)
-        );
+        eventsQuery = query(eventsQuery, limit(count));
 
         const querySnapshot = await getDocs(eventsQuery);
 
@@ -265,21 +267,23 @@ export const getDashboardRecentMembers = async (
         const currentUser = (await getCurrentUserData()) as unknown as Member;
         if (!currentUser) return [];
 
-        // Determine if we're querying by faculty or program
-        const queryField = currentUser.facultyId ? "facultyId" : "programId";
-        const queryValue = currentUser.facultyId || currentUser.programId;
-
-        if (!queryValue) {
-          console.error("User has neither facultyId nor programId.");
-          return [];
-        }
+        const accessLevel = currentUser.accessLevel;
 
         // Query for recently added members
-        const membersQuery = query(
+        let membersQuery = query(
           collection(db, "users"),
           where("isDeleted", "==", false),
-          where("role", "==", "user"),
-          where(queryField, "==", queryValue),
+          where("role", "==", "user")
+        );
+
+        if (accessLevel === 1) {
+          membersQuery = query(membersQuery, where("programId", "==", currentUser.programId ?? ""));
+        } else if (accessLevel === 2) {
+          membersQuery = query(membersQuery, where("facultyId", "==", currentUser.facultyId ?? ""));
+        }
+
+        membersQuery = query(
+          membersQuery,
           orderBy("createdAt", "desc"),
           limit(count)
         );
@@ -348,43 +352,36 @@ export const getDashboardStats = async (): Promise<{
           };
         }
 
-        // Determine if we're querying by faculty or program
-        const queryField = currentUser.facultyId ? "facultyId" : "programId";
-        const queryValue = currentUser.facultyId || currentUser.programId;
+        const accessLevel = currentUser.accessLevel;
 
-        if (!queryValue) {
-          console.error("User has neither facultyId nor programId.");
-          return {
-            totalStudents: 0,
-            totalEvents: 0,
-            totalAttendances: 0,
-            overallAttendanceRate: 0,
-            averageAttendance: 0,
-            peakAttendance: 0,
-            totalAbsences: 0,
-          };
+        // Base queries
+        let studentsBaseQuery = query(
+          collection(db, "users"),
+          where("isDeleted", "==", false),
+          where("role", "==", "user")
+        );
+        let eventsBaseQuery = query(
+          collection(db, "events"),
+          where("isDeleted", "==", false)
+        );
+
+        if (accessLevel === 1) {
+          studentsBaseQuery = query(studentsBaseQuery, where("programId", "==", currentUser.programId ?? ""));
+          eventsBaseQuery = query(eventsBaseQuery, where("accessLevelEvent", "==", 1), where("programId", "==", currentUser.programId ?? ""));
+        } else if (accessLevel === 2) {
+          studentsBaseQuery = query(studentsBaseQuery, where("facultyId", "==", currentUser.facultyId ?? ""));
+          eventsBaseQuery = query(eventsBaseQuery, where("accessLevelEvent", "==", 2), where("facultyId", "==", currentUser.facultyId ?? ""));
+        } else if (accessLevel === 3) {
+          eventsBaseQuery = query(eventsBaseQuery, where("accessLevelEvent", "==", 3));
         }
 
         // Execute all count queries in parallel for efficiency
         const [studentsCount, eventsSnapshot, totalAttendances] =
           await Promise.all([
             // Get total students count
-            getCountFromServer(
-              query(
-                collection(db, "users"),
-                where("isDeleted", "==", false),
-                where("role", "==", "user"),
-                where(queryField, "==", queryValue)
-              )
-            ),
+            getCountFromServer(studentsBaseQuery),
             // Get events with attendee counts
-            getDocs(
-              query(
-                collection(db, "events"),
-                where("isDeleted", "==", false),
-                where(queryField, "==", queryValue)
-              )
-            ),
+            getDocs(eventsBaseQuery),
             // Get total attendances count (reuse the dedicated function)
             getDashboardAttendeeCount(),
           ]);

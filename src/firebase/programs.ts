@@ -22,27 +22,30 @@ export const getPrograms = async () => {
     const currentUser = (await getCurrentUserData()) as Member | null;
     if (!currentUser) return [];
 
-    // **FIX:** If the user has a programId (is a student), fetch only that program.
-    if (currentUser.programId) {
-      const program = await getProgramById(currentUser.programId);
-      return program ? [program] : []; // Return the single program in an array, or an empty array
+    if (currentUser.accessLevel == 1) {
+      const program = await getProgramById(currentUser.programId)
+      return program ? [program] : []
     }
-
-    // For other users (e.g., faculty, admin), fetch all programs.
-    // This preserves the original logic for non-student roles.
-    
-   if (currentUser.facultyId) {
-     const programsCollection = collection(db, "programs");
-     const q = query(
-       programsCollection,
-       where("facultyId", "==", currentUser.facultyId)
-     );
-     const querySnapshot = await getDocs(q);
-     return querySnapshot.docs.map((doc) => ({
-       id: doc.id,
-       ...doc.data(),
-     }));
-   }
+    else if (currentUser.accessLevel == 2) {
+      const programsCollection = collection(db, "programs");
+      const q = query(
+        programsCollection,
+        where("facultyId", "==", currentUser.facultyId)
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+    }
+    else {
+      const programsCollection = collection(db, "programs");
+      const querySnapshot = await getDocs(query(programsCollection));
+      return querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      }))
+    }
   } catch (error) {
     handleFirestoreError(error, "fetch programs");
   }

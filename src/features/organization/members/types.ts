@@ -7,7 +7,8 @@ export type Member = {
   facultyId?: string;
   studentId: string;
   email: string;
-  role: "admin" | "user";
+  role: "admin" | "user" | "super-admin";
+  accessLevel?: number;
   createdAt?: Timestamp;
   yearLevel?: number; // Adding year level
 };

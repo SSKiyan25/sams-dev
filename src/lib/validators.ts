@@ -28,7 +28,7 @@ export const memberSchema = z.object({
   lastName: z.string().min(2, "Last name is required"),
   programId: z.string().min(1, "Program is required"),
   facultyId: z.string().optional(),
-  role: z.enum(["admin", "user"]),
+  role: z.enum(["admin", "user", "super-admin"]),
   yearLevel: z.number().min(1).max(5).optional().or(z.literal(0)),
 });
 

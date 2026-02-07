@@ -126,21 +126,19 @@ export const getUsers = async () => {
     const currentUser = (await getCurrentUserData()) as unknown as Member;
     if (!currentUser) return [];
 
-    // Determine the query field and value based on user type
-    const queryField = currentUser.facultyId ? "facultyId" : "programId";
-    const queryValue = currentUser.facultyId || currentUser.programId;
+    const accessLevel = currentUser.accessLevel;
 
-    if (!queryValue) {
-      console.error("User has neither facultyId nor programId.");
-      return [];
-    }
-
-    const usersQuery = query(
+    let usersQuery = query(
       usersCollection,
       where("isDeleted", "==", false),
-      where("role", "==", "user"),
-      where(queryField, "==", queryValue)
+      where("role", "==", "user")
     );
+
+    if (accessLevel === 1) {
+      usersQuery = query(usersQuery, where("programId", "==", currentUser.programId ?? ""));
+    } else if (accessLevel === 2) {
+      usersQuery = query(usersQuery, where("facultyId", "==", currentUser.facultyId ?? ""));
+    }
 
     const querySnapshot = await getDocs(usersQuery);
     return querySnapshot.docs.map((doc) => ({
@@ -158,22 +156,21 @@ export const getRecentUsers = async () => {
     const currentUser = (await getCurrentUserData()) as unknown as Member;
     if (!currentUser) return [];
 
-    // Determine the query field and value based on user type
-    const queryField = currentUser.facultyId ? "facultyId" : "programId";
-    const queryValue = currentUser.facultyId || currentUser.programId;
+    const accessLevel = currentUser.accessLevel;
 
-    if (!queryValue) {
-      console.error("User has neither facultyId nor programId.");
-      return [];
-    }
-    const recentUsersQuery = query(
+    let recentUsersQuery = query(
       usersCollection,
       where("role", "==", "user"),
-      where("isDeleted", "==", false),
-      where(queryField, "==", queryValue),
-      orderBy("createdAt", "desc"),
-      limit(5)
+      where("isDeleted", "==", false)
     );
+
+    if (accessLevel === 1) {
+      recentUsersQuery = query(recentUsersQuery, where("programId", "==", currentUser.programId ?? ""));
+    } else if (accessLevel === 2) {
+      recentUsersQuery = query(recentUsersQuery, where("facultyId", "==", currentUser.facultyId ?? ""));
+    }
+
+    recentUsersQuery = query(recentUsersQuery, orderBy("createdAt", "desc"), limit(5));
     const querySnapshot = await getDocs(recentUsersQuery);
     return querySnapshot.docs.map((doc) => ({
       id: doc.id,
@@ -265,21 +262,19 @@ export const searchUserByStudentId = async (
     const currentUser = (await getCurrentUserData()) as unknown as Member;
     if (!currentUser) return null;
 
-    // Determine the query field and value based on user type
-    const queryField = currentUser.facultyId ? "facultyId" : "programId";
-    const queryValue = currentUser.facultyId || currentUser.programId;
+    const accessLevel = currentUser.accessLevel;
 
-    if (!queryValue) {
-      console.error("User has neither facultyId nor programId.");
-      return null;
-    }
-
-    const searchQuery = query(
+    let searchQuery = query(
       usersCollection,
       where("studentId", "==", studentId),
-      where(queryField, "==", queryValue),
       where("isDeleted", "==", false)
     );
+
+    if (accessLevel === 1) {
+      searchQuery = query(searchQuery, where("programId", "==", currentUser.programId ?? ""));
+    } else if (accessLevel === 2) {
+      searchQuery = query(searchQuery, where("facultyId", "==", currentUser.facultyId ?? ""));
+    }
 
     const querySnapshot = await getDocs(searchQuery);
 
@@ -344,21 +339,21 @@ export const searchUserByName = async (
     const currentUserData = (await getCurrentUserData()) as unknown as Member;
     if (!currentUserData) return [];
 
-    const queryField = currentUserData.facultyId ? "facultyId" : "programId";
-    const queryValue = currentUserData.facultyId || currentUserData.programId;
-
-    if (!queryValue) {
-      console.error("User has neither facultyId nor programId.");
-      return [];
-    }
+    const accessLevel = currentUserData.accessLevel;
 
     // This query now performs the search directly in the database
-    const searchQuery = query(
+    let searchQuery = query(
       collection(db, "users"),
-      where("isDeleted", "==", false),
-      where(queryField, "==", queryValue),
-      limit(50) // Always limit your reads
+      where("isDeleted", "==", false)
     );
+
+    if (accessLevel === 1) {
+      searchQuery = query(searchQuery, where("programId", "==", currentUserData.programId ?? ""));
+    } else if (accessLevel === 2) {
+      searchQuery = query(searchQuery, where("facultyId", "==", currentUserData.facultyId ?? ""));
+    }
+
+    searchQuery = query(searchQuery, limit(50));
 
     const querySnapshot = await getDocs(searchQuery);
 
