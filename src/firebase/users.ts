@@ -254,7 +254,6 @@ export const deleteUser = async (userId: string): Promise<void> => {
 
 export const searchUserByStudentId = async (
   studentId: string,
-  currentUser: any
 ): Promise<Member | null> => {
   // Encapsulated logic in a single try/catch block for comprehensive error handling.
   try {

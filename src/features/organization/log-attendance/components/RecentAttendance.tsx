@@ -11,6 +11,7 @@ import {
   UsersIcon,
   Grid3X3,
   List,
+  AlertTriangle,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials } from "../utils";
@@ -19,6 +20,7 @@ import { getRecentAttendance } from "@/firebase";
 import { AttendanceRecord, EventAttendance } from "../types";
 import { toast } from "sonner";
 import { record } from "zod";
+import { getRemarkStyles } from "../../attendees/utils/remarkStyle";
 
 interface RecentAttendanceProps {
   eventId: string;
@@ -287,100 +289,57 @@ export function RecentAttendance({
           <div className="flex flex-col flex-1">
             {viewMode === "grid" ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1">
-                {records.map((record) => (
-                  <div
-                    key={record.id}
-                    className="h-32 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors shadow-sm flex flex-col"
-                  >
-                    <div className="flex items-center gap-3 mb-3">
-                      <Avatar className="h-10 w-10 bg-primary/10 text-primary border border-gray-200 dark:border-gray-700">
-                        <AvatarFallback className="font-nunito-sans font-semibold">
-                          {showNames
-                            ? getInitials(
-                                record.student.firstName +
-                                  " " +
-                                  record.student.lastName
-                              )
-                            : "ST"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-nunito font-semibold text-gray-900 dark:text-gray-100 truncate">
-                          {showNames
-                            ? record.student.firstName +
-                              " " +
-                              record.student.lastName
-                            : "Student"}
-                        </p>
-                        <p className="font-nunito-sans text-sm text-gray-600 dark:text-gray-400 truncate">
-                          ID: {record.student.studentId}
-                        </p>
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-700 flex items-center font-nunito-sans font-semibold"
-                      >
-                        <CheckCircleIcon className="h-3 w-3 mr-1" />
-                        Success
-                      </Badge>
-                    </div>
+                {records.map((record) => {
 
-                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mt-auto">
-                      <ClockIcon className="h-3.5 w-3.5 mr-1.5" />
-                      <span className="font-nunito-sans font-medium">
-                        {formatTime(
-                          type === "time-in" ? record.timeIn : record.timeOut
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-3 flex-1">
-                {records.map((record) => (
-                  <div
-                    key={record.id}
-                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors shadow-sm"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <Avatar className="h-9 w-9 bg-primary/10 text-primary border border-gray-200 dark:border-gray-700">
-                          <AvatarFallback className="font-nunito-sans font-semibold text-sm">
-                            {showNames
-                              ? getInitials(
-                                  record.student.firstName +
-                                    " " +
-                                    record.student.lastName
-                                )
-                              : "ST"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3">
-                            <p className="font-nunito font-semibold text-gray-900 dark:text-gray-100 truncate">
-                              {showNames
-                                ? record.student.firstName +
-                                  " " +
-                                  record.student.lastName
-                                : "Student"}
-                            </p>
-                            <p className="font-nunito-sans text-sm text-gray-600 dark:text-gray-400">
-                              ID: {record.student.studentId}
-                            </p>
-                          </div>
+                  const remarkStyles = getRemarkStyles(record.remark!);
+                  return (
+                    <div
+                      key={record.id}
+                      className={`h-32 border ${
+                        record.remark
+                          ? `${remarkStyles.border}`
+                          : "border-gray-200 dark:border-gray-700"
+                      } rounded-lg p-4 ${
+                        record.remark
+                          ? `${remarkStyles.bg}`
+                          : "bg-white dark:bg-gray-800"
+                      } hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors shadow-sm flex flex-col relative`}
+                    >
+                      {/* Red indicator for remarks */}
+                      {record.remark && (
+                        <div className="absolute top-2 right-2">
+                          <div className="h-2 w-2 rounded-full bg-red-500 dark:bg-red-600"></div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                          <ClockIcon className="h-3.5 w-3.5 mr-1.5" />
-                          <span className="font-nunito-sans font-medium">
-                            {formatTime(
-                              type === "time-in"
-                                ? record.timeIn
-                                : record.timeOut
-                            )}
-                          </span>
+                      )}
+
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="relative">
+                          <Avatar className="h-10 w-10 bg-primary/10 text-primary border border-gray-200 dark:border-gray-700">
+                            <AvatarFallback className="font-nunito-sans font-semibold">
+                              {showNames
+                                ? getInitials(
+                                    record.student.firstName +
+                                      " " +
+                                      record.student.lastName
+                                  )
+                                : "ST"}
+                            </AvatarFallback>
+                          </Avatar>
+                          {record.remark && (
+                            <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 dark:bg-red-600 border-2 border-white dark:border-gray-800 flex items-center justify-center">
+                              <AlertTriangle className="h-2 w-2 text-white" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-nunito font-semibold text-gray-900 dark:text-gray-100 truncate">
+                            {showNames
+                              ? record.student.firstName + " " + record.student.lastName
+                              : "Student"}
+                          </p>
+                          <p className="font-nunito-sans text-sm text-gray-600 dark:text-gray-400 truncate">
+                            ID: {record.student.studentId}
+                          </p>
                         </div>
                         <Badge
                           variant="outline"
@@ -390,18 +349,144 @@ export function RecentAttendance({
                           Success
                         </Badge>
                       </div>
+                      <div className="flex justify-between items-end mt-auto">
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                          <ClockIcon className="h-3.5 w-3.5 mr-1.5" />
+                          <span className="font-nunito-sans font-medium">
+                            {formatTime(
+                              type === "time-in" ? record.timeIn : record.timeOut
+                            )}
+                          </span>
+                        </div>
+                        {record.remark && (
+                          <div className="flex flex-col items-end gap-1">
+                            <Badge
+                              variant="outline"
+                              className={`h-6 px-2 text-xs font-medium flex items-center gap-1 ${remarkStyles.bg} ${remarkStyles.text} ${remarkStyles.border}`}
+                            >
+                              {remarkStyles.icon}
+                              <span className="truncate max-w-[120px]">
+                                {record.remark.includes("does not belong to this program")
+                                  ? "Program Issue"
+                                  : record.remark.includes("does not belong to this faculty")
+                                  ? "Faculty Issue"
+                                  : "Issue"}
+                              </span>
+                            </Badge>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 italic">
+                              Requires review
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="space-y-3 flex-1">
+                {records.map((record) => {
+                  const remarkStyles = getRemarkStyles(record.remark!);
+                  return (
+                    <div
+                      key={record.id}
+                      className={`border ${
+                        record.remark
+                          ? `${remarkStyles.border}`
+                          : "border-gray-200 dark:border-gray-700"
+                      } rounded-lg p-4 ${
+                        record.remark
+                          ? `${remarkStyles.bg}`
+                          : "bg-white dark:bg-gray-800"
+                      } hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors shadow-sm relative`}
+                    >
+                      {/* Red indicator for remarks */}
+                      {record.remark && (
+                        <div className="absolute top-4 right-4">
+                          <div className="h-2 w-2 rounded-full bg-red-500 dark:bg-red-600"></div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="relative">
+                            <Avatar className="h-9 w-9 bg-primary/10 text-primary border border-gray-200 dark:border-gray-700">
+                              <AvatarFallback className="font-nunito-sans font-semibold text-sm">
+                                {showNames
+                                  ? getInitials(
+                                      record.student.firstName +
+                                        " " +
+                                        record.student.lastName
+                                    )
+                                  : "ST"}
+                              </AvatarFallback>
+                            </Avatar>
+                            {record.remark && (
+                              <div className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-red-500 dark:bg-red-600 border-2 border-white dark:border-gray-800 flex items-center justify-center">
+                                <AlertTriangle className="h-1.5 w-1.5 text-white" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3">
+                              <p className="font-nunito font-semibold text-gray-900 dark:text-gray-100 truncate">
+                                {showNames
+                                  ? record.student.firstName +
+                                    " " +
+                                    record.student.lastName
+                                  : "Student"}
+                              </p>
+                              <p className="font-nunito-sans text-sm text-gray-600 dark:text-gray-400">
+                                ID: {record.student.studentId}
+                              </p>
+                              {record.remark && (
+                                <div className="flex items-center gap-2">
+                                  <Badge
+                                    variant="outline"
+                                    className={`h-6 px-2 text-xs font-medium flex items-center gap-1 ${remarkStyles.bg} ${remarkStyles.text} ${remarkStyles.border}`}
+                                  >
+                                    {remarkStyles.icon}
+                                    <span className="truncate max-w-[200px]">
+                                      {record.remark}
+                                    </span>
+                                  </Badge>
+                                  <span className="text-xs text-gray-500 dark:text-gray-400 italic">
+                                    • Requires review
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                            <ClockIcon className="h-3.5 w-3.5 mr-1.5" />
+                            <span className="font-nunito-sans font-medium">
+                              {formatTime(
+                                type === "time-in" ? record.timeIn : record.timeOut
+                              )}
+                            </span>
+                          </div>
+                          <Badge
+                            variant="outline"
+                            className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-700 flex items-center font-nunito-sans font-semibold"
+                          >
+                            <CheckCircleIcon className="h-3 w-3 mr-1" />
+                            Success
+                          </Badge>
+                       </div>
+                     </div>
+                   </div>
+                )})}
               </div>
             )}
           </div>
 
-          {/* View All Attendees Button */}
-          {!isLoading && (
-            <div className="flex justify-center pt-4">
-              <Button
-                asChild
+      {/* View All Attendees Button */}
+      {!isLoading && (
+        <div className="flex justify-center pt-4">
+          <Button
+            asChild
                 variant="outline"
                 className="font-nunito-sans font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
               >

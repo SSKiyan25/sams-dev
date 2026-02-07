@@ -52,7 +52,7 @@ export function useStudentSearch(
       setCurrentUserData(await getCurrentUserData() as unknown as Member)
     }
     fetchCurrentUser()
-  })
+  }, [])
 
   // Search by ID (manual trigger)
   const searchById = useCallback(
@@ -81,6 +81,9 @@ export function useStudentSearch(
           if (showToasts) toast.error("Student not found");
           return { status: "not-found" as const, student: null };
         }
+
+        console.log(currentUserData)
+        console.log(student)
 
         // Logic A: Check Organization Mismatch
         if (currentUserData && currentUserData.accessLevel == 1 && currentUserData.programId != student.programId) {
@@ -115,8 +118,7 @@ export function useStudentSearch(
         await new Promise((resolve) => setTimeout(resolve, 300));
 
         const student = (await searchUserByStudentId(
-          id,
-          currentUser
+          id
         )) as unknown as Member;
 
         // Cache the result
@@ -129,7 +131,7 @@ export function useStudentSearch(
         return { status: "error" as const, student: null };
       }
     },
-    []
+    [currentUserData]
   );
 
   // Search by name
@@ -228,7 +230,7 @@ export function useStudentSearch(
     setNameSearchResults,
     hasPerformedNameSearch,
     setHasPerformedNameSearch,
-
+    currentUserData,
     // Methods
     searchById,
     searchByName,

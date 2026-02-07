@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Event } from "@/features/organization/events/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -35,6 +35,8 @@ import { useStudentSearch } from "../hooks/useStudentSearch";
 import { useAuthState } from "@/hooks/useAuthState";
 import { cn } from "@/lib/utils";
 import { StudentDetailsOutsideOrg } from "./Search/StudentDetailsOutsideOrg";
+import { getCurrentUserData, searchUserByStudentId } from "@/firebase";
+import { WarningDialog } from "./WarningDialog";
 
 interface AttendanceFormProps {
   event: Event;
@@ -76,6 +78,7 @@ export function AttendanceForm({
     setNameSearchResults,
     hasPerformedNameSearch,
     setHasPerformedNameSearch,
+    currentUserData,
     searchById,
     searchByName,
     checkAttendanceExists,
@@ -197,16 +200,30 @@ export function AttendanceForm({
     resetSearch();
   };
 
+  const [warningDialog, setWarningDialog] = useState<{
+  open: boolean;
+  title: string;
+  description: string;
+  type: "program" | "faculty";
+  studentName?: string;
+  onConfirm: () => void | Promise<void>;
+  }>({
+    open: false,
+    title: "",
+    description: "",
+    type: "program",
+    onConfirm: () => {}
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (searchResult.status !== "success" || !searchResult.student) {
+    if (searchResult.status !== "success" && 
+        searchResult.status !== "success-different-organization" && 
+        searchResult.status !== "success-different-faculty" || 
+        !searchResult.student) {
       return;
     }
-
-    setIsSubmitting(true);
-    setIsLoading(true);
-    setIsProcessing(true);
 
     try {
       if (await checkAttendanceExists(studentId)) {
@@ -217,13 +234,63 @@ export function AttendanceForm({
         return;
       }
 
-      // Reduced delay for better UX
+      const student = await searchUserByStudentId(studentId);
+      const studentName = showNames
+        ? `${student?.firstName} ${student?.lastName}`
+        : "This student";
+
+      // Determine if warning is needed
+      if (currentUserData?.accessLevel === 1 && currentUserData.programId !== student?.programId) {
+        setWarningDialog({
+          open: true,
+          title: "Program Mismatch Detected",
+          description: `${studentName} is not enrolled in your program. This may indicate they're attending an event outside their designated program.`,
+          type: "program",
+          studentName: showNames ? `${student?.firstName} ${student?.lastName}` : undefined,
+          onConfirm: async () => {
+            setWarningDialog(prev => ({ ...prev, open: false }));
+            await proceedWithSubmission(studentId);
+          }
+        });
+        return;
+      } 
+      else if (currentUserData?.accessLevel === 2 && currentUserData.facultyId !== student?.facultyId) {
+        setWarningDialog({
+          open: true,
+          title: "Faculty Mismatch Detected",
+          description: `${studentName} is not registered under your faculty. They may be attending an event organized by a different faculty.`,
+          type: "faculty",
+          studentName: showNames ? `${student?.firstName} ${student?.lastName}` : undefined,
+          onConfirm: async () => {
+            setWarningDialog(prev => ({ ...prev, open: false }));
+            await proceedWithSubmission(studentId);
+          }
+        });
+        return;
+      } else {
+        await proceedWithSubmission(studentId);
+      }
+
+    } catch (error) {
+      console.error("Error logging attendance:", error);
+      toast.error("Failed to record attendance");
+      setIsProcessing(false);
+      setIsLoading(false);
+      setIsSubmitting(false);
+    }
+  };
+
+  const proceedWithSubmission = async (studentId: string) => {
+    setIsSubmitting(true);
+    setIsLoading(true);
+    setIsProcessing(true);
+    
+    try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       await onSubmit(studentId);
 
-      // Show success toast
       const studentName = showNames
-        ? searchResult.student.firstName + " " + searchResult.student.lastName
+        ? searchResult.student!.firstName + " " + searchResult.student!.lastName
         : "Student";
 
       const getMessage = () => {
@@ -237,13 +304,12 @@ export function AttendanceForm({
 
       toast.success(getMessage());
 
-      // Reset form after successful submission (reduced timeout)
       setTimeout(() => {
         resetSearch();
         setIsProcessing(false);
       }, 1000);
     } catch (error) {
-      console.error("Error logging attendance:", error);
+      console.error("Error in submission:", error);
       toast.error("Failed to record attendance");
     } finally {
       setIsSubmitting(false);
@@ -251,13 +317,14 @@ export function AttendanceForm({
     }
   };
 
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
-      if (searchMethod === "id" && searchResult.status !== "success") {
+      if (searchMethod === "id" && searchResult.status !== "success" && searchResult.status !== "success-different-organization" && searchResult.status !== "success-different-faculty") {
         handleIdSearch();
       } else if (searchMethod === "name") {
         handleNameSearch();
-      } else if (searchResult.status === "success") {
+      } else if (searchResult.status === "success" || searchResult.status === "success-different-organization" || searchResult.status === "success-different-faculty") {
         handleSubmit(e as unknown as React.FormEvent);
       }
     }
@@ -293,6 +360,22 @@ export function AttendanceForm({
           }
         />
       )}
+
+      <WarningDialog
+        open={warningDialog.open}
+        onOpenChange={(open) => setWarningDialog(prev => ({ ...prev, open }))}
+        onConfirm={warningDialog.onConfirm}
+        onCancel={() => {
+          setWarningDialog(prev => ({ ...prev, open: false }));
+          setIsProcessing(false);
+          setIsLoading(false);
+          setIsSubmitting(false);
+        }}
+        title={warningDialog.title}
+        description={warningDialog.description}
+        warningType={warningDialog.type}
+        studentName={warningDialog.studentName}
+    />
 
       <div
         className={cn(
@@ -459,9 +542,11 @@ export function AttendanceForm({
                 </TabsTrigger>
                 <TabsTrigger
                   value="name"
+                  disabled={true}
                   className="flex items-center gap-1.5 font-nunito-sans font-semibold"
                 >
                   By Name
+                  <span className="text-xs ml-1 text-muted-foreground">(Soon)</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -481,7 +566,7 @@ export function AttendanceForm({
                     />
                   </div>
 
-                  {searchResult.status === "success-different-organization" && searchResult.student && (
+                  {searchResult.status == "success-different-organization" && searchResult.student && (
                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-green-50/50 dark:bg-green-900/10">
                         <StudentDetailsOutsideOrg
                           student={searchResult.student}
@@ -489,13 +574,13 @@ export function AttendanceForm({
                           isSubmitting={isSubmitting}
                           type={type}
                           level="Organization"
-                          buttonVariant="success"
+                          buttonVariant="warning"
                           onCancel={handleCancelSearch}
                         />
                       </div>
                   )}
 
-                  {searchResult.status === "success-different-faculty" && searchResult.student && (
+                  {searchResult.status == "success-different-faculty" && searchResult.student && (
                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-green-50/50 dark:bg-green-900/10">
                         <StudentDetailsOutsideOrg
                           student={searchResult.student}
@@ -503,7 +588,7 @@ export function AttendanceForm({
                           isSubmitting={isSubmitting}
                           type={type}
                           level="Faculty"
-                          buttonVariant="success"
+                          buttonVariant="warning"
                           onCancel={handleCancelSearch}
                         />
                       </div>

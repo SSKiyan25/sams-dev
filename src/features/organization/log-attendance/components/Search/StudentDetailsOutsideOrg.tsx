@@ -11,7 +11,7 @@ interface StudentDetailsOutsideOrgProps {
   isSubmitting: boolean;
   type: "time-in" | "time-out";
   level: "Organization" | "Faculty"
-  buttonVariant?: "default" | "success";
+  buttonVariant?: "default" | "success" | "warning";
   onCancel?: () => void;
 }
 
