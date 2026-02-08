@@ -84,20 +84,26 @@ export const getPaginatedEvents = async (
     return await cacheService.getOrFetch<PaginatedEvents>(
       cacheKey,
       async () => {
-        // Get the current user's faculty ID
+        // Get the current user's level access
         const currentUser = (await getCurrentUserData()) as unknown as Member;
-
-        const queryField = currentUser.facultyId ? "facultyId" : "programId";
-        const queryValue = currentUser.facultyId || currentUser.programId;
-
-        // Base query - filter by faculty and non-deleted events
+        const levelAccess = currentUser.accessLevel;
+        // Base query - filter by non-deleted events
         let baseQuery = query(
           eventsCollection,
-          where("isDeleted", "==", false),
-          where(queryField, "==", queryValue)
+          where("isDeleted", "==", false)
         );
 
-        // Add status filter if provided and not "all"
+        // Apply filters based on levelAccess
+        if (levelAccess === 1) {
+          baseQuery = query(baseQuery, where("accessLevelEvent", "==", 1), where("programId", "==", currentUser.programId));
+        } else if (levelAccess === 2) {
+          console.log(levelAccess)
+          baseQuery = query(baseQuery, where("accessLevelEvent", "==", 2), where("facultyId", "==", currentUser.facultyId));
+        } else if (levelAccess === 3) {
+          baseQuery = query(baseQuery, where("accessLevelEvent", "==", 3));
+        }
+
+        // // Add status filter if provided and not "all"
         if (status && status !== "all") {
           baseQuery = query(baseQuery, where("status", "==", status));
         }
@@ -112,7 +118,6 @@ export const getPaginatedEvents = async (
           // End of the day
           const endDate = new Date(filterDate);
           endDate.setHours(23, 59, 59, 999);
-
           // Add date range filter
           baseQuery = query(
             baseQuery,
@@ -133,7 +138,7 @@ export const getPaginatedEvents = async (
 
         // Get total count for pagination - this is an expensive operation
         // so we'll cache it separately with a longer TTL
-        const countCacheKey = `events:count:${status}:${queryField}-${queryValue}:${datePart}`;
+        const countCacheKey = `events:count:${status}:${levelAccess}-${currentUser.facultyId || currentUser.programId || "all"}:${datePart}`;
 
         const totalCount = await cacheService.getOrFetch<number>(
           countCacheKey,
@@ -213,12 +218,15 @@ export const addEvent = async (eventData: EventFormData) => {
     const currentUser = (await getCurrentUserData()) as unknown as Member;
     if (!currentUser) return [];
 
-    // Determine the query field and value based on user type
-    const queryField = currentUser.facultyId ? "facultyId" : "programId";
-    const queryValue = currentUser.facultyId || currentUser.programId;
+    const levelAccess = currentUser.accessLevel;
 
-    if (!queryValue) {
-      console.error("User has neither facultyId nor programId.");
+    if (levelAccess === 1 && !currentUser.programId) {
+      console.error("User is Level 1 but has no programId.");
+      return [];
+    }
+
+    if (levelAccess === 2 && !currentUser.facultyId) {
+      console.error("User is Level 2 but has no facultyId.");
       return [];
     }
 
@@ -270,7 +278,7 @@ export const addEvent = async (eventData: EventFormData) => {
       attendees: 0,
       status,
       isDeleted: false,
-      [queryField]: queryValue,
+      accessLevelEvent: levelAccess,
     });
 
     // Invalidate all event caches after adding a new event
@@ -421,19 +429,21 @@ export const getEvents = async (
         const currentUser = (await getCurrentUserData()) as unknown as Member;
         if (!currentUser) return [];
 
-        // Determine the query field and value based on user type
-        const queryField = currentUser.facultyId ? "facultyId" : "programId";
-        const queryValue = currentUser.facultyId || currentUser.programId;
+        const levelAccess = currentUser.accessLevel;
 
-        if (!queryValue) {
-          console.error("User has neither facultyId nor programId.");
-          return [];
-        }
         let q = query(
           eventsCollection,
-          where("isDeleted", "==", false),
-          where(queryField, "==", queryValue)
+          where("isDeleted", "==", false)
         );
+
+        if (levelAccess === 1) {
+          q = query(q, where("accessLevelEvent", "==", 1));
+        } else if (levelAccess === 2) {
+          q = query(q, where("accessLevelEvent", "==", 2));
+        } else if (levelAccess === 3) {
+          q = query(q, where("accessLevelEvent", "==", 3));
+        }
+
         if (status) {
           q = query(q, where("status", "==", status));
         }
@@ -477,22 +487,20 @@ export const getEventsByStatus = async (status: string) => {
         const currentUser = (await getCurrentUserData()) as unknown as Member;
         if (!currentUser) return [];
 
-        // Determine the query field and value based on user type
-        const queryField = currentUser.facultyId ? "facultyId" : "programId";
-        const queryValue = currentUser.facultyId || currentUser.programId;
-
-        if (!queryValue) {
-          console.error("User has neither facultyId nor programId.");
-          return [];
-        }
+        const levelAccess = currentUser.accessLevel;
 
         const eventsRef = collection(db, "events");
-        const q = query(
+        let q = query(
           eventsRef,
           where("status", "==", status),
-          where("isDeleted", "==", false),
-          where(queryField, "==", queryValue)
+          where("isDeleted", "==", false)
         );
+
+        if (levelAccess === 1) {
+          q = query(q, where("programId", "==", currentUser.programId ?? ""));
+        } else if (levelAccess === 2) {
+          q = query(q, where("facultyId", "==", currentUser.facultyId ?? ""));
+        }
         const querySnapshot = await getDocs(q);
 
         const events: Event[] = [];

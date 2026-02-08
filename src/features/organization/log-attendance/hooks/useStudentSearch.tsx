@@ -5,6 +5,7 @@ import {
   searchUserByName,
   searchUserByStudentId,
   checkLogAttendanceExist,
+  getCurrentUserData,
 } from "@/firebase";
 import { isValidStudentId } from "../utils";
 import { toast } from "sonner";
@@ -16,6 +17,8 @@ interface SearchResult {
     | "idle"
     | "loading"
     | "success"
+    | "success-different-organization"
+    | "success-different-faculty"
     | "error"
     | "not-found"
     | "invalid-format";
@@ -29,6 +32,7 @@ export function useStudentSearch(
   const [studentId, setStudentId] = useState<string>("");
   const [searchName, setSearchName] = useState<string>("");
   const [isSearching, setIsSearching] = useState(false);
+  const [currentUserData, setCurrentUserData] = useState<Member>()
   const [hasPerformedNameSearch, setHasPerformedNameSearch] = useState(false);
   const [searchResult, setSearchResult] = useState<SearchResult>({
     status: "idle",
@@ -42,6 +46,13 @@ export function useStudentSearch(
   // Cache results to prevent duplicate reads
   const searchCache = new Map<string, Member | Member[] | null>();
   const checkCache = new Map<string, boolean>();
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      setCurrentUserData(await getCurrentUserData() as unknown as Member)
+    }
+    fetchCurrentUser()
+  }, [])
 
   // Search by ID (manual trigger)
   const searchById = useCallback(
@@ -64,14 +75,40 @@ export function useStudentSearch(
         return { status: "invalid-format" as const, student: null };
       }
 
+      const evaluateStudentStatus = (student: Member | null) => {
+        
+        if (!student) {
+          if (showToasts) toast.error("Student not found");
+          return { status: "not-found" as const, student: null };
+        }
+
+        console.log(currentUserData)
+        console.log(student)
+
+        // Logic A: Check Organization Mismatch
+        if (currentUserData && currentUserData.accessLevel == 1 && currentUserData.programId != student.programId) {
+          if (showToasts) toast.success("Student found however belongs to different organization");
+          return { status: "success-different-organization" as const, student };
+        }
+
+        // Logic B: Check Faculty Mismatch
+        if (currentUserData && currentUserData.accessLevel == 2 && currentUserData.facultyId != student.facultyId) {
+          if (showToasts) toast.success("Student found however belongs to different faculty");
+          return { status: "success-different-faculty" as const, student };
+        }
+
+        // Logic C: Standard Success
+        if (showToasts) toast.success("Student found");
+        return { status: "success" as const, student };
+      };
+
       // Check cache first
       const cacheKey = `id:${id}`;
       if (searchCache.has(cacheKey)) {
         const cachedStudent = searchCache.get(cacheKey);
-        return {
-          status: cachedStudent ? "success" : "not-found",
-          student: cachedStudent,
-        } as SearchResult;
+        if(cachedStudent){
+          return evaluateStudentStatus(cachedStudent as Member )as SearchResult;
+        }
       }
 
       try {
@@ -81,27 +118,20 @@ export function useStudentSearch(
         await new Promise((resolve) => setTimeout(resolve, 300));
 
         const student = (await searchUserByStudentId(
-          id,
-          currentUser
+          id
         )) as unknown as Member;
 
         // Cache the result
         searchCache.set(cacheKey, student || null);
 
-        if (student) {
-          if (showToasts) toast.success("Student found");
-          return { status: "success" as const, student };
-        } else {
-          if (showToasts) toast.error("Student not found");
-          return { status: "not-found" as const, student: null };
-        }
+        return evaluateStudentStatus(student)
       } catch (error) {
         console.error("Error searching by ID:", error);
         if (showToasts) toast.error("Error searching for student");
         return { status: "error" as const, student: null };
       }
     },
-    []
+    [currentUserData]
   );
 
   // Search by name
@@ -200,7 +230,7 @@ export function useStudentSearch(
     setNameSearchResults,
     hasPerformedNameSearch,
     setHasPerformedNameSearch,
-
+    currentUserData,
     // Methods
     searchById,
     searchByName,

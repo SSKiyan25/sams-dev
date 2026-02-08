@@ -30,7 +30,7 @@ import { incrementEventAttendees } from "./events";
 import { SearchParams } from "@/features/organization/attendees/types";
 import { Event } from "@/features/organization/dashboard/types";
 import { cacheService } from "@/services/cacheService";
-import { Member } from "@/features/organization/members/types";
+import { Member, MemberData } from "@/features/organization/members/types";
 // --- Reusable Constants & Helpers ---
 
 /**
@@ -86,19 +86,40 @@ export const logAttendance = async ({
     const querySnapshot = await getDocs(q);
     const now = Timestamp.now();
     const student = await searchUserByStudentId(
-      studentId,
-      getAuth().currentUser!
+      studentId
     );
+    const currentUserData = await getCurrentUserData() as unknown as Member;
     if (querySnapshot.empty) {
       // Create a new attendance record if one doesn't exist.
-      await addDoc(attendanceCollection, {
-        eventId,
-        student: student == null ? "unknown" : student,
-        userId: studentId,
-        timeIn: type === "time-in" ? now : null,
-        timeOut: type === "time-out" ? now : null,
-        status: "partially present",
-      });
+      let remark = null;
+      if(currentUserData.accessLevel === 1 && currentUserData.programId != student?.programId) {
+          remark = "registered in different program"
+      }
+      else if(currentUserData.accessLevel === 2 && currentUserData.facultyId != student?.facultyId) {
+        remark = "registered in different faculty"
+      }
+      if(remark) {
+        await addDoc(attendanceCollection, {
+          eventId,
+          student: student == null ? "unknown" : student,
+          userId: studentId,
+          timeIn: type === "time-in" ? now : null,
+          timeOut: type === "time-out" ? now : null,
+          status: "partially present",
+          remark
+        });
+      }
+      else {
+        await addDoc(attendanceCollection, {
+          eventId,
+          student: student == null ? "unknown" : student,
+          userId: studentId,
+          timeIn: type === "time-in" ? now : null,
+          timeOut: type === "time-out" ? now : null,
+          status: "partially present",
+        });
+      }
+      
       await incrementEventAttendees(eventId);
     } else {
       // Update the existing record.
@@ -153,27 +174,27 @@ export const getRecentAttendance = async (
         const currentUser = (await getCurrentUserData()) as unknown as Member;
         if (!currentUser) return [];
 
-        // Determine the correct field and value for the query
-        const queryField = currentUser.facultyId
-          ? "student.facultyId"
-          : "student.programId";
-        const queryValue = currentUser.facultyId || currentUser.programId;
+        const accessLevel = currentUser.accessLevel;
 
-        if (!queryValue) {
-          console.error("User has neither facultyId nor programId.");
+        if (accessLevel === 1 && !currentUser.programId) {
+          console.error("User is Level 1 but has no programId.");
+          return [];
+        }
+
+        if (accessLevel === 2 && !currentUser.facultyId) {
+          console.error("User is Level 2 but has no facultyId.");
           return [];
         }
 
         const timestampField = type === "time-in" ? "timeIn" : "timeOut";
 
         const q = query(
-          attendanceCollection,
-          where("eventId", "==", eventId),
-          where(timestampField, "!=", null),
-          where(queryField, "==", queryValue),
-          orderBy(timestampField, "desc"),
-          limit(9)
-        );
+            attendanceCollection,
+            where("eventId", "==", eventId),
+            where(timestampField, "!=", null),
+            orderBy(timestampField, "desc"),
+            limit(9)
+          );
 
         const querySnapshot = await getDocs(q);
         if (querySnapshot.empty) return [];
@@ -290,15 +311,18 @@ export const buildAttendanceQueryConstraints = (
 ): QueryConstraint[] => {
   const constraints: QueryConstraint[] = [where("eventId", "==", eventId)];
 
-  // Dynamically add a filter for either facultyId or programId
-  if (currentUser.facultyId) {
-    constraints.push(where("student.facultyId", "==", currentUser.facultyId));
-    if (programFilter) {
-      constraints.push(where("student.programId", "==", programFilter));
-    }
-  } else if (currentUser.programId) {
-    constraints.push(where("student.programId", "==", currentUser.programId));
-  }
+  // const accessLevel = currentUser.accessLevel;
+
+  // // Dynamically add a filter for either facultyId or programId based on accessLevel
+  // if (accessLevel === 1) {
+  //   constraints.push(where("student.programId", "==", currentUser.programId ?? ""));
+  // } else if (accessLevel === 2) {
+  //   constraints.push(where("student.facultyId", "==", currentUser.facultyId ?? ""));
+  //   if (programFilter) {
+  //     constraints.push(where("student.programId", "==", programFilter));
+  //   }
+  // }
+  // Level 3 (Admin) sees all records for the event
 
   // If a list of student IDs is provided (e.g., from a separate search),
   // use a 'where in' clause for efficient filtering.
@@ -508,20 +532,27 @@ export const totalAttendeesForAllEvent = async (): Promise<number> => {
           return 0;
         }
 
-        // 1. Build the query to get events based on the user's context.
+        // 1. Build the query to get events based on the user's level access.
         let eventsQuery: Query;
-        if (currentUser.facultyId) {
+        const accessLevel = currentUser.accessLevel;
+
+        if (accessLevel === 1) {
           eventsQuery = query(
             eventsCollection,
-            where("facultyId", "==", currentUser.facultyId)
+            where("accessLevelEvent", "==", 1)
           );
-        } else if (currentUser.programId) {
+        } else if (accessLevel === 2) {
           eventsQuery = query(
             eventsCollection,
-            where("programId", "==", currentUser.programId)
+            where("accessLevelEvent", "==", 2)
+          );
+        } else if (accessLevel === 3) {
+          eventsQuery = query(
+            eventsCollection,
+            where("accessLevelEvent", "==", 3)
           );
         } else {
-          console.log("User is not associated with a faculty or program.");
+          console.log("User has no defined level access.");
           return 0; // No context to query by.
         }
 
