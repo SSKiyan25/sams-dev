@@ -288,6 +288,7 @@ export const addEvent = async (eventData: EventFormData) => {
       isDeleted: false,
       accessLevelEvent: levelAccess,
       ...dynamicFields,
+
     });
 
     // Invalidate all event caches after adding a new event

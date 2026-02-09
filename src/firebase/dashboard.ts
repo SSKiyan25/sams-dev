@@ -176,6 +176,7 @@ export const getDashboardOngoingEvents = async (
           eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 1), where("programId", "==", currentUser.programId));
         } else if (accessLevel === 2) {
           eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 2), where("facultyId", "==", currentUser.facultyId));
+
         } else if (accessLevel === 3) {
           eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 3));
         }
