@@ -265,6 +265,14 @@ export const addEvent = async (eventData: EventFormData) => {
       }
     }
 
+    let dynamicFields = {};
+
+    if (levelAccess === 1) {
+      dynamicFields = { programId: currentUser.programId };
+    } else if (levelAccess === 2) {
+      dynamicFields = { facultyId: currentUser.facultyId };
+    }
+    
     const status = determineEventStatus(eventData.date);
     const docRef = await addDoc(eventsCollection, {
       ...eventData,
@@ -279,6 +287,7 @@ export const addEvent = async (eventData: EventFormData) => {
       status,
       isDeleted: false,
       accessLevelEvent: levelAccess,
+      ...dynamicFields,
     });
 
     // Invalidate all event caches after adding a new event

@@ -48,9 +48,9 @@ export const getDashboardAttendeeCount = async (): Promise<number> => {
         );
 
         if (accessLevel === 1) {
-          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 1));
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 1), where("programId", "==", currentUser.programId));
         } else if (accessLevel === 2) {
-          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 2));
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 2), where("facultyId", "==", currentUser.facultyId));
         } else if (accessLevel === 3) {
           eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 3));
         }
@@ -112,9 +112,9 @@ export const getDashboardUpcomingEvents = async (
         );
 
         if (accessLevel === 1) {
-          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 1));
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 1), where("programId", "==", currentUser.programId));
         } else if (accessLevel === 2) {
-          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 2));
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 2), where("facultyId", "==", currentUser.facultyId));
         } else if (accessLevel === 3) {
           eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 3));
         }
@@ -173,9 +173,9 @@ export const getDashboardOngoingEvents = async (
         );
 
         if (accessLevel === 1) {
-          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 1));
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 1), where("programId", "==", currentUser.programId));
         } else if (accessLevel === 2) {
-          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 2));
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 2), where("facultyId", "==", currentUser.facultyId));
         } else if (accessLevel === 3) {
           eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 3));
         }
