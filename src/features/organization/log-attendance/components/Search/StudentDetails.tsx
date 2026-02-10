@@ -28,7 +28,7 @@ export function StudentDetails({
       : "bg-primary hover:bg-primary/90 dark:bg-blue-600 dark:hover:bg-blue-500 text-white shadow-lg hover:shadow-xl transition-all";
 
   return (
-    <div className="flex flex-col gap-4 p-3 sm:p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3 sm:p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 flex-1">
         <div className="flex items-center gap-3 sm:gap-4 flex-1">
           <Avatar className="h-10 w-10 sm:h-12 sm:w-12 bg-primary/10 text-primary border border-gray-200 dark:border-gray-700 flex-shrink-0">
@@ -61,7 +61,7 @@ export function StudentDetails({
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3 w-full">
+      <div className="flex flex-col md:flex-row md:justify-end justify-center gap-2 sm:gap-3 w-full">
         {onCancel && !isSubmitting && (
           <Button
             type="button"
