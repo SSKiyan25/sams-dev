@@ -288,18 +288,18 @@ export function RecentAttendance({
           {/* Main content area with flexible height */}
           <div className="flex flex-col flex-1">
             {viewMode === "grid" ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 flex-1">
                 {records.map((record) => {
 
                   const remarkStyles = getRemarkStyles(record.remark!);
                   return (
                     <div
                       key={record.id}
-                      className={`h-32 border ${
+                      className={`h-28 sm:h-32 border ${
                         record.remark
                           ? `${remarkStyles.border}`
                           : "border-gray-200 dark:border-gray-700"
-                      } rounded-lg p-4 ${
+                      } rounded-lg p-3 sm:p-4 ${
                         record.remark
                           ? `${remarkStyles.bg}`
                           : "bg-white dark:bg-gray-800"
@@ -312,10 +312,10 @@ export function RecentAttendance({
                         </div>
                       )}
 
-                      <div className="flex items-center gap-3 mb-3">
+                      <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
                         <div className="relative">
-                          <Avatar className="h-10 w-10 bg-primary/10 text-primary border border-gray-200 dark:border-gray-700">
-                            <AvatarFallback className="font-nunito-sans font-semibold">
+                          <Avatar className="h-8 w-8 sm:h-10 sm:w-10 bg-primary/10 text-primary border border-gray-200 dark:border-gray-700">
+                            <AvatarFallback className="font-nunito-sans font-semibold text-sm">
                               {showNames
                                 ? getInitials(
                                     record.student.firstName +
@@ -326,32 +326,32 @@ export function RecentAttendance({
                             </AvatarFallback>
                           </Avatar>
                           {record.remark && (
-                            <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 dark:bg-red-600 border-2 border-white dark:border-gray-800 flex items-center justify-center">
-                              <AlertTriangle className="h-2 w-2 text-white" />
+                            <div className="absolute -top-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 rounded-full bg-red-500 dark:bg-red-600 border-2 border-white dark:border-gray-800 flex items-center justify-center">
+                              <AlertTriangle className="h-1.5 w-1.5 sm:h-2 sm:w-2 text-white" />
                             </div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-nunito font-semibold text-gray-900 dark:text-gray-100 truncate">
+                          <p className="font-nunito font-semibold text-gray-900 dark:text-gray-100 truncate text-sm sm:text-base">
                             {showNames
                               ? record.student.firstName + " " + record.student.lastName
                               : "Student"}
                           </p>
-                          <p className="font-nunito-sans text-sm text-gray-600 dark:text-gray-400 truncate">
+                          <p className="font-nunito-sans text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
                             ID: {record.student.studentId}
                           </p>
                         </div>
                         <Badge
                           variant="outline"
-                          className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-700 flex items-center font-nunito-sans font-semibold"
+                          className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-700 flex items-center font-nunito-sans font-semibold text-xs"
                         >
-                          <CheckCircleIcon className="h-3 w-3 mr-1" />
+                          <CheckCircleIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" />
                           Success
                         </Badge>
                       </div>
                       <div className="flex justify-between items-end mt-auto">
-                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                          <ClockIcon className="h-3.5 w-3.5 mr-1.5" />
+                        <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                          <ClockIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
                           <span className="font-nunito-sans font-medium">
                             {formatTime(
                               type === "time-in" ? record.timeIn : record.timeOut
@@ -359,24 +359,13 @@ export function RecentAttendance({
                           </span>
                         </div>
                         {record.remark && (
-                          <div className="flex flex-col items-end gap-1">
-                            <Badge
-                              variant="outline"
-                              className={`h-6 px-2 text-xs font-medium flex items-center gap-1 ${remarkStyles.bg} ${remarkStyles.text} ${remarkStyles.border}`}
-                            >
-                              {remarkStyles.icon}
-                              <span className="truncate max-w-[120px]">
-                                {record.remark.includes("does not belong to this program")
-                                  ? "Program Issue"
-                                  : record.remark.includes("does not belong to this faculty")
-                                  ? "Faculty Issue"
-                                  : "Issue"}
-                              </span>
-                            </Badge>
-                            <span className="text-xs text-gray-500 dark:text-gray-400 italic">
-                              Requires review
-                            </span>
-                          </div>
+                          <Badge
+                            variant="outline"
+                            className={`text-xs font-medium flex items-center gap-1 ${remarkStyles.bg} ${remarkStyles.text} ${remarkStyles.border}`}
+                          >
+                            {remarkStyles.icon}
+                            <span>{record.remark}</span>
+                          </Badge>
                         )}
                       </div>
                     </div>
@@ -398,7 +387,7 @@ export function RecentAttendance({
                         record.remark
                           ? `${remarkStyles.bg}`
                           : "bg-white dark:bg-gray-800"
-                      } hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors shadow-sm relative`}
+                      } hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-all duration-200 shadow-sm relative`}
                     >
                       {/* Red indicator for remarks */}
                       {record.remark && (
@@ -440,20 +429,13 @@ export function RecentAttendance({
                                 ID: {record.student.studentId}
                               </p>
                               {record.remark && (
-                                <div className="flex items-center gap-2">
-                                  <Badge
-                                    variant="outline"
-                                    className={`h-6 px-2 text-xs font-medium flex items-center gap-1 ${remarkStyles.bg} ${remarkStyles.text} ${remarkStyles.border}`}
-                                  >
-                                    {remarkStyles.icon}
-                                    <span className="truncate max-w-[200px]">
-                                      {record.remark}
-                                    </span>
-                                  </Badge>
-                                  <span className="text-xs text-gray-500 dark:text-gray-400 italic">
-                                    • Requires review
-                                  </span>
-                                </div>
+                                <Badge
+                                  variant="outline"
+                                  className={`text-xs font-medium flex items-center gap-1 ${remarkStyles.bg} ${remarkStyles.text} ${remarkStyles.border}`}
+                                >
+                                  {remarkStyles.icon}
+                                  <span>{record.remark}</span>
+                                </Badge>
                               )}
                             </div>
                           </div>

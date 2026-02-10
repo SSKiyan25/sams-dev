@@ -11,7 +11,7 @@ interface AttendeesHeaderProps {
 
 export function AttendeesHeader({ event, onExport, isExporting = false }: AttendeesHeaderProps) {
   return (
-    <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/20 dark:from-gray-800 dark:via-gray-800 dark:to-gray-700/50 rounded-xl border border-gray-200/60 dark:border-gray-700/60 shadow-lg shadow-blue-100/50 dark:shadow-gray-900/20 p-6">
+    <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/20 dark:from-gray-800 dark:via-gray-800 dark:to-gray-700/50 rounded-xl border border-gray-200/60 dark:border-gray-700/60 shadow-lg shadow-blue-100/50 dark:shadow-gray-900/20 px-4 sm:px-6 py-4 sm:py-6">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         {/* Header Section */}
         <div className="flex items-center gap-3">
