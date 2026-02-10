@@ -80,14 +80,12 @@ export const getProgramByFacultyId = async () => {
     if (!currentUser) return null;
 
     // Check if user is a student first
-    if (currentUser.programId) {
+    if (currentUser.accessLevel == 1) {
       const program = await getProgramById(currentUser.programId);
       // **FIX:** Now correctly calls the fixed getProgramById function.
       return program ? [program] : null;
     }
-
-    // Check if user is faculty
-    if (currentUser.facultyId) {
+    else if (currentUser.accessLevel == 2) {
       const programsCollection = collection(db, "programs");
       const q = query(
         programsCollection,
@@ -99,10 +97,14 @@ export const getProgramByFacultyId = async () => {
         ...doc.data(),
       }));
     }
-
-    // If user has neither ID, return null.
-    console.error("User has neither facultyId nor programId.");
-    return null;
+    else {
+      const programsCollection = collection(db, "programs");
+      const querySnapshot = await getDocs(query(programsCollection));
+      return querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      }))
+    } 
   } catch (error) {
     handleFirestoreError(error, "fetch program by faculty ID");
     return null;

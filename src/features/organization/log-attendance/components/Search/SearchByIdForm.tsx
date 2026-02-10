@@ -63,7 +63,7 @@ export function SearchByIdForm({
           Enter Student ID
         </label>
       )}
-      <div className="flex flex-col min-[1178px]:flex-row min-[1178px]:items-start min-[1178px]:space-x-2 space-y-2 min-[1178px]:space-y-0">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:space-x-2 space-y-2 sm:space-y-0">
         <div className="flex-1">
           <StudentIdInput
             value={studentId}
@@ -75,13 +75,13 @@ export function SearchByIdForm({
             onKeyDown={onKeyDown}
           />
         </div>
-        <div className="min-[1178px]:pt-1 flex gap-2 w-full min-[1178px]:w-auto">
+        <div className="sm:pt-1 flex gap-2 w-full sm:w-auto">
           <Button
             type="button"
             onClick={handleClear}
             disabled={isDisabled || !studentId.trim()}
             variant="outline"
-            className="h-10 md:h-12 px-4 md:px-6 font-nunito-sans font-semibold border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 w-auto min-[1178px]:min-w-[80px] flex-shrink-0"
+            className="h-10 px-4 font-nunito-sans font-semibold border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 flex-1 sm:flex-none sm:min-w-[80px] flex-shrink-0"
           >
             <XIcon className="h-4 w-4" />
             <span className="ml-2 hidden sm:inline">Clear</span>
@@ -90,17 +90,17 @@ export function SearchByIdForm({
             type="button"
             onClick={handleSearch}
             disabled={isDisabled || !studentId.trim()}
-            className="h-10 md:h-12 px-6 md:px-8 font-nunito-sans font-semibold bg-primary hover:bg-primary/90 shadow-sm flex-1 min-[1178px]:flex-none min-[1178px]:min-w-[120px] flex-shrink-0"
+            className="h-10 px-6 font-nunito-sans font-semibold bg-primary hover:bg-primary/90 shadow-sm flex-1 sm:flex-none sm:min-w-[120px] flex-shrink-0"
           >
             {isLoading ? (
               <span className="flex items-center justify-center">
                 <span className="h-4 w-4 border-2 border-current border-t-transparent animate-spin rounded-full mr-2"></span>
-                Checking
+                <span className="text-sm">Checking</span>
               </span>
             ) : (
               <span className="flex items-center justify-center">
                 <SearchIcon className="h-4 w-4 mr-2" />
-                Find
+                <span className="text-sm">Find</span>
               </span>
             )}
           </Button>
