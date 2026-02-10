@@ -1,6 +1,13 @@
 import { Badge } from "@/components/ui/badge";
 import { EventAttendance } from "../../log-attendance/types";
-import { ArrowRight, ArrowLeft, Clock, Users, AlertTriangle, UserX } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowLeft,
+  Clock,
+  Users,
+  AlertTriangle,
+  UserX,
+} from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { CACHE_DURATIONS } from "@/services/cacheService";
@@ -102,21 +109,21 @@ const getRemarkStyles = (remark: string) => {
         bg: "bg-red-50 dark:bg-red-900/10",
         text: "text-red-700 dark:text-red-400",
         border: "border-red-200 dark:border-red-800",
-        icon: <AlertTriangle className="h-3 w-3" />
+        icon: <AlertTriangle className="h-3 w-3" />,
       };
     case "registered in different faculty":
       return {
         bg: "bg-orange-50 dark:bg-orange-900/10",
         text: "text-orange-700 dark:text-orange-400",
         border: "border-orange-200 dark:border-orange-800",
-        icon: <UserX className="h-3 w-3" />
+        icon: <UserX className="h-3 w-3" />,
       };
     default:
       return {
         bg: "bg-gray-50 dark:bg-gray-800",
         text: "text-gray-700 dark:text-gray-300",
         border: "border-gray-200 dark:border-gray-700",
-        icon: null
+        icon: null,
       };
   }
 };
@@ -138,14 +145,14 @@ export function AttendanceList({
 
     return `${formattedHours}:${minutes} ${ampm}`;
   }, []);
-  
+
   // Extract all unique program IDs from attendees
   const programIds = useMemo(() => {
     return [
       ...new Set(
         attendees
           .map((a) => a.student?.programId)
-          .filter((id): id is string => Boolean(id))
+          .filter((id): id is string => Boolean(id)),
       ),
     ];
   }, [attendees]);
@@ -156,10 +163,10 @@ export function AttendanceList({
       total: 0,
       programMismatch: 0,
       facultyMismatch: 0,
-      other: 0
+      other: 0,
     };
-    
-    attendees.forEach(attendee => {
+
+    attendees.forEach((attendee) => {
       if (attendee.remark) {
         stats.total++;
         const remarkLower = attendee.remark.toLowerCase();
@@ -172,7 +179,7 @@ export function AttendanceList({
         }
       }
     });
-    
+
     return stats;
   }, [attendees]);
 
@@ -190,7 +197,7 @@ export function AttendanceList({
   return (
     <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/20 dark:from-gray-800 dark:via-gray-800 dark:to-gray-700/50 rounded-xl border border-gray-200/60 dark:border-gray-700/60 shadow-lg shadow-blue-100/50 dark:shadow-gray-900/20">
       {/* Enhanced Header */}
-      <div className="p-6 border-b border-gray-200/60 dark:border-gray-700/60">
+      <div className="px-4 sm:px-6 py-4 sm:py-6 border-b border-gray-200/60 dark:border-gray-700/60">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
@@ -250,32 +257,36 @@ export function AttendanceList({
                   Time-Out
                 </span>
               </div>
-              {remarkStats.programMismatch > 0 && <div className="flex items-center gap-2">
-                <Badge
-                  variant="outline"
-                  className="h-5 bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-700"
-                >
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                </Badge>
-                <span className="text-gray-600 dark:text-gray-400">
-                  Program Issue
-                </span>
-              </div>}
-              {remarkStats.facultyMismatch > 0 && <div className="flex items-center gap-2">
-                <Badge
-                  variant="outline"
-                  className="h-5 bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-700"
-                >
-                  <UserX className="h-3 w-3 mr-1" />
-                </Badge>
-                <span className="text-gray-600 dark:text-gray-400">
-                  Faculty Issue
-                </span>
-              </div>}
+              {remarkStats.programMismatch > 0 && (
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant="outline"
+                    className="h-5 bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-700"
+                  >
+                    <AlertTriangle className="h-3 w-3 mr-1" />
+                  </Badge>
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Program Issue
+                  </span>
+                </div>
+              )}
+              {remarkStats.facultyMismatch > 0 && (
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant="outline"
+                    className="h-5 bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-700"
+                  >
+                    <UserX className="h-3 w-3 mr-1" />
+                  </Badge>
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Faculty Issue
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
-        
+
         {/* Remark Statistics */}
         {remarkStats.total > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">
@@ -297,21 +308,22 @@ export function AttendanceList({
 
       {/* Attendance List */}
       {attendees.length > 0 ? (
-        <div className="p-6">
+        <div className="px-4 sm:px-6 py-4 sm:py-6">
           <div className="space-y-3">
             {attendees.map(({ id, student, timeIn, timeOut, remark }) => {
               if (!student) return null;
               const remarkStyles = getRemarkStyles(remark!);
-              
+
               return (
                 <div
                   key={id || student.studentId}
-                  className={`group relative p-4 rounded-lg border ${
-                    remark 
+                  className={`group relative p-4 rounded-lg border pb-5 ${
+                    remark
                       ? `${remarkStyles.bg} ${remarkStyles.border}`
                       : "border-gray-200/60 dark:border-gray-700/60 bg-white/80 dark:bg-gray-800/40"
                   } backdrop-blur-sm hover:bg-white/90 dark:hover:bg-gray-800/60 hover:border-gray-300/80 dark:hover:border-gray-600/80 transition-all duration-200 hover:shadow-md`}
                 >
+
                   <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                     {/* Student Info */}
                     <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -333,19 +345,6 @@ export function AttendanceList({
                             <h4 className="font-nunito font-semibold text-gray-900 dark:text-gray-100 truncate">
                               {student.firstName} {student.lastName}
                             </h4>
-                            {remark && (
-                              <Badge 
-                                variant="outline" 
-                                className={`ml-2 ${remarkStyles.bg} ${remarkStyles.text} ${remarkStyles.border} font-medium text-xs`}
-                              >
-                                <div className="flex items-center gap-1.5">
-                                  {remarkStyles.icon}
-                                  <span className="max-w-[180px] truncate">
-                                    {remark}
-                                  </span>
-                                </div>
-                              </Badge>
-                            )}
                           </div>
                         </div>
 
@@ -356,51 +355,83 @@ export function AttendanceList({
                           {student.programId && (
                             <ProgramBadge programId={student.programId} />
                           )}
-                          {remark && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400 italic">
-                              Requires attention
-                            </span>
-                          )}
                         </div>
+                        {remark && (
+                          <div className="mt-2 lg:hidden">
+                            <Badge
+                              variant="outline"
+                              className={`${remarkStyles.bg} ${remarkStyles.text} ${remarkStyles.border} font-medium text-xs`}
+                            >
+                              <div className="flex items-center gap-1.5">
+                                {remarkStyles.icon}
+                                <span className="max-w-full break-words">
+                                  {remark}
+                                </span>
+                              </div>
+                            </Badge>
+                          </div>                          
+                        )}
+                        {remark && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400 italic lg:hidden">
+                            Requires attention
+                          </span>
+                        )}
                       </div>
                     </div>
 
                     {/* Time Records */}
-                    <div className="flex flex-col sm:flex-row gap-3 lg:flex-shrink-0">
-                      {/* Check-in Badge */}
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant="outline"
-                          className={`flex items-center h-8 px-3 font-medium ${
-                            timeIn
-                              ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-700"
-                              : "bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800/20 dark:text-gray-400 dark:border-gray-700"
-                          }`}
-                        >
-                          <ArrowRight className="h-3 w-3 mr-2 flex-shrink-0" />
-                          <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
-                          <span className="text-xs whitespace-nowrap">
-                            {formatTime(timeIn) || "Not recorded"}
-                          </span>
-                        </Badge>
-                      </div>
+                    <div className="flex flex-col gap-2 lg:flex-shrink-0">
+                      {remark && (
+                        <div className="hidden lg:block self-end">
+                          <Badge
+                            variant="outline"
+                            className={`${remarkStyles.bg} ${remarkStyles.text} ${remarkStyles.border} font-medium text-xs max-w-[200px]`}
+                          >
+                            <div className="flex items-center gap-1.5">
+                              {remarkStyles.icon}
+                              <span className="truncate">
+                                {remark}
+                              </span>
+                            </div>
+                          </Badge>
+                        </div>
+                      )}
+                      <div className="flex flex-row gap-3 flex-wrap justify-center">
+                        {/* Check-in Badge */}
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className={`flex items-center h-8 px-3 font-medium ${
+                              timeIn
+                                ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-700"
+                                : "bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800/20 dark:text-gray-400 dark:border-gray-700"
+                            }`}
+                          >
+                            <ArrowRight className="h-3 w-3 mr-2 flex-shrink-0" />
+                            <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
+                            <span className="text-xs whitespace-nowrap">
+                              {formatTime(timeIn) || "Not recorded"}
+                            </span>
+                          </Badge>
+                        </div>
 
-                      {/* Check-out Badge */}
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant="outline"
-                          className={`flex items-center h-8 px-3 font-medium ${
-                            timeOut
-                              ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700"
-                              : "bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800/20 dark:text-gray-400 dark:border-gray-700"
-                          }`}
-                        >
-                          <ArrowLeft className="h-3 w-3 mr-2 flex-shrink-0" />
-                          <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
-                          <span className="text-xs whitespace-nowrap">
-                            {formatTime(timeOut) || "Not recorded"}
-                          </span>
-                        </Badge>
+                        {/* Check-out Badge */}
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className={`flex items-center h-8 px-3 font-medium ${
+                              timeOut
+                                ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700"
+                                : "bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800/20 dark:text-gray-400 dark:border-gray-700"
+                            }`}
+                          >
+                            <ArrowLeft className="h-3 w-3 mr-2 flex-shrink-0" />
+                            <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
+                            <span className="text-xs whitespace-nowrap">
+                              {formatTime(timeOut) || "Not recorded"}
+                            </span>
+                          </Badge>
+                        </div>
                       </div>
                     </div>
                   </div>

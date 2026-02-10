@@ -94,7 +94,7 @@ export default function EventAttendeesPage() {
   if (attendeesLoading && !eventData) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="container mx-auto p-4">
+        <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6">
           <EventSkeleton />
         </div>
       </div>
@@ -104,7 +104,7 @@ export default function EventAttendeesPage() {
   if (error || !eventData) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="container mx-auto p-4">
+        <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6">
           {/* Breadcrumb */}
           <div className="mb-6">
             <Breadcrumb>
@@ -143,7 +143,7 @@ export default function EventAttendeesPage() {
 
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="container mx-auto p-4">
+        <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6">
           {/* Breadcrumb */}
           <div className="mb-6">
             <Breadcrumb>
