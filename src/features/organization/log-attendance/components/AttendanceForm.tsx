@@ -225,6 +225,10 @@ export function AttendanceForm({
       return;
     }
 
+    // set submitting state immediately to disable button
+    setIsSubmitting(true);
+    setIsLoading(true);
+
     try {
       if (await checkAttendanceExists(studentId)) {
         toast.error("Attendance record already exists.");
@@ -281,8 +285,6 @@ export function AttendanceForm({
   };
 
   const proceedWithSubmission = async (studentId: string) => {
-    setIsSubmitting(true);
-    setIsLoading(true);
     setIsProcessing(true);
     
     try {
@@ -363,7 +365,15 @@ export function AttendanceForm({
 
       <WarningDialog
         open={warningDialog.open}
-        onOpenChange={(open) => setWarningDialog(prev => ({ ...prev, open }))}
+        onOpenChange={(open) => {
+          setWarningDialog(prev => ({ ...prev, open }));
+          // reset states when dialog is closed without confirming
+          if (!open) {
+            setIsProcessing(false);
+            setIsLoading(false);
+            setIsSubmitting(false);
+          }
+        }}
         onConfirm={warningDialog.onConfirm}
         onCancel={() => {
           setWarningDialog(prev => ({ ...prev, open: false }));
@@ -433,7 +443,7 @@ export function AttendanceForm({
           )}
         </div>
 
-        <div className="px-6 pt-2 pb-6 space-y-6">
+        <div className="px-4 sm:px-6 pt-2 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div className="flex-1">
               <h3 className="flex items-center gap-3 text-xl font-nunito font-bold text-gray-900 dark:text-gray-100">
@@ -567,7 +577,7 @@ export function AttendanceForm({
                   </div>
 
                   {searchResult.status == "success-different-organization" && searchResult.student && (
-                     <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-green-50/50 dark:bg-green-900/10">
+                 
                         <StudentDetailsOutsideOrg
                           student={searchResult.student}
                           showNames={showNames}
@@ -577,11 +587,10 @@ export function AttendanceForm({
                           buttonVariant="warning"
                           onCancel={handleCancelSearch}
                         />
-                      </div>
                   )}
 
                   {searchResult.status == "success-different-faculty" && searchResult.student && (
-                     <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-green-50/50 dark:bg-green-900/10">
+                     
                         <StudentDetailsOutsideOrg
                           student={searchResult.student}
                           showNames={showNames}
@@ -591,12 +600,12 @@ export function AttendanceForm({
                           buttonVariant="warning"
                           onCancel={handleCancelSearch}
                         />
-                      </div>
+                     
                   )}
 
                   {searchResult.status === "success" &&
                     searchResult.student && (
-                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-green-50/50 dark:bg-green-900/10">
+                      
                         <StudentDetails
                           student={searchResult.student}
                           showNames={showNames}
@@ -605,7 +614,6 @@ export function AttendanceForm({
                           buttonVariant="success"
                           onCancel={handleCancelSearch}
                         />
-                      </div>
                     )}
 
                   {/* Use NoStudentFound component */}
